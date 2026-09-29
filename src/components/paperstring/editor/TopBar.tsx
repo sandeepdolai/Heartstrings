@@ -13,6 +13,7 @@ import {
   Compass,
   Keyboard,
   Loader2,
+  Pencil,
   Redo2,
   Share2,
   Undo2,
@@ -96,7 +97,8 @@ export function TopBar({
           <ArrowLeft className="h-4.5 w-4.5" />
         </button>
 
-        {/* title */}
+        {/* title — the book's name, set in the display serif; hovering
+            reveals the rename affordance (pencil + a fine accent underline) */}
         {editing ? (
           <input
             ref={inputRef}
@@ -112,16 +114,29 @@ export function TopBar({
             }}
             maxLength={120}
             aria-label="Project title"
-            className="min-w-0 flex-1 rounded-md border border-editor-border-strong bg-editor-panel px-2.5 py-1.5 text-sm font-medium text-editor-text outline-none focus:border-[#e8446a]/70 sm:max-w-xs"
+            className="min-w-0 flex-1 rounded-md border border-editor-border-strong bg-editor-panel px-2.5 py-1.5 font-display text-sm italic text-editor-text outline-none focus:border-[#e8446a]/70 sm:max-w-xs"
           />
         ) : (
           <button
             type="button"
             onClick={startEditing}
             aria-label="Rename project"
-            className="min-w-0 max-w-[32vw] truncate rounded-md px-2.5 py-1.5 text-sm font-medium text-editor-text transition hover:bg-editor-raised sm:max-w-xs"
+            title="Rename this book"
+            className="group/title min-w-0 max-w-[32vw] rounded-md px-2.5 py-1.5 text-sm text-editor-text transition hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]/70 sm:max-w-xs"
           >
-            {title || "Untitled book"}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate font-display italic tracking-tight">
+                {title || "Untitled book"}
+              </span>
+              <Pencil
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 text-editor-dim/0 transition-all duration-200 group-hover/title:text-editor-dim group-hover/title:translate-x-px group-focus-visible/title:text-editor-dim"
+              />
+            </span>
+            <span
+              aria-hidden="true"
+              className="mt-0.5 block h-px w-full origin-left scale-x-0 bg-[#e8446a]/70 transition-transform duration-300 group-hover/title:scale-x-100"
+            />
           </button>
         )}
 

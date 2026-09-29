@@ -430,7 +430,9 @@ export function layerContentBox(layer: Layer): { w: number; h: number } {
     }
     case "text": {
       const m = measureTextLayer(layer as TextLayer);
-      return m;
+      // The bend lifts the ends — the content box grows so selection
+      // chrome, hit tests and the transform box all cover the arc.
+      return { w: m.w, h: m.h + textCurveSagitta(layer as TextLayer) };
     }
   }
 }
@@ -497,11 +499,11 @@ export function measureTextLayer(l: TextLayer): { w: number; h: number } {
   const ctx = canvas.getContext("2d")!;
   ctx.save();
   ctx.font = textFontString(l);
-  applyLetterSpacing(ctx, l.letterSpacing);
+  // Per-glyph measure (same math as the curved path) so the block anchor,
+  // selection chrome and 4K publishes all agree on widths.
   let w = 0;
   for (const line of lines) {
-    const m = ctx.measureText(line || " ").width;
-    if (m > w) w = m;
+    w = Math.max(w, measureLineWidth(ctx, line || " ", l.letterSpacing));
   }
   ctx.restore();
   return { w, h: lines.length * l.fontSize * l.lineHeight };
@@ -516,22 +518,36 @@ function applyLetterSpacing(ctx: CanvasRenderingContext2D, spacing: number) {
 }
 
 function drawTextLayer(ctx: CanvasRenderingContext2D, l: TextLayer) {
+  // NOTE: the layer transform (translate + rotate) is applied ONCE by the
+  // caller — drawLayerContent. This function draws in the layer's local
+  // space only. (Historical bug, fixed Round 15: this used to repeat the
+  // translate/rotate, silently rendering every text layer at 2× its stored
+  // position — the click point never matched the committed art.)
   const lines = l.text.split("\n");
+  const curve = l.curve ?? 0;
   ctx.save();
-  ctx.translate(l.x, l.y);
-  ctx.rotate(layerRotationRad(l));
   ctx.font = textFontString(l);
-  applyLetterSpacing(ctx, l.letterSpacing);
-  ctx.textBaseline = "middle";
   ctx.fillStyle = l.color;
   const lh = l.fontSize * l.lineHeight;
   const totalH = lines.length * lh;
   // Block anchor: align inside the widest line's box so left/right/center all
   // pivot around the layer center (FR-4.5).
-  const widths = lines.map((line) => ctx.measureText(line || " ").width);
+  const widths = lines.map((line) => measureLineWidth(ctx, line, l.letterSpacing));
   const blockW = Math.max(...widths, 1);
   const anchorX =
     l.align === "left" ? -blockW / 2 : l.align === "right" ? blockW / 2 : 0;
+
+  if (Math.abs(curve) >= 2) {
+    // Curved path: each line follows its own circular arc (FR-4.7, PRD
+    // future ideas — text-on-path). Per-glyph placement keeps letterSpacing
+    // exact and lets every glyph rotate with the tangent, like badge text.
+    drawCurvedLines(ctx, l, lines, widths, anchorX, totalH, lh, curve);
+    ctx.restore();
+    return;
+  }
+
+  applyLetterSpacing(ctx, l.letterSpacing);
+  ctx.textBaseline = "middle";
   ctx.textAlign = l.align;
   lines.forEach((line, i) => {
     const y = -totalH / 2 + lh * (i + 0.5);
@@ -552,6 +568,111 @@ function drawTextLayer(ctx: CanvasRenderingContext2D, l: TextLayer) {
     ctx.fillText(line, anchorX, y);
   });
   ctx.restore();
+}
+
+/** Line width with letter spacing applied manually (curve path measure). */
+function measureLineWidth(
+  ctx: CanvasRenderingContext2D,
+  line: string,
+  spacing: number
+): number {
+  if (!line) return ctx.measureText(" ").width;
+  let w = 0;
+  for (const ch of line) w += ctx.measureText(ch).width + spacing;
+  return w - spacing;
+}
+
+/** Geometry of one arc: chord width w + curve −100…100 → sagitta (peak
+ *  height of the arc, signed: + = ends up) and circle radius. The sagitta
+ *  tops out at 40% of the chord so even full bend stays badge-like. */
+function arcGeometry(
+  w: number,
+  curve: number
+): { sag: number; radius: number; sign: 1 | -1 } {
+  const sign = curve > 0 ? 1 : -1;
+  const sag = (Math.min(100, Math.abs(curve)) / 100) * w * 0.4;
+  if (sag < 1 || w < 4) return { sag: 0, radius: Infinity, sign };
+  const radius = (w * w) / (8 * sag) + sag / 2;
+  return { sag, radius, sign };
+}
+
+/** Height the arc adds to a text block (widest line's sagitta) — used by
+ *  layerContentBox so selection chrome and hit tests cover the bend. */
+export function textCurveSagitta(l: TextLayer): number {
+  const curve = l.curve ?? 0;
+  if (Math.abs(curve) < 2) return 0;
+  const m = measureTextLayer(l);
+  return arcGeometry(m.w, curve).sag;
+}
+
+function drawCurvedLines(
+  ctx: CanvasRenderingContext2D,
+  l: TextLayer,
+  lines: string[],
+  widths: number[],
+  anchorX: number,
+  totalH: number,
+  lh: number,
+  curve: number
+) {
+  // Curved glyphs are placed one by one — letterSpacing is applied manually
+  // so the spacing is identical in Chrome's per-glyph math and elsewhere.
+  if ("letterSpacing" in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+      "0px";
+  }
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  const underlineW = Math.max(1, l.fontSize * 0.045);
+
+  lines.forEach((line, i) => {
+    const lineY = -totalH / 2 + lh * (i + 0.5);
+    const w = widths[i];
+    if (!line.trim() || w < 4) return;
+    const { sag, radius, sign } = arcGeometry(w, curve);
+    if (sag < 1 || !isFinite(radius)) {
+      // Degenerate arc (tiny line / weak curve) — draw it straight.
+      ctx.fillText(line, anchorX, lineY);
+      return;
+    }
+    // Where this line's chord starts, honoring block alignment.
+    const startX =
+      l.align === "left"
+        ? anchorX
+        : l.align === "right"
+          ? anchorX - w
+          : anchorX - w / 2;
+
+    // Walk the glyphs; t0 tracks the running offset from the chord start.
+    let t0 = 0;
+    for (const ch of line) {
+      const adv = ctx.measureText(ch).width;
+      const u = t0 + adv / 2 - w / 2; // glyph center, chord-center-relative
+      t0 += adv + l.letterSpacing;
+      // Position on the arc: x is the chord offset (arcs share chord x),
+      // y lifts the glyph by the arc drop; rotation follows the tangent.
+      const drop = radius - Math.sqrt(radius * radius - u * u);
+      const angle = Math.asin(Math.max(-1, Math.min(1, u / radius)));
+      const gx = startX + w / 2 + u;
+      const gy = lineY - sign * drop;
+      const rot = sign * angle;
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.rotate(rot);
+      ctx.fillText(ch, 0, 0);
+      if (l.underline) {
+        // A short underline segment per glyph, rotating with it — together
+        // they trace a dotted-follow-the-arc line under the words.
+        ctx.lineWidth = underlineW;
+        ctx.strokeStyle = l.color;
+        ctx.beginPath();
+        ctx.moveTo(-adv / 2, l.fontSize * 0.42);
+        ctx.lineTo(adv / 2, l.fontSize * 0.42);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  });
 }
 
 /* ── image adjustments (ctx.filter — draw-time, publish parity free) ──── */

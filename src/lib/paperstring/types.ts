@@ -93,6 +93,10 @@ export interface TextLayer extends BaseLayer {
   letterSpacing: number; // canvas units
   lineHeight: number; // multiplier
   underline: boolean;
+  /** Arc bend, −100…100: positive arches the text up like a badge (∩),
+   *  negative dips it into a smile (∪). 0 / undefined = straight — old
+   *  projects and undo history stay byte-clean. Curves apply per line. */
+  curve?: number;
 }
 
 /** Per-image color adjustments (non-destructive — a filter applied at draw

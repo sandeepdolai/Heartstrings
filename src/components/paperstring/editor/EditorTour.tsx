@@ -37,12 +37,12 @@ const STEPS: TourStep[] = [
   {
     target: "tools",
     title: "Pick your tools",
-    body: "Brush, text, stickers and more live in this rail. Each has a one-key shortcut — hover a tool to see it.",
+    body: "Brush, text, stickers and more live in this rail — plus two finishing touches: F softens with a dreamy blur, D smudges like a wet finger. Each tool has a one-key shortcut; hover one to see it.",
   },
   {
     target: "panel",
     title: "Tune it here",
-    body: "The panel follows your tool: size, opacity, color, fonts — everything you need, nothing you don't.",
+    body: "The panel follows your tool: size, opacity, color, fonts, text curves — everything you need, nothing you don't.",
     prepare: () => {
       // The panel only exists while a panelled tool is active — nudge one on.
       const s = useEditorStore.getState();

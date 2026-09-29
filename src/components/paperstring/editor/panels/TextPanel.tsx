@@ -34,6 +34,7 @@ import {
 import { PALETTE } from "@/lib/paperstring/color";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import {
   GroupLabel,
   PanelShell,
@@ -92,6 +93,31 @@ const TEXT_PRESETS: {
   },
 ];
 
+/** Arc-bend presets — small inline SVG arcs so the shape reads at a glance. */
+const CURVE_PRESETS = [
+  {
+    label: "Arch",
+    aria: "arch the text upward",
+    title: "Arch — badge-style, ends rising",
+    value: 60,
+    path: "M3 10 C 10 2, 22 2, 29 10",
+  },
+  {
+    label: "Flat",
+    aria: "straight text",
+    title: "Flat — no curve",
+    value: 0,
+    path: "M3 6 H 29",
+  },
+  {
+    label: "Smile",
+    aria: "curve the text downward",
+    title: "Smile — ribbon-style, ends dipping",
+    value: -60,
+    path: "M3 2 C 10 10, 22 10, 29 2",
+  },
+] as const;
+
 /** Everything a text layer and the next-insert defaults share. */
 type TextProps = Pick<
   TextLayer,
@@ -104,6 +130,7 @@ type TextProps = Pick<
   | "underline"
   | "letterSpacing"
   | "lineHeight"
+  | "curve"
 >;
 
 export function TextPanel() {
@@ -134,6 +161,7 @@ export function TextPanel() {
         underline: target.underline,
         letterSpacing: target.letterSpacing,
         lineHeight: target.lineHeight,
+        curve: target.curve ?? 0,
       }
     : defaults;
 
@@ -263,6 +291,74 @@ export function TextPanel() {
         }}
         onCommit={endLive}
       />
+
+      {/* arc bend — text-on-path, the badge/ribbon flourish */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-editor-text">Curve</span>
+          <span className="tabular-nums text-editor-dim">
+            {(values.curve ?? 0) === 0
+              ? "Flat"
+              : `${(values.curve ?? 0) > 0 ? "Arch" : "Smile"} ${Math.abs(Math.round(values.curve ?? 0))}`}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {CURVE_PRESETS.map((p) => {
+            const active = Math.round(values.curve ?? 0) === p.value;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                aria-label={`Curve: ${p.aria}`}
+                aria-pressed={active}
+                title={`${p.title}`}
+                onClick={() => apply({ curve: p.value })}
+                className={cn(
+                  "group flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  active
+                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
+                )}
+              >
+                <svg
+                  viewBox="0 0 32 12"
+                  aria-hidden="true"
+                  className="h-3.5 w-8 shrink-0"
+                  fill="none"
+                >
+                  <path
+                    d={p.path}
+                    stroke="currentColor"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="text-[10px] font-medium leading-none">{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <Slider
+          value={[Math.round(values.curve ?? 0)]}
+          min={-100}
+          max={100}
+          step={5}
+          onValueChange={(v) => {
+            if (target) {
+              beginLive();
+              apply({ curve: v[0] }, { live: true });
+            } else apply({ curve: v[0] });
+          }}
+          onValueCommit={() => target && endLive()}
+          aria-label="Curve amount"
+          className={cn(
+            "text-editor-dim",
+            "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
+            "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
+            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
+          )}
+        />
+      </div>
       <SliderRow
         label="Line height"
         value={values.lineHeight}

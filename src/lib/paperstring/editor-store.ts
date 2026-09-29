@@ -50,6 +50,8 @@ export interface TextDefaults {
   align: "left" | "center" | "right";
   letterSpacing: number;
   lineHeight: number;
+  /** Arc bend for the next text (−100…100; 0 = straight). */
+  curve: number;
 }
 
 export interface HistoryEntry {
@@ -227,6 +229,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     align: "center" as TextDefaults["align"],
     letterSpacing: 0,
     lineHeight: 1.25,
+    curve: 0,
   },
   selectionShape: "rect",
   liveStroke: null,
@@ -464,6 +467,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       letterSpacing: t.letterSpacing,
       lineHeight: t.lineHeight,
       underline: t.underline,
+      // 0 stays undefined so old projects / saved JSON stay byte-clean.
+      ...(t.curve ? { curve: t.curve } : {}),
     };
     get().addLayer(layer);
     set({ editingTextLayerId: layer.id, tool: "text" });
