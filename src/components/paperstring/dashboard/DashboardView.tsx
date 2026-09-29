@@ -155,12 +155,15 @@ export function DashboardView({ user }: { user: PsUser }) {
     <Button
       onClick={() => createBook.mutate()}
       disabled={createBook.isPending}
-      className="h-11 rounded-full px-5"
+      className="group h-11 rounded-full px-5"
     >
       {createBook.isPending ? (
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
       ) : (
-        <Plus className="size-4" aria-hidden="true" />
+        <Plus
+          className="size-4 transition-transform duration-300 group-hover:rotate-90 motion-reduce:transition-none motion-reduce:group-hover:rotate-0"
+          aria-hidden="true"
+        />
       )}
       New book
     </Button>

@@ -5,7 +5,7 @@ import { WordMark } from "@/components/paperstring/brand";
 import { psNavigate } from "@/lib/paperstring/navigation";
 
 const FOOTER_LINK_CLASS =
-  "rounded-full text-dim transition-colors duration-200 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night";
+  "ps-underline-link rounded-full text-onyx transition-colors duration-200 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night";
 
 export function LandingFooter() {
   const signIn = () => psNavigate("auth");

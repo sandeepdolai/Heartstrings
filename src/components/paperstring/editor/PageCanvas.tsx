@@ -29,12 +29,15 @@ import {
   renderPage,
 } from "@/lib/paperstring/render";
 import { useEditorStore, type HistoryEntry } from "@/lib/paperstring/editor-store";
+import { LogoMark } from "@/components/paperstring/brand";
 import { cn } from "@/lib/utils";
 
 interface Props {
   page: CanvasPageData;
   active: boolean;
   width: number; // CSS px
+  /** Show the decorative first-mark welcome (pristine single blank page). */
+  welcome?: boolean;
 }
 
 type Gesture =
@@ -57,7 +60,7 @@ type Gesture =
     }
   | { kind: "select-area"; x0: number; y0: number };
 
-function PageCanvasInner({ page, active, width }: Props) {
+function PageCanvasInner({ page, active, width, welcome }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const gestureRef = useRef<Gesture>({ kind: "none" });
@@ -388,6 +391,39 @@ function PageCanvasInner({ page, active, width }: Props) {
         className="block h-full w-full rounded-lg bg-white shadow-[0_24px_60px_-18px_rgba(0,0,0,0.65),0_6px_16px_-8px_rgba(0,0,0,0.4)] ring-1 ring-black/15"
         aria-label={`Canvas page ${page.id}`}
       />
+
+      {/* decorative welcome on a pristine first page — editor chrome only,
+          never exported, and it vanishes with the very first mark */}
+      {welcome && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] flex flex-col items-center justify-center gap-4 px-12 text-center"
+        >
+          <div className="relative ps-float motion-reduce:animate-none">
+            <LogoMark className="h-14 w-[3.9rem] text-silver/70" strokeWidth={2.4} />
+            {/* a faint dashed gesture, like the first stroke about to happen */}
+            <svg
+              viewBox="0 0 120 24"
+              fill="none"
+              className="absolute -bottom-5 left-1/2 h-4 w-[7.5rem] -translate-x-1/2 text-silver/50"
+            >
+              <path
+                d="M4 16 C 28 4, 52 22, 76 10 S 108 14, 116 8"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray="1 7"
+              />
+            </svg>
+          </div>
+          <p className="font-display text-lg leading-snug text-onyx/55 sm:text-xl">
+            This page is waiting for your first mark
+          </p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-silver">
+            pick a brush · begin anywhere
+          </p>
+        </div>
+      )}
 
       {/* interaction overlay */}
       <div

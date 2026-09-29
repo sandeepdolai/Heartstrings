@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   BookOpen,
   Copy,
+  CopyPlus,
   Eye,
   Loader2,
   MoreVertical,
@@ -63,6 +64,7 @@ export function ProjectCard({
   const [newTitle, setNewTitle] = useState(title);
   const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const openInEditor = () => psNavigate("editor", { project: id });
 
@@ -108,6 +110,29 @@ export function ProjectCard({
       toast.error(err instanceof Error ? err.message : "Couldn't rename the book");
     } finally {
       setRenaming(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (duplicating) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/duplicate`, { method: "POST" });
+      let json: { project?: ProjectSummary; error?: string } | null = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (!res.ok || !json?.project) {
+        throw new Error(json?.error ?? "Couldn't duplicate the book");
+      }
+      await refresh();
+      toast.success("Book duplicated — the original stays safe");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't duplicate the book");
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -243,6 +268,17 @@ export function ProjectCard({
               >
                 <Pencil />
                 Rename…
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDuplicate}
+                disabled={duplicating}
+              >
+                {duplicating ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CopyPlus />
+                )}
+                Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setDeleteOpen(true)}

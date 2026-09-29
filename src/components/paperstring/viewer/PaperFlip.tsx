@@ -28,6 +28,8 @@ export interface PaperFlipProps {
   /** Page sources — PNG data URLs or plain paths. Portrait 9:16. */
   pages: string[];
   title: string;
+  /** Page the book opens on (clamped) — used to resume a session. */
+  initialIndex?: number;
   onIndexChange?: (index: number) => void;
 }
 
@@ -132,18 +134,19 @@ interface DragState {
  * DOM inside a requestAnimationFrame loop, so nothing re-renders per frame.
  */
 export const PaperFlip = forwardRef<PaperFlipHandle, PaperFlipProps>(
-  function PaperFlip({ pages, title, onIndexChange }, ref) {
+  function PaperFlip({ pages, title, initialIndex = 0, onIndexChange }, ref) {
     const reduced = useReducedMotion() ?? false;
     const single = pages.length <= 1;
     const interactive = !single;
 
     /* ── state (mount/commit only — never per-frame) ──────────────────── */
-    const [index, setIndex] = useState(0);
+    const startIndex = Math.min(Math.max(0, Math.floor(initialIndex)), Math.max(0, pages.length - 1));
+    const [index, setIndex] = useState(startIndex);
     const [leaf, setLeaf] = useState<FlipDir | null>(null);
     const [xfadeTarget, setXfadeTarget] = useState<number | null>(null);
 
     /* ── refs: engine + DOM handles ───────────────────────────────────── */
-    const indexRef = useRef(0);
+    const indexRef = useRef(startIndex);
     const flipRef = useRef<{ dir: FlipDir; progress: number } | null>(null);
     const rafRef = useRef(0);
     const lockRef = useRef(false);

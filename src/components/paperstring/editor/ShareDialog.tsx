@@ -2,13 +2,19 @@
 
 /**
  * ShareDialog (FR-1.6, FR-1.10, §6 Save & Share flow) — the publishing pipeline:
- * save the project → render every canvas to a 4K PNG master → POST the publish
- * endpoint → present the shareable URL. Every stage shows clear progress /
- * success / failure states; a failure is never presented as published.
+ * save the project → render every canvas to a 4K PNG master → upload the pages
+ * → present the shareable URL. Every stage shows clear progress / success /
+ * failure states; a failure is never presented as published.
+ *
+ * Long books publish in chunks: pages are rendered one at a time and streamed
+ * to a server-side staging session (start → chunk… → finish), so neither the
+ * browser nor the request body ever holds the whole book. Short books keep
+ * the single-shot endpoint. The dialog can be cancelled midway — nothing is
+ * written until the final call.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Link2, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, Heart, Link2, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
@@ -25,7 +31,12 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-type Stage = "preparing" | "saving" | "rendering" | "publishing" | "ready" | "error";
+type Stage = "preparing" | "saving" | "rendering" | "uploading" | "publishing" | "ready" | "error";
+
+/** Books up to this many pages use the legacy single-shot publish. */
+const LEGACY_MAX = 3;
+/** Pages streamed per chunk request in the chunked pipeline. */
+const CHUNK_SIZE = 3;
 
 export function ShareDialog({
   open,
@@ -45,6 +56,7 @@ export function ShareDialog({
   const [stage, setStage] = useState<Stage>("preparing");
   const [done, setDone] = useState(0);
   const [total, setTotal] = useState(1);
+  const [detail, setDetail] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +70,7 @@ export function ShareDialog({
     const alive = () => runRef.current === runId;
     setError(null);
     setCopied(false);
+    setDetail(null);
     setStage("saving");
 
     try {
@@ -71,39 +84,77 @@ export function ShareDialog({
       setTotal(canvases.length);
       setDone(0);
       setStage("rendering");
-      const pages: string[] = [];
-      for (let i = 0; i < canvases.length; i++) {
-        const png = await renderPageToPublishPng(canvases[i]);
+
+      const cover = saved.coverImage ? { coverImage: saved.coverImage } : {};
+
+      if (canvases.length <= LEGACY_MAX) {
+        // Short book — one request, exactly like before.
+        const pages: string[] = [];
+        for (let i = 0; i < canvases.length; i++) {
+          setDetail(`Preparing page ${i + 1} of ${canvases.length} in 4K…`);
+          const png = await renderPageToPublishPng(canvases[i]);
+          if (!alive()) return;
+          pages.push(png);
+          setDone(i + 1);
+          // let the progress bar paint between pages
+          await new Promise((r) => setTimeout(r, 16));
+        }
+
+        setStage("publishing");
+        const res = await fetch(`/api/projects/${projectId}/publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pages, ...cover, regenerate: false }),
+        });
+        await consumePublishResponse(res, alive, setToken, setShareUrl, setStage, onPublished);
+      } else {
+        // Long book — chunked pipeline: render a few pages, send them, let go.
+        const startRes = await fetch(`/api/projects/${projectId}/publish/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
         if (!alive()) return;
-        pages.push(png);
-        setDone(i + 1);
-        // let the progress bar paint between pages
-        await new Promise((r) => setTimeout(r, 16));
+        if (!startRes.ok) throw new Error("start-failed");
+        const { publishId } = (await startRes.json()) as { publishId: string };
+
+        const buffer: string[] = [];
+        for (let i = 0; i < canvases.length; i++) {
+          setDetail(`Preparing page ${i + 1} of ${canvases.length} in 4K…`);
+          const png = await renderPageToPublishPng(canvases[i]);
+          if (!alive()) return;
+          buffer.push(png);
+
+          if (buffer.length === CHUNK_SIZE || i === canvases.length - 1) {
+            const from = i + 1 - buffer.length + 1;
+            setDetail(`Sending page ${from}${buffer.length > 1 ? `–${i + 1}` : ""} of ${canvases.length}…`);
+            setStage("uploading");
+            const chunkRes = await fetch(`/api/projects/${projectId}/publish/chunk`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ publishId, pages: buffer }),
+            });
+            if (!alive()) return;
+            if (!chunkRes.ok) throw new Error("chunk-failed");
+            const { received } = (await chunkRes.json()) as { received: number };
+            buffer.length = 0; // release the memory
+            setDone(received);
+            setStage("rendering");
+            // let the progress bar paint between chunks
+            await new Promise((r) => setTimeout(r, 16));
+          }
+        }
+
+        setDetail(null);
+        setStage("publishing");
+        const finishRes = await fetch(`/api/projects/${projectId}/publish/finish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publishId, ...cover, regenerate: false }),
+        });
+        await consumePublishResponse(finishRes, alive, setToken, setShareUrl, setStage, onPublished);
       }
 
-      // 3 — publish (server stores only the rendered pages — SEP-3)
-      setStage("publishing");
-      const res = await fetch(`/api/projects/${projectId}/publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pages,
-          // keep the existing cover when this session didn't render one
-          ...(saved.coverImage ? { coverImage: saved.coverImage } : {}),
-          // keep the link stable across republishes; the pages update in place
-          regenerate: false,
-        }),
-      });
-      if (!alive()) return;
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "publish-failed");
-      }
-      const { shareToken: token } = (await res.json()) as { shareToken: string };
-      setToken(token);
-      setShareUrl(`${window.location.origin}/?view=viewer&s=${token}`);
-      setStage("ready");
-      onPublished?.(token);
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (err) {
       if (!alive()) return;
@@ -129,6 +180,13 @@ export function ShareDialog({
     void run();
   }, [open, run]);
 
+  /** Abort the pipeline and close — nothing reaches the share link. */
+  const cancel = useCallback(() => {
+    runRef.current++; // invalidate the running pipeline
+    onOpenChange(false);
+    toast.info("Publishing stopped — your book was not shared.");
+  }, [onOpenChange]);
+
   const copy = async () => {
     if (!shareUrl) return;
     try {
@@ -141,20 +199,41 @@ export function ShareDialog({
     }
   };
 
-  const busy = stage === "saving" || stage === "rendering" || stage === "publishing";
+  const busy = stage === "saving" || stage === "rendering" || stage === "uploading" || stage === "publishing";
+
+  const progressValue =
+    stage === "saving"
+      ? 8
+      : stage === "publishing"
+        ? 96
+        : stage === "ready"
+          ? 100
+          : 8 + (total > 0 ? (done / total) * 84 : 0);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        if (busy && !o) return; // don't abandon a publish midway
+        if (busy && !o) return; // don't abandon a publish midway (use Cancel)
         onOpenChange(o);
       }}
     >
       <DialogContent className="border-editor-border-strong bg-editor-panel text-editor-text sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-lg text-editor-text">
-            {stage === "ready" ? "Your book is ready to share" : "Sharing your book"}
+            {stage === "ready" ? (
+              <span className="inline-flex items-center gap-2">
+                Your book is ready to share
+                <Heart
+                  className="h-4 w-4 shrink-0 text-[#e8446a] ps-heartbeat motion-reduce:animate-none"
+                  fill="currentColor"
+                  strokeWidth={0}
+                  aria-hidden="true"
+                />
+              </span>
+            ) : (
+              "Sharing your book"
+            )}
           </DialogTitle>
           <DialogDescription className="text-editor-dim">
             {stage === "ready"
@@ -169,19 +248,26 @@ export function ShareDialog({
               <Loader2 className="h-4 w-4 animate-spin text-editor-dim" />
               {stage === "saving" && "Saving your book…"}
               {stage === "rendering" && (
-                <span>
-                  Preparing page {Math.min(done + 1, total)} of {total} in 4K…
-                </span>
+                <span>{detail ?? `Preparing page ${Math.min(done + 1, total)} of ${total} in 4K…`}</span>
               )}
+              {stage === "uploading" && <span>{detail ?? "Sending your pages…"}</span>}
               {stage === "publishing" && "Publishing…"}
             </div>
-            <Progress
-              value={stage === "rendering" ? (done / total) * 100 : 8}
-              className="h-1.5 bg-editor-raised"
-            />
-            <p className="text-xs text-editor-dim">
-              High quality is always on — this can take a moment for long books.
-            </p>
+            <Progress value={progressValue} className="h-1.5 bg-editor-raised" />
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-editor-dim">
+                {total > LEGACY_MAX
+                  ? "Long books are sent page by page — high quality is always on."
+                  : "High quality is always on — this can take a moment for long books."}
+              </p>
+              <button
+                type="button"
+                onClick={cancel}
+                className="shrink-0 rounded-full border border-editor-border-strong px-3 py-1 text-[11px] font-medium text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
@@ -244,4 +330,25 @@ export function ShareDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Shared tail of both pipelines: read the token, or surface the failure. */
+async function consumePublishResponse(
+  res: Response,
+  alive: () => boolean,
+  setToken: (t: string) => void,
+  setShareUrl: (u: string) => void,
+  setStage: (s: Stage) => void,
+  onPublished?: (token: string) => void
+): Promise<void> {
+  if (!alive()) return;
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "publish-failed");
+  }
+  const { shareToken: token } = (await res.json()) as { shareToken: string };
+  setToken(token);
+  setShareUrl(`${window.location.origin}/?view=viewer&s=${token}`);
+  setStage("ready");
+  onPublished?.(token);
 }

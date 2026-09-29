@@ -80,7 +80,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="rounded-full px-3.5 py-2 text-sm text-dim transition-colors duration-200 hover:bg-night/5 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night"
+                  className="ps-underline-link rounded-full px-3.5 py-2 text-sm text-onyx transition-colors duration-200 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night"
                 >
                   {link.label}
                 </a>

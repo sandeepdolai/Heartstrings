@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
+import type { CanvasPageData } from "@/lib/paperstring/types";
 import { PageCanvas } from "./PageCanvas";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -52,6 +53,15 @@ export function CanvasWorkspace() {
   );
   const mobilePage = canvases[activeIdx] ?? canvases[0];
 
+  /* A pristine book — one untouched white page — shows the decorative
+     welcome hint that dissolves with the creator's very first mark. */
+  const isPristinePage = (page: CanvasPageData) =>
+    canvases.length === 1 &&
+    page.background === "#FFFFFF" &&
+    page.layers.length === 1 &&
+    page.layers[0].type === "raster" &&
+    page.layers[0].strokes.length === 0;
+
   /* ── mobile: one page at a time (FR-2.3, FR-2.8) ───────────────────── */
   if (isMobile) {
     return (
@@ -63,6 +73,7 @@ export function CanvasWorkspace() {
                 key={mobilePage.id}
                 page={mobilePage}
                 active
+                welcome={isPristinePage(mobilePage)}
                 width={Math.min(
                   typeof window !== "undefined" ? window.innerWidth - 24 : 360,
                   ((typeof window !== "undefined" ? window.innerHeight : 800) - 210) *
@@ -142,7 +153,12 @@ export function CanvasWorkspace() {
               }}
               className="block cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor"
             >
-              <PageCanvas page={page} active={page.id === activeCanvasId} width={300} />
+              <PageCanvas
+                page={page}
+                active={page.id === activeCanvasId}
+                welcome={isPristinePage(page)}
+                width={300}
+              />
             </div>
             <div className="mt-3 flex items-center justify-between px-1">
               <span className="text-[11px] uppercase tracking-[0.2em] text-editor-dim">

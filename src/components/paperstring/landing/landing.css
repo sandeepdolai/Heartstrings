@@ -13,3 +13,43 @@
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-optical-sizing: auto;
 }
+
+/*
+   .ps-underline-link — a hand-drawn-feel underline that grows outward from
+   the centre on hover/focus (nav + footer links). Uses the flip easing so
+   every motion on the page shares one personality.
+*/
+.ps-underline-link {
+  position: relative;
+}
+.ps-underline-link::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  right: 50%;
+  height: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.75;
+  transition:
+    left 0.28s var(--ease-flip, cubic-bezier(0.22, 0.9, 0.32, 1)),
+    right 0.28s var(--ease-flip, cubic-bezier(0.22, 0.9, 0.32, 1));
+}
+.ps-underline-link:hover::after,
+.ps-underline-link:focus-visible::after {
+  left: 0.9rem;
+  right: 0.9rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-underline-link::after {
+    transition: none;
+    left: 0.9rem;
+    right: 0.9rem;
+    opacity: 0;
+  }
+  .ps-underline-link:hover::after,
+  .ps-underline-link:focus-visible::after {
+    opacity: 0.75;
+  }
+}

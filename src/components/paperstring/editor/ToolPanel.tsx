@@ -185,6 +185,45 @@ function BrushPanel({ eraser }: { eraser: boolean }) {
             step={1}
             onChange={(v) => setBrush({ opacity: v / 100 })}
           />
+
+          {/* quick presets — one tap sets a whole brush personality */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs text-editor-text">Presets</span>
+            <div className="grid grid-cols-2 gap-2">
+              {BRUSH_PRESETS.map((p) => {
+                const active =
+                  Math.round(brush.size) === p.size &&
+                  Math.round(brush.opacity * 100) === p.opacity;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={active}
+                    title={`${p.label} — ${p.size}px at ${p.opacity}% opacity`}
+                    onClick={() => setBrush({ size: p.size, opacity: p.opacity / 100 })}
+                    className={cn(
+                      "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                      active
+                        ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                        : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
+                    )}
+                  >
+                    <span className="grid h-6 w-6 place-items-center" aria-hidden="true">
+                      <span
+                        className="rounded-full bg-current transition-transform duration-200 group-hover:scale-110"
+                        style={{ width: p.dot, height: p.dot }}
+                      />
+                    </span>
+                    <span className="text-[11px] font-medium leading-none">{p.label}</span>
+                    <span className="text-[9px] tabular-nums leading-none text-editor-dim/70">
+                      {p.size}px · {p.opacity}%
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={() => setTool("color")}
@@ -204,6 +243,14 @@ function BrushPanel({ eraser }: { eraser: boolean }) {
     </PanelShell>
   );
 }
+
+/** One-tap brush personalities — size (canvas units) at an opacity %. */
+const BRUSH_PRESETS = [
+  { id: "fineliner", label: "Fine liner", size: 6, opacity: 100, dot: 4 },
+  { id: "marker", label: "Marker", size: 28, opacity: 90, dot: 10 },
+  { id: "soft", label: "Soft paint", size: 64, opacity: 55, dot: 16 },
+  { id: "wash", label: "Ink wash", size: 120, opacity: 35, dot: 22 },
+] as const;
 
 function SelectionAreaPanel() {
   const selectionShape = useEditorStore((s) => s.selectionShape);

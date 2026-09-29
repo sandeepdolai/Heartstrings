@@ -63,7 +63,12 @@ export function ViewerView({ shareToken }: { shareToken: string }) {
   if (unavailable) return <ViewerUnavailable />;
 
   return (
-    <ViewerBook key={shareToken} title={data.title || "Untitled"} pages={data.pages} />
+    <ViewerBook
+      key={shareToken}
+      shareToken={shareToken}
+      title={data.title || "Untitled"}
+      pages={data.pages}
+    />
   );
 }
 
@@ -108,12 +113,46 @@ function ViewerUnavailable() {
 
 /* ── the book (success) ─────────────────────────────────────────────────── */
 
-function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
+/** Session-scoped position store: a reload in the same tab reopens the book
+ *  where the recipient left it; a brand-new tab still starts at page 1. Purely
+ *  local — nothing is ever sent anywhere. */
+const viewerPosKey = (token: string) => `ps-viewer-pos:${token}`;
+
+function readStoredPosition(token: string, pageCount: number): number {
+  try {
+    const raw = window.sessionStorage.getItem(viewerPosKey(token));
+    if (!raw) return 0;
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(Math.max(n, 0), Math.max(0, pageCount - 1));
+  } catch {
+    return 0; // storage unavailable (private mode) — just start fresh
+  }
+}
+
+function ViewerBook({
+  shareToken,
+  title,
+  pages,
+}: {
+  shareToken: string;
+  title: string;
+  pages: string[];
+}) {
   const reduced = useReducedMotion() ?? false;
   const flipRef = useRef<PaperFlipHandle>(null);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => readStoredPosition(shareToken, pages.length));
   const [titleDimmed, setTitleDimmed] = useState(false);
   const single = pages.length <= 1;
+
+  // Remember where the recipient is (same tab session only).
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(viewerPosKey(shareToken), String(index));
+    } catch {
+      /* private mode — fine */
+    }
+  }, [index, shareToken]);
 
   // The recipient's browser tab carries the book's name.
   useEffect(() => {
@@ -182,6 +221,7 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
             ref={flipRef}
             pages={pages}
             title={title}
+            initialIndex={index}
             onIndexChange={setIndex}
           />
         </motion.div>
@@ -228,6 +268,17 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
             <p className="text-[11px] uppercase tracking-[0.25em] tabular-nums text-dim">
               {index + 1} / {pages.length}
             </p>
+            {/* reading-progress hairline — a quiet ribbon for every book,
+                carrying long ones where the dots leave off */}
+            <div
+              aria-hidden="true"
+              className="h-[2px] w-40 overflow-hidden rounded-full bg-onyx/80"
+            >
+              <div
+                className="h-full rounded-full bg-silver/80 transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                style={{ width: `${((index + 1) / pages.length) * 100}%` }}
+              />
+            </div>
             {pages.length <= 12 && (
               <div aria-hidden="true" className="flex items-center gap-1.5">
                 {pages.map((_, i) => (
