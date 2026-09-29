@@ -46,6 +46,25 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   const [tourOpen, setTourOpen] = useState(false);
+  /* transient HUD for brush/eraser size changes via [ / ] keys */
+  const [sizeHud, setSizeHud] = useState<{
+    value: number;
+    tool: "brush" | "eraser";
+  } | null>(null);
+  const sizeHudTimer = useRef<number | null>(null);
+
+  const flashSizeHud = useCallback((value: number, tool: "brush" | "eraser") => {
+    setSizeHud({ value, tool });
+    if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
+    sizeHudTimer.current = window.setTimeout(() => setSizeHud(null), 1000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
+    },
+    []
+  );
 
   /* ── load the project ─────────────────────────────────────────────── */
 
@@ -235,6 +254,21 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         void saveRef.current({ force: true });
         return;
       }
+      // Move the active page: Ctrl+Shift+←/→ (the keyboard twin of
+      // filmstrip drag-reorder; navigation stays on Alt/Ctrl alone).
+      if (mod && e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        const { canvases, activeCanvasId, reorderCanvas } = store;
+        const idx = canvases.findIndex((c) => c.id === activeCanvasId);
+        if (idx >= 0) {
+          const to = e.key === "ArrowRight" ? idx + 1 : idx - 1;
+          if (to >= 0 && to < canvases.length) {
+            e.preventDefault();
+            reorderCanvas(canvases[idx].id, to);
+            toast.success(`Page ${idx + 1} moved to position ${to + 1}`);
+          }
+        }
+        return;
+      }
       // Page navigation: Alt+←/→ anywhere, PageUp/PageDown too. Never fires
       // while a text editor is open (guarded above) or inputs hold focus.
       if (
@@ -264,6 +298,30 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         return;
       }
       if (mod || e.altKey) return;
+
+      // Brush / eraser size: [ smaller, ] larger (Shift = ×10 step).
+      // Shift+[ / Shift+] surface as "{" / "}" — both count.
+      const sizeKey = e.key === "[" || e.key === "{" ? "[" : e.key === "]" || e.key === "}" ? "]" : null;
+      if (sizeKey) {
+        e.preventDefault();
+        const bigStep = e.shiftKey ? 10 : 1;
+        const delta = sizeKey === "[" ? -bigStep : bigStep;
+        const { tool, brush, eraserSize, setBrush, setEraserSize } = store;
+        if (tool === "eraser") {
+          const next = Math.round(Math.min(220, Math.max(2, eraserSize + delta)));
+          if (next !== eraserSize) {
+            setEraserSize(next);
+            flashSizeHud(next, "eraser");
+          }
+        } else {
+          const next = Math.round(Math.min(200, Math.max(1, brush.size + delta)));
+          if (next !== brush.size) {
+            setBrush({ size: next });
+            flashSizeHud(next, "brush");
+          }
+        }
+        return;
+      }
 
       switch (e.key.toLowerCase()) {
         case "v": store.setTool("select"); break;
@@ -345,6 +403,36 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
           <div className="hidden md:block">
             <LayersPanel />
           </div>
+
+          {/* transient size HUD — a quiet confirm for [ / ] size changes */}
+          {sizeHud && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2"
+            >
+              <div className="flex items-center gap-3 rounded-full border border-editor-border-strong bg-editor-panel/95 px-4 py-2.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+                <span
+                  className="rounded-full"
+                  style={{
+                    width: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
+                    height: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
+                    background:
+                      sizeHud.tool === "brush" ? "#e8446a" : "transparent",
+                    border:
+                      sizeHud.tool === "eraser"
+                        ? "1.5px dashed #b5b5b5"
+                        : "none",
+                  }}
+                />
+                <span className="text-[11px] uppercase tracking-[0.18em] text-editor-dim">
+                  {sizeHud.tool === "eraser" ? "Eraser" : "Brush"}
+                </span>
+                <span className="text-sm tabular-nums text-editor-text">
+                  {sizeHud.value} px
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

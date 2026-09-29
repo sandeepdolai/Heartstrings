@@ -7,8 +7,8 @@
  * changes are always instant — no flip animations (FR-2.4, OOS-4).
  */
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Trash2, Type } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Copy, GripHorizontal, MoreHorizontal, Plus, Trash2, Type } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { CANVAS_W, CANVAS_H, type CanvasPageData } from "@/lib/paperstring/types";
 import { PageCanvas } from "./PageCanvas";
@@ -44,6 +44,7 @@ export function CanvasWorkspace() {
   const setActiveCanvas = useEditorStore((s) => s.setActiveCanvas);
   const addCanvas = useEditorStore((s) => s.addCanvas);
   const duplicateCanvas = useEditorStore((s) => s.duplicateCanvas);
+  const reorderCanvas = useEditorStore((s) => s.reorderCanvas);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -146,6 +147,7 @@ export function CanvasWorkspace() {
           canvases={canvases}
           activeCanvasId={activeCanvasId}
           onSelect={setActiveCanvas}
+          onReorder={reorderCanvas}
         />
       )}
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -218,6 +220,25 @@ export function CanvasWorkspace() {
                 >
                   <ChevronRight className="h-4 w-4" /> Next page
                 </ContextMenuItem>
+                <ContextMenuSeparator className="bg-editor-border" />
+                <ContextMenuItem
+                  disabled={i === 0}
+                  onClick={() => {
+                    reorderCanvas(page.id, i - 1);
+                    toast.success(`Page ${i + 1} moved to position ${i}`);
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" /> Move page earlier
+                </ContextMenuItem>
+                <ContextMenuItem
+                  disabled={i === canvases.length - 1}
+                  onClick={() => {
+                    reorderCanvas(page.id, i + 1);
+                    toast.success(`Page ${i + 1} moved to position ${i + 2}`);
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" /> Move page later
+                </ContextMenuItem>
               </ContextMenuContent>
             </ContextMenu>
             <div className="mt-3 flex items-center justify-between px-1">
@@ -267,12 +288,30 @@ function PageFilmstrip({
   canvases,
   activeCanvasId,
   onSelect,
+  onReorder,
 }: {
   canvases: CanvasPageData[];
   activeCanvasId: string;
   onSelect: (id: string) => void;
+  onReorder: (id: string, toIndex: number) => void;
 }) {
   const listRef = useRef<HTMLOListElement | null>(null);
+  /* drag state — which chip is being carried, and the insertion slot
+     (an index BETWEEN chips: 0 = before page 1, n = after page n). */
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropIdx, setDropIdx] = useState<number | null>(null);
+  const edgeScroll = useRef<number | null>(null);
+
+  const fromIdx = dragId ? canvases.findIndex((c) => c.id === dragId) : -1;
+
+  const clearDrag = useCallback(() => {
+    setDragId(null);
+    setDropIdx(null);
+    if (edgeScroll.current !== null) {
+      window.clearInterval(edgeScroll.current);
+      edgeScroll.current = null;
+    }
+  }, []);
 
   // Keep the active thumbnail visible when the page changes (keyboard nav,
   // context menu, layer panel — they all land here).
@@ -282,6 +321,37 @@ function PageFilmstrip({
     const item = listRef.current.children[idx] as HTMLElement | undefined;
     item?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [activeCanvasId, canvases]);
+
+  // Nudge the strip sideways while a chip is dragged near either edge.
+  const startEdgeScroll = (dir: -1 | 0 | 1) => {
+    if (dir === 0) {
+      if (edgeScroll.current !== null) {
+        window.clearInterval(edgeScroll.current);
+        edgeScroll.current = null;
+      }
+      return;
+    }
+    if (edgeScroll.current !== null) return;
+    edgeScroll.current = window.setInterval(() => {
+      listRef.current?.scrollBy({ left: dir * 9, behavior: "instant" as ScrollBehavior });
+    }, 16);
+  };
+
+  useEffect(() => () => {
+    if (edgeScroll.current !== null) window.clearInterval(edgeScroll.current);
+  }, []);
+
+  /** Resolve the insertion slot (0..n) from a pointer X — self-sufficient,
+      so the drop never depends on the last dragover having flushed state. */
+  const computeDropIndex = (clientX: number): number => {
+    const items = listRef.current?.children;
+    if (!items) return 0;
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      if (clientX < r.left + r.width / 2) return i;
+    }
+    return items.length;
+  };
 
   return (
     <nav
@@ -294,22 +364,85 @@ function PageFilmstrip({
       <ol
         ref={listRef}
         className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:thin]"
+        onDragLeave={(e) => {
+          // Leaving the strip entirely clears the indicator (child hops
+          // between chips fire dragleave too — only react to the parent).
+          if (e.currentTarget === e.target) setDropIdx(null);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          const rect = e.currentTarget.getBoundingClientRect();
+          const zone = 36;
+          if (e.clientX < rect.left + zone) startEdgeScroll(-1);
+          else if (e.clientX > rect.right - zone) startEdgeScroll(1);
+          else startEdgeScroll(0);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (dragId && fromIdx !== -1) {
+            // Convert the between-slot into an insert index for the
+            // post-removal array (slots right of the source shift by one).
+            const slot = computeDropIndex(e.clientX);
+            const to = fromIdx < slot ? slot - 1 : slot;
+            if (to !== fromIdx) onReorder(dragId, to);
+          }
+          clearDrag();
+        }}
+        onDragEnd={clearDrag}
       >
         {canvases.map((page, i) => {
           const active = page.id === activeCanvasId;
+          const dragging = page.id === dragId;
           return (
-            <li key={page.id} className="shrink-0">
+            <li
+              key={page.id}
+              className="relative shrink-0"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setDropIdx(e.clientX > rect.left + rect.width / 2 ? i + 1 : i);
+              }}
+            >
+              {/* insertion indicator — a fine accent seam between chips.
+                  One seam = one bar: the right edge of the chip before the
+                  slot (plus a left bar only before the very first chip). */}
+              {dropIdx === i && i === 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -left-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+                />
+              )}
+              {dropIdx === i + 1 && !(dragging && i === fromIdx) && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+                />
+              )}
               <button
                 type="button"
                 aria-label={`Go to page ${i + 1}`}
                 aria-current={active}
                 onClick={() => onSelect(page.id)}
-                title={`Page ${i + 1}`}
+                title={`Page ${i + 1} — drag to reorder`}
+                draggable
+                onDragStart={(e) => {
+                  setDragId(page.id);
+                  e.dataTransfer.effectAllowed = "move";
+                  // Firefox requires data for drag to start at all.
+                  e.dataTransfer.setData("text/plain", page.id);
+                }}
+                onDragEnd={clearDrag}
                 className={cn(
                   "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
-                  active
-                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
-                    : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
+                  dragging
+                    ? "cursor-grabbing border-[#e8446a]/60 bg-[#e8446a]/10 opacity-40"
+                    : "cursor-grab active:cursor-grabbing",
+                  dragging
+                    ? ""
+                    : active
+                      ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
+                      : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
                 {/* tiny page preview chip — background colour at a glance */}
@@ -319,11 +452,21 @@ function PageFilmstrip({
                   style={{ background: page.background }}
                 />
                 {i + 1}
+                {/* reorder affordance — appears on hover, whisper-quiet */}
+                <GripHorizontal
+                  aria-hidden="true"
+                  className="h-3 w-3 text-editor-dim/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                />
               </button>
             </li>
           );
         })}
       </ol>
+      {dragId && (
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#e8446a]/80">
+          Drop to reorder
+        </span>
+      )}
     </nav>
   );
 }

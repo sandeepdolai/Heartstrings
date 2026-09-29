@@ -52,9 +52,12 @@ import { cn } from "@/lib/utils";
 export function ProjectCard({
   project,
   index = 0,
+  variant = "grid",
 }: {
   project: ProjectSummary;
   index?: number;
+  /** "grid" — classic cover card; "list" — compact one-line row. */
+  variant?: "grid" | "list";
 }) {
   const { id, title, coverImage, pageCount, shareToken, updatedAt } = project;
   const queryClient = useQueryClient();
@@ -161,6 +164,179 @@ export function ProjectCard({
     }
   };
 
+  /* Shared pieces — the actions menu and both dialogs are identical in
+     every layout; only the chrome around them changes. */
+  const actionsMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`More options for ${title}`}
+          className={cn(
+            "size-8 rounded-full bg-paper/80 text-night shadow-sm backdrop-blur transition hover:bg-paper focus-visible:opacity-100 dark:bg-onyx/80 dark:text-smoke dark:hover:bg-onyx",
+            variant === "grid"
+              ? "opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+              : "opacity-100"
+          )}
+        >
+          <MoreVertical className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={openInEditor}>
+          <BookOpen />
+          Open
+        </DropdownMenuItem>
+        {shareToken && (
+          <>
+            <DropdownMenuItem
+              onClick={() => psNavigate("viewer", { s: shareToken })}
+            >
+              <Eye />
+              View as recipient
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={copyShareLink}>
+              <Copy />
+              Copy share link
+            </DropdownMenuItem>
+          </>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => {
+            setNewTitle(title);
+            setRenameOpen(true);
+          }}
+        >
+          <Pencil />
+          Rename…
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handleDuplicate}
+          disabled={duplicating}
+        >
+          {duplicating ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <CopyPlus />
+          )}
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setDeleteOpen(true)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 />
+          Delete…
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const stopProp = {
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
+  };
+
+  if (variant === "list") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.24) }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${title}`}
+        onClick={(e) => {
+          if (!e.currentTarget.contains(e.target as Node)) return;
+          openInEditor();
+        }}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openInEditor();
+          }
+        }}
+        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-silver/30 bg-card p-3 transition-all duration-200 hover:border-silver/60 hover:shadow-[0_10px_28px_-16px_rgba(19,19,19,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.995]"
+      >
+        {/* thumb */}
+        <div className="relative h-[4.25rem] w-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-silver/40">
+          {coverImage ? (
+            <img
+              src={coverImage}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30 dark:from-onyx/50 dark:to-night">
+              <LogoMark
+                className="h-6 w-auto text-dim/50 dark:text-silver/60"
+                strokeWidth={4}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* title + meta */}
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-display text-base font-semibold tracking-tight">
+            {title}
+          </h3>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-dim dark:text-silver/80">
+            <span className="tabular-nums">
+              {pageCount} {pageCount === 1 ? "page" : "pages"}
+            </span>
+            <span aria-hidden="true" className="text-silver dark:text-silver/40">
+              ·
+            </span>
+            <span>Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</span>
+          </p>
+        </div>
+
+        {/* shared / private chip */}
+        {shareToken ? (
+          <span className="hidden shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke dark:bg-onyx dark:ring-1 dark:ring-silver/30 sm:inline-flex">
+            Shared
+          </span>
+        ) : (
+          <span className="hidden shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim dark:text-silver/80 sm:inline-flex">
+            Private
+          </span>
+        )}
+
+        {/* menu — always visible in the row */}
+        <div className="shrink-0" {...stopProp}>
+          {actionsMenu}
+        </div>
+
+        {/* Rename dialog */}
+        <RenameDialog
+          id={id}
+          title={title}
+          newTitle={newTitle}
+          setNewTitle={setNewTitle}
+          renameOpen={renameOpen}
+          setRenameOpen={setRenameOpen}
+          renaming={renaming}
+          onSubmit={handleRename}
+        />
+
+        {/* Delete confirmation */}
+        <DeleteDialog
+          title={title}
+          deleteOpen={deleteOpen}
+          setDeleteOpen={setDeleteOpen}
+          deleting={deleting}
+          onDelete={handleDelete}
+        />
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -229,66 +405,7 @@ export function ProjectCard({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`More options for ${title}`}
-                className="size-8 rounded-full bg-paper/80 text-night opacity-100 shadow-sm backdrop-blur transition hover:bg-paper focus-visible:opacity-100 dark:bg-onyx/80 dark:text-smoke dark:hover:bg-onyx lg:opacity-0 lg:group-hover:opacity-100"
-              >
-                <MoreVertical className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={openInEditor}>
-                <BookOpen />
-                Open
-              </DropdownMenuItem>
-              {shareToken && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => psNavigate("viewer", { s: shareToken })}
-                  >
-                    <Eye />
-                    View as recipient
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={copyShareLink}>
-                    <Copy />
-                    Copy share link
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setNewTitle(title);
-                  setRenameOpen(true);
-                }}
-              >
-                <Pencil />
-                Rename…
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDuplicate}
-                disabled={duplicating}
-              >
-                {duplicating ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <CopyPlus />
-                )}
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 />
-                Delete…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {actionsMenu}
         </div>
       </div>
 
@@ -315,90 +432,149 @@ export function ProjectCard({
       </div>
 
       {/* Rename dialog */}
-      <Dialog
-        open={renameOpen}
-        onOpenChange={(open) => {
-          setRenameOpen(open);
-          if (!open) setNewTitle(title);
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-display">Rename book</DialogTitle>
-            <DialogDescription>
-              Give &ldquo;{title}&rdquo; a new name.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleRename} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor={`rename-${id}`}>Title</Label>
-              <Input
-                id={`rename-${id}`}
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                maxLength={80}
-                autoFocus
-                aria-label="Book title"
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRenameOpen(false)}
-                disabled={renaming}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={renaming || !newTitle.trim() || newTitle.trim() === title}
-              >
-                {renaming && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <RenameDialog
+        id={id}
+        title={title}
+        newTitle={newTitle}
+        setNewTitle={setNewTitle}
+        renameOpen={renameOpen}
+        setRenameOpen={setRenameOpen}
+        renaming={renaming}
+        onSubmit={handleRename}
+      />
 
       {/* Delete confirmation */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-display">
-              Delete &ldquo;{title}&rdquo;?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the book and its share link. This can&apos;t be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleDelete();
-              }}
-              disabled={deleting}
-              className={cn(
-                "bg-destructive text-white hover:bg-destructive/90",
-                deleting && "opacity-70"
-              )}
-            >
-              {deleting ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Trash2 className="size-4" aria-hidden="true" />
-              )}
-              Delete book
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteDialog
+        title={title}
+        deleteOpen={deleteOpen}
+        setDeleteOpen={setDeleteOpen}
+        deleting={deleting}
+        onDelete={handleDelete}
+      />
     </motion.div>
+  );
+}
+
+/* ── shared dialogs (identical in grid + list layouts) ─────────────────── */
+
+function RenameDialog({
+  id,
+  title,
+  newTitle,
+  setNewTitle,
+  renameOpen,
+  setRenameOpen,
+  renaming,
+  onSubmit,
+}: {
+  id: string;
+  title: string;
+  newTitle: string;
+  setNewTitle: (v: string) => void;
+  renameOpen: boolean;
+  setRenameOpen: (open: boolean) => void;
+  renaming: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+}) {
+  return (
+    <Dialog
+      open={renameOpen}
+      onOpenChange={(open) => {
+        setRenameOpen(open);
+        if (!open) setNewTitle(title);
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display">Rename book</DialogTitle>
+          <DialogDescription>
+            Give &ldquo;{title}&rdquo; a new name.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor={`rename-${id}`}>Title</Label>
+            <Input
+              id={`rename-${id}`}
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              maxLength={80}
+              autoFocus
+              aria-label="Book title"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRenameOpen(false)}
+              disabled={renaming}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={renaming || !newTitle.trim() || newTitle.trim() === title}
+            >
+              {renaming && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              )}
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteDialog({
+  title,
+  deleteOpen,
+  setDeleteOpen,
+  deleting,
+  onDelete,
+}: {
+  title: string;
+  deleteOpen: boolean;
+  setDeleteOpen: (open: boolean) => void;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-display">
+            Delete &ldquo;{title}&rdquo;?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes the book and its share link. This can&apos;t be
+            undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete();
+            }}
+            disabled={deleting}
+            className={cn(
+              "bg-destructive text-white hover:bg-destructive/90",
+              deleting && "opacity-70"
+            )}
+          >
+            {deleting ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="size-4" aria-hidden="true" />
+            )}
+            Delete book
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { MotionConfig, motion } from "framer-motion";
@@ -12,6 +12,8 @@ import {
   Check,
   ChevronDown,
   HeartCrack,
+  LayoutGrid,
+  List,
   Loader2,
   LogOut,
   Moon,
@@ -48,6 +50,20 @@ async function fetchProjects(): Promise<ProjectSummary[]> {
 }
 
 type SortMode = "edited" | "created" | "title" | "pages";
+type LibraryView = "grid" | "list";
+
+/** Library layout preference — purely local, survives reloads. */
+const LIBRARY_VIEW_KEY = "ps-library-view";
+
+function readLibraryView(): LibraryView {
+  try {
+    return window.localStorage.getItem(LIBRARY_VIEW_KEY) === "list"
+      ? "list"
+      : "grid";
+  } catch {
+    return "grid";
+  }
+}
 
 const SORT_OPTIONS: ReadonlyArray<{ id: SortMode; label: string }> = [
   { id: "edited", label: "Recently edited" },
@@ -96,6 +112,15 @@ export function DashboardView({ user }: { user: PsUser }) {
   // Library-management state lives here only — resets on mount by design.
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("edited");
+  const [viewMode, setViewMode] = useState<LibraryView>(readLibraryView);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LIBRARY_VIEW_KEY, viewMode);
+    } catch {
+      /* private mode — the toggle still works, it just won't persist */
+    }
+  }, [viewMode]);
 
   const firstName = user.name.trim().split(/\s+/)[0] || "friend";
   const initials =
@@ -365,6 +390,44 @@ export function DashboardView({ user }: { user: PsUser }) {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* layout toggle — covers at a glance, or a scannable list */}
+                <div
+                  role="group"
+                  aria-label="Library layout"
+                  className="ml-auto flex h-11 items-center gap-1 rounded-full border border-silver/60 bg-paper p-1 dark:border-silver/25 dark:bg-onyx/60"
+                >
+                  <button
+                    type="button"
+                    aria-label="Grid layout"
+                    aria-pressed={viewMode === "grid"}
+                    title="Grid layout"
+                    onClick={() => setViewMode("grid")}
+                    className={cn(
+                      "grid size-9 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      viewMode === "grid"
+                        ? "bg-night text-smoke shadow-sm dark:bg-smoke dark:text-night"
+                        : "text-dim hover:text-night dark:text-silver/70 dark:hover:text-smoke"
+                    )}
+                  >
+                    <LayoutGrid className="size-4" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="List layout"
+                    aria-pressed={viewMode === "list"}
+                    title="List layout"
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "grid size-9 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      viewMode === "list"
+                        ? "bg-night text-smoke shadow-sm dark:bg-smoke dark:text-night"
+                        : "text-dim hover:text-night dark:text-silver/70 dark:hover:text-smoke"
+                    )}
+                  >
+                    <List className="size-4" aria-hidden="true" />
+                  </button>
+                </div>
               </motion.div>
             )}
 
@@ -449,6 +512,14 @@ export function DashboardView({ user }: { user: PsUser }) {
                     Clear search
                   </Button>
                 </div>
+              ) : viewMode === "list" ? (
+                <ul className="flex flex-col gap-3">
+                  {visibleProjects.map((project, i) => (
+                    <li key={project.id}>
+                      <ProjectCard project={project} index={i} variant="list" />
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {visibleProjects.map((project, i) => (

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { LogoMark, WordMark } from "@/components/paperstring/brand";
 import { cn } from "@/lib/utils";
@@ -145,6 +145,22 @@ function ViewerBook({
   const [titleDimmed, setTitleDimmed] = useState(false);
   const single = pages.length <= 1;
 
+  /* First-open flip affordance: a quiet pill that shows how the book turns,
+     then dissolves on the very first flip (or after ~5s). Skipped entirely
+     when the session resumes mid-book — that reader already knows. */
+  const [hintVisible, setHintVisible] = useState(!single && index === 0);
+
+  useEffect(() => {
+    if (!hintVisible) return;
+    const t = window.setTimeout(() => setHintVisible(false), 5200);
+    return () => window.clearTimeout(t);
+  }, [hintVisible]);
+
+  const handleIndexChange = (i: number) => {
+    setHintVisible(false);
+    setIndex(i);
+  };
+
   // Remember where the recipient is (same tab session only).
   useEffect(() => {
     try {
@@ -216,14 +232,47 @@ function ViewerBook({
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.965 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: reduced ? 0.2 : 0.55, ease: EASE_FLIP }}
+          className="relative"
         >
           <PaperFlip
             ref={flipRef}
             pages={pages}
             title={title}
             initialIndex={index}
-            onIndexChange={setIndex}
+            onIndexChange={handleIndexChange}
           />
+
+          {/* first-open flip hint — fades with the first turn of a page */}
+          <AnimatePresence>
+            {hintVisible && !reduced && (
+              <motion.div
+                key="flip-hint"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6, transition: { duration: 0.3, delay: 0 } }}
+                transition={{ duration: 0.45, ease: EASE_FLIP, delay: 0.6 }}
+                className="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2"
+              >
+                <div className="flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-1.5 ring-1 ring-white/15 backdrop-blur-sm">
+                  <motion.span
+                    animate={{ x: [-2, 2, -2] }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="flex items-center"
+                  >
+                    <ChevronLeft className="h-3 w-3 text-silver/90" aria-hidden="true" />
+                    <ChevronRight className="h-3 w-3 text-silver/90" aria-hidden="true" />
+                  </motion.span>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-silver">
+                    Swipe or tap the arrows
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* view-only navigation (SEP-2); zones + swipe carry touch screens */}

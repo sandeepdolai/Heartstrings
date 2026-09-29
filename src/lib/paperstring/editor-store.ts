@@ -112,6 +112,8 @@ export interface EditorState {
   addCanvas: () => void;
   deleteCanvas: (id: string) => void;
   duplicateCanvas: (id: string) => void;
+  /** Move a page to a new position in the book (index in canvases order). */
+  reorderCanvas: (id: string, toIndex: number) => void;
   setBackground: (canvasId: string, background: string) => void;
 
   /* layers */
@@ -337,6 +339,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       d.canvases.splice(idx + 1, 0, copy);
       d.activeCanvasId = copy.id;
       d.activeLayerIds[copy.id] = copy.layers[copy.layers.length - 1]?.id;
+    });
+    set({ dirty: true });
+  },
+
+  reorderCanvas: (id, toIndex) => {
+    const { canvases } = get();
+    const from = canvases.findIndex((c) => c.id === id);
+    if (from === -1) return;
+    const to = Math.max(0, Math.min(toIndex, canvases.length - 1));
+    if (from === to) return;
+    get()._commit((d) => {
+      const [page] = d.canvases.splice(from, 1);
+      d.canvases.splice(to, 0, page);
+      // The dragged page becomes active — its layers panel follows the move.
+      d.activeCanvasId = page.id;
     });
     set({ dirty: true });
   },

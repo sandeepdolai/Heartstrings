@@ -286,8 +286,10 @@ const SHORTCUTS: [string, string][] = [
   ["Ctrl + ⇧ + Z", "Redo"],
   ["Ctrl + S", "Save"],
   ["Del", "Delete active layer"],
+  ["[ / ]", "Brush or eraser size (⇧ = ×10)"],
   ["Alt + ← / →", "Previous / next page"],
   ["PgUp / PgDn", "Previous / next page"],
+  ["Ctrl + ⇧ + ← / →", "Move page earlier / later"],
 ];
 
 /** Touch-friendly equivalents shown on small screens instead of the
