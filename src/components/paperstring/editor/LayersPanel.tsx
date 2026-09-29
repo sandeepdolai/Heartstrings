@@ -9,6 +9,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
   ArrowDownToLine,
   Copy,
   Eye,
@@ -31,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import type { CanvasPageData, Layer, LayerType } from "@/lib/paperstring/types";
+import { CANVAS_H, CANVAS_W } from "@/lib/paperstring/types";
 import { renderLayerThumb, renderPageToCanvas, onEngineContentLoaded } from "@/lib/paperstring/render";
 import { TEMPLATES } from "@/lib/paperstring/stickers";
 import { cn } from "@/lib/utils";
@@ -66,11 +69,12 @@ export function LayersPanel({ onClose }: { onClose?: () => void }) {
   return (
     <aside
       aria-label={`Layers — page ${pageIdx + 1}`}
+      data-tour="layers"
       className="flex h-full w-full flex-col border-editor-border bg-editor-panel md:w-60 md:border-l"
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-editor-border px-3 py-2.5">
         <Layers className="h-4 w-4 text-editor-dim" aria-hidden="true" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c9c9c9]">
           Layers
         </span>
         <span className="ml-auto text-[10px] uppercase tracking-widest text-editor-dim/70">
@@ -407,8 +411,37 @@ function ActiveLayerControls() {
           onValueChange={(v) => setOpacity(v[0])}
           onValueCommit={endLive}
           aria-label="Layer opacity"
-          className="text-editor-dim"
+          className={cn(
+            "text-editor-dim",
+            "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
+            "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
+            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
+          )}
         />
+      </div>
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          aria-label="Center this layer horizontally on the page"
+          title="Center on page · horizontal"
+          onClick={() =>
+            useEditorStore.getState().updateLayer(layer.id, { x: CANVAS_W / 2 })
+          }
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-2 py-1.5 text-[11px] text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
+        >
+          <AlignCenterVertical className="h-3.5 w-3.5" /> Center H
+        </button>
+        <button
+          type="button"
+          aria-label="Center this layer vertically on the page"
+          title="Center on page · vertical"
+          onClick={() =>
+            useEditorStore.getState().updateLayer(layer.id, { y: CANVAS_H / 2 })
+          }
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-2 py-1.5 text-[11px] text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
+        >
+          <AlignCenterHorizontal className="h-3.5 w-3.5" /> Center V
+        </button>
       </div>
       <div className="flex gap-1.5">
         <button

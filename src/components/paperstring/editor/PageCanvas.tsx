@@ -385,7 +385,7 @@ function PageCanvasInner({ page, active, width }: Props) {
     >
       <canvas
         ref={canvasRef}
-        className="block h-full w-full rounded-lg bg-white shadow-[0_10px_40px_-12px_rgba(0,0,0,0.5)] ring-1 ring-black/10"
+        className="block h-full w-full rounded-lg bg-white shadow-[0_24px_60px_-18px_rgba(0,0,0,0.65),0_6px_16px_-8px_rgba(0,0,0,0.4)] ring-1 ring-black/15"
         aria-label={`Canvas page ${page.id}`}
       />
 
@@ -436,14 +436,14 @@ function PageCanvasInner({ page, active, width }: Props) {
         )}
       </div>
 
-      {/* active page ring */}
+      {/* active page ring — a soft paper-white edge with a heartstring glow */}
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute -inset-[3px] rounded-[10px] transition-all duration-200",
+          "pointer-events-none absolute -inset-[3px] rounded-[10px] transition-all duration-300",
           active
-            ? "ring-2 ring-white shadow-[0_0_0_4px_rgba(232,68,106,0.35)]"
-            : "ring-0"
+            ? "ring-1 ring-white/90 shadow-[0_0_0_4px_rgba(232,68,106,0.25),0_0_28px_-4px_rgba(232,68,106,0.3)]"
+            : "ring-0 shadow-none"
         )}
       />
 

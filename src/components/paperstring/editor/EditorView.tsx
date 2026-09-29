@@ -25,6 +25,7 @@ import { ToolPanel } from "./ToolPanel";
 import { CanvasWorkspace } from "./CanvasWorkspace";
 import { LayersPanel } from "./LayersPanel";
 import { ShareDialog } from "./ShareDialog";
+import { EditorTour, TOUR_STORAGE_KEY } from "./EditorTour";
 import { EditorFontsProvider, registerSavedFonts } from "./fonts-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +45,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const [layersOpen, setLayersOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const [tourOpen, setTourOpen] = useState(false);
 
   /* ── load the project ─────────────────────────────────────────────── */
 
@@ -83,6 +85,21 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   );
 
   const ready = !!storeProjectId;
+
+  /* ── first-time guided tour ────────────────────────────────────────── */
+
+  useEffect(() => {
+    if (!ready) return;
+    let seen = true;
+    try {
+      seen = !!window.localStorage.getItem(TOUR_STORAGE_KEY);
+    } catch {
+      seen = true; // storage unavailable → don't nag with the tour
+    }
+    if (seen) return;
+    const t = window.setTimeout(() => setTourOpen(true), 650);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   /* ── custom font registry (FR-4.4) ────────────────────────────────── */
 
@@ -288,6 +305,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
           onSave={() => void save({ force: true })}
           onShare={() => setShareOpen(true)}
           shareToken={shareToken}
+          onStartTour={() => setTourOpen(true)}
         />
 
         <div className="relative flex min-h-0 flex-1">
@@ -327,6 +345,9 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         performSave={performShareSave}
         onPublished={(token) => setShareToken(token)}
       />
+
+      {/* first-time guided tour (auto once; replayable from shortcuts) */}
+      <EditorTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </EditorFontsProvider>
   );
 }

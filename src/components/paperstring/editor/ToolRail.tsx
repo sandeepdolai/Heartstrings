@@ -52,6 +52,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
     <TooltipProvider delayDuration={350}>
       <nav
         aria-label="Tools"
+        data-tour="tools"
         className={cn(
           "z-20 flex shrink-0 items-center gap-1 border-editor-border bg-editor",
           "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5",
@@ -98,6 +99,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
               <button
                 type="button"
                 aria-label="Layers"
+                data-tour="layers-mobile"
                 onClick={onOpenLayers}
                 className="grid h-11 w-11 place-items-center rounded-xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:hidden"
               >

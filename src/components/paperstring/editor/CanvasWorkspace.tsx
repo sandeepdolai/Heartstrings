@@ -55,7 +55,7 @@ export function CanvasWorkspace() {
   /* ── mobile: one page at a time (FR-2.3, FR-2.8) ───────────────────── */
   if (isMobile) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col pb-[4.75rem]">
+      <div data-tour="canvas" className="flex min-h-0 flex-1 flex-col pb-[4.75rem]">
         <div className="flex min-h-0 flex-1 items-center justify-center px-3 py-2">
           {mobilePage && (
             <div className="w-full" style={{ maxWidth: "min(100%, 62vh * 9 / 16)" }}>
@@ -119,8 +119,13 @@ export function CanvasWorkspace() {
 
   /* ── desktop/tablet: the continuous grid (FR-2.1/2.2) ──────────────── */
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="flex flex-wrap items-start justify-center gap-10 px-8 py-10">
+    <div data-tour="canvas" className="min-h-0 flex-1 overflow-y-auto">
+      {/* subtle dot-grid — the quiet graph-paper feel of a real studio desk */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1.5px)] [background-size:26px_26px]"
+      />
+      <div className="relative flex flex-wrap items-start justify-center gap-10 px-8 py-10">
         {canvases.map((page, i) => (
           <div key={page.id} className="group relative">
             <div
@@ -156,13 +161,16 @@ export function CanvasWorkspace() {
             type="button"
             onClick={addCanvas}
             aria-label="Add a new page"
-            className="grid aspect-[9/16] w-[300px] place-items-center rounded-lg border-2 border-dashed border-editor-border-strong text-editor-dim transition hover:border-[#e8446a]/60 hover:text-editor-text"
+            className="group/add grid aspect-[9/16] w-[300px] place-items-center rounded-lg border border-[#4a4a4a] bg-white/[0.015] text-[#b5b5b5] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] transition-all duration-200 hover:border-[#e8446a]/60 hover:bg-[#e8446a]/[0.04] hover:text-editor-text hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_0_24px_-8px_rgba(232,68,106,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/70"
           >
             <span className="flex flex-col items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-full border border-current">
-                <Plus className="h-6 w-6" />
+              <span className="grid h-12 w-12 place-items-center rounded-full border border-[#5a5a5a] transition-all duration-300 group-hover/add:rotate-90 group-hover/add:border-[#e8446a]/70 group-hover/add:text-editor-text">
+                <Plus className="h-6 w-6 transition-transform duration-300" />
               </span>
               <span className="text-xs uppercase tracking-[0.2em]">Add page</span>
+              <span className="text-[10px] tracking-wide text-editor-dim/60 transition-colors group-hover/add:text-editor-dim">
+                Keep the story going
+              </span>
             </span>
           </button>
         </div>

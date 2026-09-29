@@ -46,6 +46,7 @@ export function ToolPanel() {
   return (
     <aside
       aria-label="Tool options"
+      data-tour="panel"
       className={cn(
         "z-20 flex w-full shrink-0 flex-col border-editor-border bg-editor-panel",
         "max-md:fixed inset-x-0 bottom-[4.25rem] z-30 max-h-[56vh] overflow-y-auto rounded-t-2xl border-t pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl",

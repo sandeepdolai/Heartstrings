@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Check,
   CloudUpload,
+  Compass,
   Keyboard,
   Loader2,
   Redo2,
@@ -38,11 +39,13 @@ export function TopBar({
   onSave,
   onShare,
   shareToken,
+  onStartTour,
 }: {
   saveState: SaveState;
   onSave: () => void;
   onShare: () => void;
   shareToken: string | null;
+  onStartTour?: () => void;
 }) {
   const title = useEditorStore((s) => s.title);
   const setTitle = useEditorStore((s) => s.setTitle);
@@ -206,10 +209,23 @@ export function TopBar({
                 </li>
               ))}
             </ul>
+            {onStartTour && (
+              <>
+                <div className="my-3 border-t border-editor-border/70" />
+                <button
+                  type="button"
+                  onClick={onStartTour}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-editor-text transition hover:bg-editor-raised"
+                >
+                  <Compass className="h-4 w-4 text-editor-dim" aria-hidden="true" />
+                  Show the guided tour
+                </button>
+              </>
+            )}
           </PopoverContent>
         </Popover>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2" data-tour="share">
           <Button
             variant="ghost"
             size="sm"

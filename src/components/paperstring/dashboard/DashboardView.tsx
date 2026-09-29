@@ -1,10 +1,25 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { MotionConfig, motion } from "framer-motion";
 import { toast } from "sonner";
-import { AlertCircle, BookOpen, Loader2, LogOut, Moon, Plus, Sun } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpDown,
+  BookOpen,
+  Check,
+  ChevronDown,
+  HeartCrack,
+  Loader2,
+  LogOut,
+  Moon,
+  Plus,
+  Search,
+  Sun,
+  X,
+} from "lucide-react";
 
 import type { ProjectSummary, PsUser } from "@/lib/paperstring/types";
 import { psNavigate } from "@/lib/paperstring/navigation";
@@ -21,7 +36,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 async function fetchProjects(): Promise<ProjectSummary[]> {
   const res = await fetch("/api/projects", { cache: "no-store" });
@@ -30,9 +47,55 @@ async function fetchProjects(): Promise<ProjectSummary[]> {
   return json.projects ?? [];
 }
 
+type SortMode = "edited" | "created" | "title" | "pages";
+
+const SORT_OPTIONS: ReadonlyArray<{ id: SortMode; label: string }> = [
+  { id: "edited", label: "Recently edited" },
+  { id: "created", label: "Recently created" },
+  { id: "title", label: "Title A–Z" },
+  { id: "pages", label: "Most pages" },
+];
+
+const DEFAULT_SORT = SORT_OPTIONS[0];
+
+function titleCaseInsensitive(a: string, b: string) {
+  return a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+}
+
+/** Client-side comparator over the cached projects array (no refetching). */
+function compareProjects(mode: SortMode) {
+  return (a: ProjectSummary, b: ProjectSummary): number => {
+    switch (mode) {
+      case "created":
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+          titleCaseInsensitive(a.title, b.title)
+        );
+      case "title":
+        return (
+          titleCaseInsensitive(a.title, b.title) ||
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+      case "pages":
+        return b.pageCount - a.pageCount || titleCaseInsensitive(a.title, b.title);
+      case "edited":
+      default:
+        // Same as the API's default order: updatedAt, newest first.
+        return (
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() ||
+          titleCaseInsensitive(a.title, b.title)
+        );
+    }
+  };
+}
+
 export function DashboardView({ user }: { user: PsUser }) {
   const queryClient = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
+
+  // Library-management state lives here only — resets on mount by design.
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("edited");
 
   const firstName = user.name.trim().split(/\s+/)[0] || "friend";
   const initials =
@@ -104,6 +167,29 @@ export function DashboardView({ user }: { user: PsUser }) {
   );
 
   const projects = projectsQuery.data ?? [];
+  const libraryLoaded = !projectsQuery.isLoading && !projectsQuery.isError;
+
+  const trimmedQuery = search.trim();
+  const needle = trimmedQuery.toLowerCase();
+
+  const visibleProjects = useMemo(() => {
+    const filtered = needle
+      ? projects.filter((p) => p.title.toLowerCase().includes(needle))
+      : projects;
+    return [...filtered].sort(compareProjects(sortMode));
+  }, [projects, needle, sortMode]);
+
+  const activeSort = SORT_OPTIONS.find((o) => o.id === sortMode) ?? DEFAULT_SORT;
+
+  // Library stats microcopy — summarizes the whole shelf, not the search view.
+  const totalPages = projects.reduce((sum, p) => sum + p.pageCount, 0);
+  const sharedCount = projects.filter((p) => p.shareToken).length;
+  const statsSegments = [
+    `${projects.length} ${projects.length === 1 ? "book" : "books"}`,
+    `${totalPages} ${totalPages === 1 ? "page" : "pages"}`,
+  ];
+  if (sharedCount > 0) statsSegments.push(`${sharedCount} shared`);
+  const statsLine = statsSegments.join(" · ");
 
   return (
     <MotionConfig reducedMotion="user">
@@ -188,9 +274,96 @@ export function DashboardView({ user }: { user: PsUser }) {
                 <p className="mt-2 text-sm text-dim dark:text-silver/80">
                   Every book you make lives here, {firstName}.
                 </p>
+                {libraryLoaded && projects.length > 0 && (
+                  <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-dim dark:text-silver/50">
+                    {statsLine}
+                  </p>
+                )}
               </div>
               {newBookButton}
             </motion.div>
+
+            {/* Search + sort toolbar (library affordances, all client-side) */}
+            {libraryLoaded && projects.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut", delay: 0.08 }}
+                className="mt-6 flex flex-wrap items-center gap-3"
+              >
+                <div role="search" className="relative w-full sm:w-64 md:w-72">
+                  <Search
+                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-dim dark:text-silver/60"
+                    aria-hidden="true"
+                  />
+                  <Input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape" && search !== "") {
+                        e.preventDefault();
+                        setSearch("");
+                      }
+                    }}
+                    placeholder="Search your books…"
+                    aria-label="Search your books"
+                    autoComplete="off"
+                    enterKeyHint="search"
+                    className="h-11 rounded-full border-silver/60 bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring dark:border-silver/25 dark:bg-onyx/60 dark:placeholder:text-silver/60"
+                  />
+                  {search !== "" && (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      onClick={() => setSearch("")}
+                      className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-dim transition-colors hover:bg-smoke hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-silver/70 dark:hover:bg-onyx dark:hover:text-smoke"
+                    >
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-11 rounded-full border-silver/60 bg-paper px-4 hover:bg-smoke dark:border-silver/25 dark:bg-onyx/60 dark:hover:bg-onyx"
+                    >
+                      <ArrowUpDown
+                        className="size-4 text-dim dark:text-silver/80"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">Sort books by</span>
+                      <span className="max-w-36 truncate sm:max-w-none">
+                        {activeSort.label}
+                      </span>
+                      <ChevronDown className="size-3.5 opacity-60" aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wider text-dim dark:text-silver/60">
+                      Sort by
+                    </DropdownMenuLabel>
+                    {SORT_OPTIONS.map((option) => (
+                      <DropdownMenuItem
+                        key={option.id}
+                        onSelect={() => setSortMode(option.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "text-night dark:text-smoke",
+                            sortMode === option.id ? "opacity-100" : "opacity-0"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </motion.div>
+            )}
 
             <div className="mt-8 lg:mt-10">
               {projectsQuery.isLoading ? (
@@ -250,9 +423,32 @@ export function DashboardView({ user }: { user: PsUser }) {
                     Create your first book
                   </Button>
                 </div>
+              ) : visibleProjects.length === 0 ? (
+                <div className="rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
+                  <HeartCrack
+                    className="mx-auto size-9 text-silver dark:text-silver/60"
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                  <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
+                    No books match &ldquo;{trimmedQuery}&rdquo;
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim dark:text-silver/80">
+                    The words are there — just not in that order. Try another
+                    word, or clear the search to see your whole shelf.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearch("")}
+                    className="mt-8 h-11 rounded-full px-6"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                    Clear search
+                  </Button>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {projects.map((project, i) => (
+                  {visibleProjects.map((project, i) => (
                     <ProjectCard key={project.id} project={project} index={i} />
                   ))}
                 </div>

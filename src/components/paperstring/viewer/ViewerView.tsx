@@ -194,7 +194,7 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
               aria-label="Previous page"
               disabled={index === 0}
               onClick={() => flipRef.current?.prev()}
-              className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-silver/70 transition-colors duration-200 hover:bg-white/5 hover:text-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 md:grid"
+              className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full text-silver/90 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-200 hover:bg-white/10 hover:text-smoke hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 disabled:ring-transparent md:grid"
             >
               <ChevronLeft className="h-6 w-6" aria-hidden="true" />
             </button>
@@ -203,7 +203,7 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
               aria-label="Next page"
               disabled={index === pages.length - 1}
               onClick={() => flipRef.current?.next()}
-              className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-silver/70 transition-colors duration-200 hover:bg-white/5 hover:text-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 md:grid"
+              className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full text-silver/90 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-200 hover:bg-white/10 hover:text-smoke hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 disabled:ring-transparent md:grid"
             >
               <ChevronRight className="h-6 w-6" aria-hidden="true" />
             </button>
@@ -225,7 +225,7 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
           </p>
         ) : (
           <>
-            <p className="text-xs tabular-nums text-dim">
+            <p className="text-[11px] uppercase tracking-[0.25em] tabular-nums text-dim">
               {index + 1} / {pages.length}
             </p>
             {pages.length <= 12 && (
@@ -234,8 +234,10 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
                   <span
                     key={i}
                     className={cn(
-                      "h-1.5 w-1.5 rounded-full transition-colors duration-300",
-                      i === index ? "bg-silver" : "bg-onyx"
+                      "h-1.5 rounded-full transition-all duration-300",
+                      i === index
+                        ? "w-5 bg-silver"
+                        : "w-1.5 bg-onyx hover:bg-dim/60"
                     )}
                   />
                 ))}
