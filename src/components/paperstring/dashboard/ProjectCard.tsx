@@ -187,7 +187,7 @@ export function ProjectCard({
           openInEditor();
         }
       }}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-silver/30 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="group cursor-pointer overflow-hidden rounded-2xl border border-silver/30 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:border-silver/60 hover:shadow-[0_18px_40px_-16px_rgba(19,19,19,0.28)] focus-visible:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:translate-y-0 active:scale-[0.99]"
     >
       {/* Cover */}
       <div className="relative aspect-[3/4] overflow-hidden">

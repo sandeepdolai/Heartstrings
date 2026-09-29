@@ -209,6 +209,20 @@ export function TopBar({
                 </li>
               ))}
             </ul>
+            {/* touch hints — the phone-native gestures behind the same button */}
+            <p className="mb-2 mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim md:hidden">
+              Touch
+            </p>
+            <ul className="grid gap-1.5 text-xs md:hidden">
+              {TOUCH_HINTS.map(([gesture, label]) => (
+                <li key={gesture} className="flex items-center justify-between gap-3">
+                  <span className="text-editor-dim">{label}</span>
+                  <span className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 text-[10px] text-editor-text">
+                    {gesture}
+                  </span>
+                </li>
+              ))}
+            </ul>
             {onStartTour && (
               <>
                 <div className="my-3 border-t border-editor-border/70" />
@@ -272,4 +286,16 @@ const SHORTCUTS: [string, string][] = [
   ["Ctrl + ⇧ + Z", "Redo"],
   ["Ctrl + S", "Save"],
   ["Del", "Delete active layer"],
+  ["Alt + ← / →", "Previous / next page"],
+  ["PgUp / PgDn", "Previous / next page"],
+];
+
+/** Touch-friendly equivalents shown on small screens instead of the
+ *  keyboard cheatsheet (keyboards are rare on phones — gestures are the UI). */
+const TOUCH_HINTS: [string, string][] = [
+  ["Pinch", "Scale a selected layer"],
+  ["Drag corners", "Resize / rotate"],
+  ["Two-finger tap", "Undo (while selected)"],
+  ["⋯ page menu", "Duplicate / delete page"],
+  ["Layers button", "Reorder & blend layers"],
 ];

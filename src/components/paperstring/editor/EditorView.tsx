@@ -235,7 +235,35 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         void saveRef.current({ force: true });
         return;
       }
-      if (mod) return;
+      // Page navigation: Alt+←/→ anywhere, PageUp/PageDown too. Never fires
+      // while a text editor is open (guarded above) or inputs hold focus.
+      if (
+        e.key === "PageDown" ||
+        (e.altKey && e.key === "ArrowRight") ||
+        (e.ctrlKey && e.key === "ArrowRight")
+      ) {
+        const { canvases, activeCanvasId, setActiveCanvas } = store;
+        const idx = canvases.findIndex((c) => c.id === activeCanvasId);
+        if (idx >= 0 && idx < canvases.length - 1) {
+          e.preventDefault();
+          setActiveCanvas(canvases[idx + 1].id);
+        }
+        return;
+      }
+      if (
+        e.key === "PageUp" ||
+        (e.altKey && e.key === "ArrowLeft") ||
+        (e.ctrlKey && e.key === "ArrowLeft")
+      ) {
+        const { canvases, activeCanvasId, setActiveCanvas } = store;
+        const idx = canvases.findIndex((c) => c.id === activeCanvasId);
+        if (idx > 0) {
+          e.preventDefault();
+          setActiveCanvas(canvases[idx - 1].id);
+        }
+        return;
+      }
+      if (mod || e.altKey) return;
 
       switch (e.key.toLowerCase()) {
         case "v": store.setTool("select"); break;

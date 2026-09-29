@@ -8,12 +8,19 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Trash2, Type } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
-import type { CanvasPageData } from "@/lib/paperstring/types";
+import { CANVAS_W, CANVAS_H, type CanvasPageData } from "@/lib/paperstring/types";
 import { PageCanvas } from "./PageCanvas";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +43,7 @@ export function CanvasWorkspace() {
   const activeCanvasId = useEditorStore((s) => s.activeCanvasId);
   const setActiveCanvas = useEditorStore((s) => s.setActiveCanvas);
   const addCanvas = useEditorStore((s) => s.addCanvas);
+  const duplicateCanvas = useEditorStore((s) => s.duplicateCanvas);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -130,7 +138,17 @@ export function CanvasWorkspace() {
 
   /* ── desktop/tablet: the continuous grid (FR-2.1/2.2) ──────────────── */
   return (
-    <div data-tour="canvas" className="min-h-0 flex-1 overflow-y-auto">
+    <div data-tour="canvas" className="flex min-h-0 flex-1 flex-col">
+      {/* filmstrip — slim page thumbnails for instant jumps in long books
+          (3+ pages; scrolls horizontally, active page keeps itself in view) */}
+      {canvases.length >= 3 && (
+        <PageFilmstrip
+          canvases={canvases}
+          activeCanvasId={activeCanvasId}
+          onSelect={setActiveCanvas}
+        />
+      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
       {/* subtle dot-grid — the quiet graph-paper feel of a real studio desk */}
       <div
         aria-hidden="true"
@@ -139,27 +157,69 @@ export function CanvasWorkspace() {
       <div className="relative flex flex-wrap items-start justify-center gap-10 px-8 py-10">
         {canvases.map((page, i) => (
           <div key={page.id} className="group relative">
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label={`Open page ${i + 1}`}
-              aria-current={page.id === activeCanvasId}
-              onClick={() => setActiveCanvas(page.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setActiveCanvas(page.id);
-                }
-              }}
-              className="block cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor"
-            >
-              <PageCanvas
-                page={page}
-                active={page.id === activeCanvasId}
-                welcome={isPristinePage(page)}
-                width={300}
-              />
-            </div>
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open page ${i + 1}`}
+                  aria-current={page.id === activeCanvasId}
+                  onClick={() => setActiveCanvas(page.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setActiveCanvas(page.id);
+                    }
+                  }}
+                  className="block cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor"
+                >
+                  <PageCanvas
+                    page={page}
+                    active={page.id === activeCanvasId}
+                    welcome={isPristinePage(page)}
+                    width={300}
+                  />
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="border-editor-border-strong bg-editor-panel text-editor-text">
+                <ContextMenuItem
+                  onClick={() => {
+                    setActiveCanvas(page.id);
+                    useEditorStore.getState().addTextLayer(CANVAS_W / 2, CANVAS_H / 2);
+                    toast.success(`Text added to page ${i + 1}`);
+                  }}
+                >
+                  <Type className="h-4 w-4" /> Add text here
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => {
+                    duplicateCanvas(page.id);
+                    toast.success("Page duplicated");
+                  }}
+                >
+                  <Copy className="h-4 w-4" /> Duplicate page
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => setConfirmDelete(page.id)}
+                  className="text-[#f08ca0] focus:text-[#f5a8bb]"
+                >
+                  <Trash2 className="h-4 w-4" /> Delete page
+                </ContextMenuItem>
+                <ContextMenuSeparator className="bg-editor-border" />
+                <ContextMenuItem
+                  disabled={i === 0}
+                  onClick={() => setActiveCanvas(canvases[i - 1].id)}
+                >
+                  <ChevronLeft className="h-4 w-4" /> Previous page
+                </ContextMenuItem>
+                <ContextMenuItem
+                  disabled={i === canvases.length - 1}
+                  onClick={() => setActiveCanvas(canvases[i + 1].id)}
+                >
+                  <ChevronRight className="h-4 w-4" /> Next page
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
             <div className="mt-3 flex items-center justify-between px-1">
               <span className="text-[11px] uppercase tracking-[0.2em] text-editor-dim">
                 Page {i + 1}
@@ -196,7 +256,75 @@ export function CanvasWorkspace() {
         pageId={confirmDelete}
         onClose={() => setConfirmDelete(null)}
       />
+      </div>
     </div>
+  );
+}
+
+/* ── filmstrip — quick page jumps for long books ──────────────────────── */
+
+function PageFilmstrip({
+  canvases,
+  activeCanvasId,
+  onSelect,
+}: {
+  canvases: CanvasPageData[];
+  activeCanvasId: string;
+  onSelect: (id: string) => void;
+}) {
+  const listRef = useRef<HTMLOListElement | null>(null);
+
+  // Keep the active thumbnail visible when the page changes (keyboard nav,
+  // context menu, layer panel — they all land here).
+  useEffect(() => {
+    const idx = canvases.findIndex((c) => c.id === activeCanvasId);
+    if (idx < 0 || !listRef.current) return;
+    const item = listRef.current.children[idx] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeCanvasId, canvases]);
+
+  return (
+    <nav
+      aria-label="Jump to page"
+      className="z-10 flex shrink-0 items-center gap-2 border-b border-editor-border bg-editor-panel/60 px-4 py-2 backdrop-blur-sm"
+    >
+      <span className="hidden shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim lg:inline">
+        Pages
+      </span>
+      <ol
+        ref={listRef}
+        className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:thin]"
+      >
+        {canvases.map((page, i) => {
+          const active = page.id === activeCanvasId;
+          return (
+            <li key={page.id} className="shrink-0">
+              <button
+                type="button"
+                aria-label={`Go to page ${i + 1}`}
+                aria-current={active}
+                onClick={() => onSelect(page.id)}
+                title={`Page ${i + 1}`}
+                className={cn(
+                  "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
+                  active
+                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
+                    : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
+                )}
+              >
+                {/* tiny page preview chip — background colour at a glance */}
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-3.5 rounded-[3px] ring-1 ring-inset ring-black/20"
+                  style={{ background: page.background }}
+                />
+                {i + 1}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 

@@ -238,7 +238,7 @@ export function AuthView({
             <Button
               type="button"
               variant="outline"
-              className="mt-8 h-11 w-full rounded-full"
+              className="mt-8 h-11 w-full rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
               onClick={() =>
                 toast.info(
                   "Google sign-in is being configured for this environment — use email for now."
