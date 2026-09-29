@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripHorizontal, MoreHorizontal, Plus, Trash2, Type } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { CANVAS_W, CANVAS_H, type CanvasPageData } from "@/lib/paperstring/types";
+import { renderPage, onEngineContentLoaded } from "@/lib/paperstring/render";
 import { PageCanvas } from "./PageCanvas";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -284,6 +285,45 @@ export function CanvasWorkspace() {
 
 /* ── filmstrip — quick page jumps for long books ──────────────────────── */
 
+/** Live mini page preview for a filmstrip chip. Repaints (debounced) when
+ *  the page data changes, and again whenever async engine assets (uploaded
+ *  photos, stickers, fonts) finish loading. Draws at 2× for crisp screens. */
+function PageChipThumb({ page }: { page: CanvasPageData }) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let alive = true;
+    const paint = () => {
+      if (!alive) return;
+      const ctx = el.getContext("2d");
+      if (!ctx) return;
+      const scale = el.width / CANVAS_W;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      renderPage(ctx, page);
+    };
+    // Debounce: strokes/edits mutate page identity rapidly — collapse repaints.
+    const t = window.setTimeout(paint, 220);
+    const unsub = onEngineContentLoaded(paint);
+    return () => {
+      alive = false;
+      window.clearTimeout(t);
+      unsub();
+    };
+  }, [page]);
+
+  return (
+    <canvas
+      ref={ref}
+      width={40}
+      height={Math.round((40 * CANVAS_H) / CANVAS_W)}
+      aria-hidden="true"
+      className="h-8 w-[18px] shrink-0 rounded-[4px] bg-white ring-1 ring-inset ring-black/25 transition-transform duration-200 group-hover:scale-110"
+    />
+  );
+}
+
 function PageFilmstrip({
   canvases,
   activeCanvasId,
@@ -445,12 +485,8 @@ function PageFilmstrip({
                       : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
-                {/* tiny page preview chip — background colour at a glance */}
-                <span
-                  aria-hidden="true"
-                  className="h-5 w-3.5 rounded-[3px] ring-1 ring-inset ring-black/20"
-                  style={{ background: page.background }}
-                />
+                {/* live mini page preview — the whole page at a glance */}
+                <PageChipThumb page={page} />
                 {i + 1}
                 {/* reorder affordance — appears on hover, whisper-quiet */}
                 <GripHorizontal

@@ -262,9 +262,18 @@ export function TopBar({
             size="sm"
             onClick={onShare}
             aria-label="Share your book"
-            className="gap-1.5 rounded-full bg-smoke text-night hover:bg-white"
+            className={cn(
+              "group gap-1.5 rounded-full bg-smoke text-night transition-all hover:bg-white hover:shadow-[0_6px_20px_-6px_rgba(243,243,243,0.45)] active:scale-[0.97]",
+              shareToken && "bg-smoke/90"
+            )}
           >
-            <Share2 className="h-4 w-4" />
+            <Share2
+              className={cn(
+                "h-4 w-4 transition-transform",
+                !shareToken &&
+                  "ps-heartbeat motion-reduce:animate-none motion-reduce:transform-none"
+              )}
+            />
             <span className="hidden sm:inline">{shareToken ? "Shared" : "Share"}</span>
           </Button>
         </div>

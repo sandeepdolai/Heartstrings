@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
+  ArrowUpRight,
   BookOpen,
   Copy,
   CopyPlus,
@@ -307,6 +308,14 @@ export function ProjectCard({
             Private
           </span>
         )}
+
+        {/* open affordance — whispers "click to open" on hover */}
+        <span
+          aria-hidden="true"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-silver/50 text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 dark:text-silver/80 md:-translate-x-1"
+        >
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </span>
 
         {/* menu — always visible in the row */}
         <div className="shrink-0" {...stopProp}>

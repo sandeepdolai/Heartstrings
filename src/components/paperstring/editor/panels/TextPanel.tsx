@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import type { TextLayer } from "@/lib/paperstring/types";
+import { CANVAS_W, CANVAS_H } from "@/lib/paperstring/types";
 import {
   CREATIVE_FONTS,
   ensureCreativeFonts,
@@ -43,6 +44,53 @@ import {
 import { importFontFile, registerFontFace, useEditorFonts } from "../fonts-context";
 
 type Align = TextLayer["align"];
+
+/** One-tap styled text — romantic starters from the PaperString font
+ *  library. In insert mode a tap drops ready-styled text on the page and
+ *  opens the editor; with a text layer selected it restyles that layer. */
+const TEXT_PRESETS: {
+  label: string;
+  preview: string;
+  props: Partial<TextProps>;
+  style: React.CSSProperties;
+}[] = [
+  {
+    label: "Love script",
+    preview: "Love",
+    props: { fontFamily: "'Great Vibes'", fontSize: 190, color: "#e8446a", italic: false, bold: false, letterSpacing: 0 },
+    style: { fontFamily: "'Great Vibes'", color: "#e8446a" },
+  },
+  {
+    label: "Bold heart",
+    preview: "Always",
+    props: { fontFamily: "'Abril Fatface'", fontSize: 130, color: "#131313", italic: false, bold: false, letterSpacing: 0 },
+    style: { fontFamily: "'Abril Fatface'", color: "#f3f3f3" },
+  },
+  {
+    label: "Notebook",
+    preview: "my notes",
+    props: { fontFamily: "Caveat", fontSize: 130, color: "#646464", italic: false, bold: false, letterSpacing: 0 },
+    style: { fontFamily: "Caveat", color: "#b5b5b5" },
+  },
+  {
+    label: "Elegant",
+    preview: "Yours",
+    props: { fontFamily: "'Playfair Display'", fontSize: 110, color: "#3c3c3c", italic: true, bold: false, letterSpacing: 2 },
+    style: { fontFamily: "'Playfair Display'", fontStyle: "italic", color: "#f3f3f3" },
+  },
+  {
+    label: "Poster",
+    preview: "MINE",
+    props: { fontFamily: "'Bebas Neue'", fontSize: 150, color: "#f7c948", italic: false, bold: false, letterSpacing: 8 },
+    style: { fontFamily: "'Bebas Neue'", color: "#f7c948" },
+  },
+  {
+    label: "Whisper",
+    preview: "xoxo",
+    props: { fontFamily: "Sacramento", fontSize: 170, color: "#f06e8c", italic: false, bold: false, letterSpacing: 0 },
+    style: { fontFamily: "Sacramento", color: "#f06e8c" },
+  },
+];
 
 /** Everything a text layer and the next-insert defaults share. */
 type TextProps = Pick<
@@ -100,6 +148,43 @@ export function TextPanel() {
           : "These settings apply to the next text you add — tap the page with the text tool."
       }
     >
+      {/* one-tap styled starters */}
+      <div className="flex flex-col gap-2">
+        <GroupLabel>{target ? "Restyle with a preset" : "Start from a style"}</GroupLabel>
+        <div className="grid grid-cols-3 gap-1.5">
+          {TEXT_PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              aria-label={`${target ? "Restyle with" : "Add"} ${p.label} text style`}
+              title={target ? `Restyle: ${p.label}` : `Add ${p.label} text to the page`}
+              onClick={() => {
+                if (target) {
+                  useEditorStore.getState().updateLayer(target.id, p.props);
+                  toast.success(`Restyled with ${p.label.toLowerCase()}`);
+                } else {
+                  // style the insert defaults, then drop ready text at page center
+                  useEditorStore.getState().setTextDefaults(p.props);
+                  useEditorStore.getState().addTextLayer(CANVAS_W / 2, CANVAS_H / 2);
+                }
+              }}
+              className="group flex h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg border border-editor-border-strong bg-editor px-1 py-1 transition hover:-translate-y-0.5 hover:border-[#e8446a]/50 hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+            >
+              <span
+                aria-hidden="true"
+                className="max-w-full truncate text-lg leading-none"
+                style={p.style}
+              >
+                {p.preview}
+              </span>
+              <span className="text-[8.5px] uppercase tracking-[0.14em] text-editor-dim/70 group-hover:text-editor-dim">
+                {p.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <FontPicker
         value={values.fontFamily}
         onChange={(cssFamily) => apply({ fontFamily: cssFamily })}

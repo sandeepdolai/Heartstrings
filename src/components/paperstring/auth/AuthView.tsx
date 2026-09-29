@@ -191,13 +191,20 @@ export function AuthView({
           </div>
 
           {showcaseSrc ? (
-            <img
-              src={showcaseSrc}
-              alt="A handmade PaperString page"
-              decoding="async"
-              onError={() => setShowcaseIdx((i) => i + 1)}
-              className="max-h-[40vh] w-auto max-w-full -rotate-2 rounded-xl object-cover shadow-2xl ring-1 ring-white/10"
-            />
+            <div className="group relative w-fit">
+              {/* soft paper glow behind the tilted page */}
+              <div
+                aria-hidden="true"
+                className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(closest-side,rgba(181,181,181,0.14),transparent)] opacity-70 blur-md transition-opacity duration-500 group-hover:opacity-100"
+              />
+              <img
+                src={showcaseSrc}
+                alt="A handmade PaperString page"
+                decoding="async"
+                onError={() => setShowcaseIdx((i) => i + 1)}
+                className="relative max-h-[40vh] w-auto max-w-full -rotate-2 rounded-xl object-cover shadow-2xl ring-1 ring-white/10 transition-transform duration-500 ease-out group-hover:-rotate-1 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100"
+              />
+            </div>
           ) : (
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-silver/60">
               4K pages · no account needed to view

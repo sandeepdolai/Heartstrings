@@ -38,12 +38,35 @@ export interface ClipShape {
   h: number;
 }
 
+/** Layer blend modes (canvas globalCompositeOperation values, CSS-compat).
+ *  undefined / "normal" = source-over. Applied per layer at composite time
+ *  so editor previews and 4K published pages stay pixel-identical. */
+export const BLEND_MODES = [
+  "multiply",
+  "screen",
+  "overlay",
+  "darken",
+  "lighten",
+  "color-dodge",
+  "color-burn",
+  "hard-light",
+  "soft-light",
+  "difference",
+  "exclusion",
+  "hue",
+  "saturation",
+  "color",
+  "luminosity",
+] as const;
+export type BlendMode = (typeof BLEND_MODES)[number];
+
 export interface BaseLayer {
   id: string;
   name: string;
   type: LayerType;
   visible: boolean;
   opacity: number; // 0..1
+  blendMode?: BlendMode; // canvas composite op (undefined = normal)
   clipped: boolean; // render only over the alpha of the layer below
   clipShape?: ClipShape;
   x: number; // center X (raster: offset from canvas center)

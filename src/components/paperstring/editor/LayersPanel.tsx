@@ -12,6 +12,7 @@ import {
   AlignCenterHorizontal,
   AlignCenterVertical,
   ArrowDownToLine,
+  Blend,
   Copy,
   Eye,
   EyeOff,
@@ -32,7 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
-import type { CanvasPageData, Layer, LayerType } from "@/lib/paperstring/types";
+import type { CanvasPageData, Layer, LayerType, BlendMode } from "@/lib/paperstring/types";
 import { CANVAS_H, CANVAS_W } from "@/lib/paperstring/types";
 import { renderLayerThumb, renderPageToCanvas, onEngineContentLoaded } from "@/lib/paperstring/render";
 import { TEMPLATES } from "@/lib/paperstring/stickers";
@@ -45,6 +46,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { GroupLabel, useLayerLiveEdit } from "./panels/shared";
 
 const TYPE_ICON: Record<LayerType, React.ComponentType<{ className?: string }>> = {
@@ -53,6 +62,58 @@ const TYPE_ICON: Record<LayerType, React.ComponentType<{ className?: string }>> 
   image: ImageIcon,
   sticker: Sticker,
 };
+
+/* Blend modes, grouped Photoshop-style so the picker reads at a glance. */
+const BLEND_GROUPS: { label: string; modes: { value: BlendMode | "normal"; label: string }[] }[] = [
+  {
+    label: "Basic",
+    modes: [{ value: "normal", label: "Normal" }],
+  },
+  {
+    label: "Darken",
+    modes: [
+      { value: "multiply", label: "Multiply" },
+      { value: "darken", label: "Darken" },
+      { value: "color-burn", label: "Color burn" },
+    ],
+  },
+  {
+    label: "Lighten",
+    modes: [
+      { value: "screen", label: "Screen" },
+      { value: "lighten", label: "Lighten" },
+      { value: "color-dodge", label: "Color dodge" },
+    ],
+  },
+  {
+    label: "Contrast",
+    modes: [
+      { value: "overlay", label: "Overlay" },
+      { value: "soft-light", label: "Soft light" },
+      { value: "hard-light", label: "Hard light" },
+    ],
+  },
+  {
+    label: "Compare",
+    modes: [
+      { value: "difference", label: "Difference" },
+      { value: "exclusion", label: "Exclusion" },
+    ],
+  },
+  {
+    label: "Color",
+    modes: [
+      { value: "hue", label: "Hue" },
+      { value: "saturation", label: "Saturation" },
+      { value: "color", label: "Color" },
+      { value: "luminosity", label: "Luminosity" },
+    ],
+  },
+];
+
+const BLEND_LABELS: Record<string, string> = Object.fromEntries(
+  BLEND_GROUPS.flatMap((g) => g.modes.map((m) => [m.value, m.label]))
+);
 
 export function LayersPanel({ onClose }: { onClose?: () => void }) {
   const canvas = useEditorStore((s) =>
@@ -217,6 +278,14 @@ function LayerRow({
                 className="h-3 w-3 shrink-0 text-[#f7c948]"
                 aria-label="Keep-inside mask"
               />
+            )}
+            {layer.blendMode && layer.blendMode !== "normal" && (
+              <span
+                title={`Blend: ${BLEND_LABELS[layer.blendMode]}`}
+                className="shrink-0 rounded-sm bg-[#e8446a]/15 px-1 py-px text-[8.5px] font-semibold uppercase tracking-wider text-[#f5a8bb]"
+              >
+                {BLEND_LABELS[layer.blendMode]}
+              </span>
             )}
           </div>
         )}
@@ -418,6 +487,54 @@ function ActiveLayerControls() {
             "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
           )}
         />
+      </div>
+      <div className="flex items-center gap-2">
+        <Blend
+          aria-hidden="true"
+          className="h-3.5 w-3.5 shrink-0 text-editor-dim"
+        />
+        <Select
+          value={layer.blendMode ?? "normal"}
+          onValueChange={(v) =>
+            useEditorStore.getState().updateLayer(layer.id, {
+              // "normal" persists as undefined — old projects stay byte-clean
+              blendMode: v === "normal" ? undefined : (v as BlendMode),
+            })
+          }
+        >
+          <SelectTrigger
+            aria-label={`Blend mode for ${layer.name}`}
+            size="sm"
+            className={cn(
+              "h-7 flex-1 rounded-lg border-editor-border-strong bg-transparent px-2.5 text-[11px] text-editor-text shadow-none transition hover:bg-editor-raised hover:text-editor-text focus-visible:ring-[#e8446a]/50",
+              layer.blendMode && layer.blendMode !== "normal"
+                ? "border-[#e8446a]/50 text-[#f5a8bb]"
+                : "text-editor-dim"
+            )}
+          >
+            {layer.blendMode && layer.blendMode !== "normal"
+              ? BLEND_LABELS[layer.blendMode]
+              : "Blend · Normal"}
+          </SelectTrigger>
+          <SelectContent className="border-editor-border bg-editor-panel text-editor-text shadow-xl shadow-black/40">
+            {BLEND_GROUPS.map((group) => (
+              <SelectGroup key={group.label}>
+                <SelectLabel className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim/70">
+                  {group.label}
+                </SelectLabel>
+                {group.modes.map((m) => (
+                  <SelectItem
+                    key={m.value}
+                    value={m.value}
+                    className="text-xs text-editor-text/90 focus:bg-editor-raised focus:text-editor-text aria-selected:bg-[#e8446a]/15 aria-selected:text-editor-text"
+                  >
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex gap-1.5">
         <button

@@ -496,6 +496,13 @@ export interface RenderExtras {
   hideLayerId?: string;
 }
 
+/** Canvas composite op for a layer (undefined/"normal" → source-over). */
+function blendOp(layer: Layer): GlobalCompositeOperation {
+  return (layer.blendMode && layer.blendMode !== "normal"
+    ? layer.blendMode
+    : "source-over") as GlobalCompositeOperation;
+}
+
 /**
  * Composite a full page. `ctx` must already carry the scale transform
  * (canvas-units → device px). Clipped layers render only over the alpha of
@@ -556,11 +563,15 @@ export function renderPage(
         mctx.restore();
       }
       ctx.save();
+      // Blend applies when the masked composite lands on the page —
+      // the masks above are internal to this layer.
+      ctx.globalCompositeOperation = blendOp(layer);
       ctx.drawImage(mask, 0, 0);
       ctx.restore();
     } else {
       ctx.save();
       ctx.globalAlpha = layer.opacity;
+      ctx.globalCompositeOperation = blendOp(layer);
       drawLayerContent(ctx, layer);
       ctx.restore();
     }
