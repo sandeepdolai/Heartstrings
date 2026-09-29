@@ -15,6 +15,10 @@ const PAGES = SHOWCASE_PAGES.slice(0, 4);
 const FLIP_MS = 680;
 /** Small grace period before the flipped sheet is cycled to the back. */
 const SETTLE_MS = 40;
+/** Drag distance (px) that equals a full page-turn. */
+const DRAG_FULL_PX = 140;
+/** Past this progress a released drag completes the turn; below it snaps back. */
+const COMPLETE_AT = 0.42;
 
 /**
  * Resting transforms of the sheets beneath the top page. Depth 0 lies flat
@@ -33,14 +37,26 @@ const PAGE_FRAME =
 /**
  * The hero's signature moment: a small stack of sample pages that turns
  * like a real book — a 3D rotateY(-180°) page-flip from the left edge,
- * looping forever. Click the book, the flip button, or press Enter.
+ * looping forever. Click the book, the flip button, press Enter — or DRAG
+ * the page left like a real book (release past halfway to finish the turn,
+ * earlier and it settles back).
  */
 export function FlipBookDemo() {
   const reduce = useReducedMotion();
   /** Page indices, top of the stack first — order[0] is the visible sheet. */
   const [order, setOrder] = useState<number[]>(() => PAGES.map((_, i) => i));
   const [flipping, setFlipping] = useState(false);
+  /** Live drag progress 0..1 (null = not dragging). */
+  const [drag, setDrag] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragRef = useRef<{
+    id: number;
+    startX: number;
+    moved: boolean;
+    active: boolean;
+  } | null>(null);
+  /** Suppresses the click that follows a real drag (pointerup → click). */
+  const suppressClickRef = useRef(false);
 
   // Never leave a pending flip behind if the view unmounts mid-turn.
   useEffect(
@@ -51,7 +67,7 @@ export function FlipBookDemo() {
   );
 
   const flip = useCallback(() => {
-    if (flipping) return;
+    if (flipping || dragRef.current?.active) return;
     const cycle = () => setOrder((o) => [...o.slice(1), o[0]]);
     if (reduce) {
       cycle();
@@ -65,8 +81,75 @@ export function FlipBookDemo() {
     }, FLIP_MS + SETTLE_MS);
   }, [flipping, reduce]);
 
+  /* ── drag-to-turn (a taste of the real viewer's paper-flip gesture) ─── */
+
+  const onDragPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (reduce || flipping || e.button !== 0) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      dragRef.current = {
+        id: e.pointerId,
+        startX: e.clientX,
+        moved: false,
+        active: true,
+      };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [reduce, flipping]
+  );
+
+  const onDragPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const d = dragRef.current;
+      if (!d || !d.active || e.pointerId !== d.id) return;
+      const dx = d.startX - e.clientX; // leftward drag = turning forward
+      if (Math.abs(dx) > 8) d.moved = true;
+      const progress = Math.max(0, Math.min(1, dx / DRAG_FULL_PX));
+      setDrag(progress);
+    },
+    []
+  );
+
+  const finishTurn = useCallback(() => {
+    setFlipping(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setOrder((o) => [...o.slice(1), o[0]]);
+      setFlipping(false);
+    }, FLIP_MS + SETTLE_MS);
+  }, []);
+
+  const onDragPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (!d || !d.active || e.pointerId !== d.id) return;
+      if (d.moved) suppressClickRef.current = true;
+      const dx = d.startX - e.clientX;
+      const progress = Math.max(0, Math.min(1, dx / DRAG_FULL_PX));
+      setDrag(null);
+      // A flick (fast leftward release) counts even below the distance bar.
+      if (progress >= COMPLETE_AT || (d.moved && dx > 36)) {
+        finishTurn();
+      } else if (progress > 0) {
+        setFlipping(false); // snap back via the 0deg transition
+      }
+    },
+    [finishTurn]
+  );
+
+  const onDragClick = useCallback(() => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return; // the drag already had its say
+    }
+    flip();
+  }, [flip]);
+
   const topIdx = order[0];
   const stack = order.slice(1); // pages beneath the top sheet, nearest first
+  const dragging = drag !== null;
+  const turn = dragging ? drag : flipping ? 1 : 0;
 
   return (
     <div className="flex select-none flex-col items-center">
@@ -74,12 +157,17 @@ export function FlipBookDemo() {
         {/* The book itself — one generous tap target */}
         <button
           type="button"
-          onClick={flip}
+          onClick={onDragClick}
+          onPointerDown={onDragPointerDown}
+          onPointerMove={onDragPointerMove}
+          onPointerUp={onDragPointerUp}
+          onPointerCancel={onDragPointerUp}
           disabled={flipping}
           aria-label={`Sample PaperString book — flip from “${PAGES[topIdx].label}” to the next page`}
-          className="group relative block cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-4 focus-visible:ring-offset-smoke"
+          style={{ touchAction: "pan-y" }}
+          className="group relative block cursor-grab rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-4 focus-visible:ring-offset-smoke active:cursor-grabbing motion-reduce:cursor-pointer motion-reduce:active:cursor-pointer"
         >
-          <div className="ps-perspective">
+          <div className="ps-perspective transition-transform duration-300 ease-out group-hover:-translate-y-1.5 motion-reduce:transform-none">
             <div className="relative aspect-[9/16] w-[228px] sm:w-[272px] lg:w-[300px]">
               {/* Sheets resting beneath the top page */}
               {stack.map((pageIdx, depth) => (
@@ -104,17 +192,23 @@ export function FlipBookDemo() {
                 </div>
               ))}
 
-              {/* The top sheet — turns like a real page */}
+              {/* The top sheet — turns like a real page. While dragging it
+                  follows the pointer with NO transition; on release it either
+                  animates to -180° (turn completed) or back to 0°. */}
               <div
                 key={topIdx}
                 className="ps-preserve-3d absolute inset-0 z-30"
                 style={{
                   transformOrigin: "left center",
-                  transform: flipping ? "rotateY(-180deg)" : "rotateY(0deg)",
-                  opacity: flipping ? 0 : 1,
-                  transition: reduce
-                    ? undefined
-                    : `transform ${FLIP_MS}ms var(--ease-flip), opacity 240ms ease 440ms`,
+                  transform: `rotateY(${-180 * turn}deg)`,
+                  opacity: turn > 0.75 ? 0 : 1,
+                  transition: dragging
+                    ? "none"
+                    : reduce
+                      ? undefined
+                      : `transform ${FLIP_MS}ms var(--ease-flip), opacity 240ms ease ${
+                          Math.max(0, 1 - turn) * 440
+                        }ms`,
                   willChange: "transform",
                 }}
               >
@@ -138,10 +232,11 @@ export function FlipBookDemo() {
             </div>
           </div>
 
-          {/* soft shadow the stack rests on */}
+          {/* soft shadow the stack rests on — stays put while the book
+              lifts on hover, so it genuinely floats */}
           <div
             aria-hidden="true"
-            className="absolute -bottom-5 left-1/2 h-8 w-[88%] -translate-x-1/2 rounded-[100%] bg-night/15 blur-xl"
+            className="absolute -bottom-5 left-1/2 h-8 w-[88%] -translate-x-1/2 rounded-[100%] bg-night/15 blur-xl transition-all duration-300 group-hover:w-[94%] group-hover:bg-night/25 motion-reduce:transition-none"
           />
         </button>
 
@@ -172,7 +267,7 @@ export function FlipBookDemo() {
 
       <p className="mt-3 flex items-center gap-1.5 text-xs text-dim">
         <MousePointerClick className="h-3.5 w-3.5" aria-hidden="true" />
-        Tap the book to flip the page
+        Drag or tap the book to turn the page
       </p>
 
       <span className="sr-only" aria-live="polite">

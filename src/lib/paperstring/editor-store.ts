@@ -31,6 +31,7 @@ export type EditorTool =
   | "select"
   | "brush"
   | "eraser"
+  | "blur"
   | "text"
   | "color"
   | "select-area"
@@ -74,6 +75,8 @@ export interface EditorState {
   prevTool: EditorTool;
   brush: { size: number; opacity: number; color: string };
   eraserSize: number;
+  /** Soft-focus brush: nib diameter (canvas units) and blur strength per pass. */
+  blur: { size: number; strength: number };
   colorHistory: string[];
   textDefaults: TextDefaults;
   selectionShape: "rect" | "ellipse";
@@ -100,6 +103,7 @@ export interface EditorState {
   setTool: (tool: EditorTool) => void;
   setBrush: (patch: Partial<EditorState["brush"]>) => void;
   setEraserSize: (size: number) => void;
+  setBlurTool: (patch: Partial<EditorState["blur"]>) => void;
   pushColorHistory: (color: string) => void;
   setTextDefaults: (patch: Partial<TextDefaults>) => void;
   setSelectionShape: (shape: "rect" | "ellipse") => void;
@@ -147,6 +151,15 @@ export interface EditorState {
   extendStroke: (point: [number, number]) => void;
   commitStroke: () => void;
   cancelStroke: () => void;
+
+  /** Flatten a soft-focus gesture into the raster layer's bitmap — one undo
+   *  entry from the caller-supplied pre-gesture snapshot. */
+  commitBlur: (
+    canvasId: string,
+    layerId: string,
+    flattened: string,
+    snapshot: HistoryEntry
+  ) => void;
 
   /* text editing */
   setEditingText: (id: string | null) => void;
@@ -197,6 +210,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   prevTool: "select",
   brush: { size: 18, opacity: 1, color: "#e8446a" },
   eraserSize: 40,
+  blur: { size: 110, strength: 4 },
   colorHistory: ["#e8446a", "#131313", "#f7c948", "#8ab8e0", "#7cc47f", "#ffffff"],
   textDefaults: {
     fontFamily: "Fraunces",
@@ -266,6 +280,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((s) => ({ brush: { ...s.brush, ...patch } })),
 
   setEraserSize: (size) => set({ eraserSize: size }),
+
+  setBlurTool: (patch) =>
+    set((s) => ({ blur: { ...s.blur, ...patch } })),
 
   pushColorHistory: (color) =>
     set((s) => ({
@@ -660,6 +677,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   cancelStroke: () => set({ liveStroke: null }),
+
+  commitBlur: (canvasId, layerId, flattened, snapshot) => {
+    get()._mutateNoHistory((d) => {
+      const c = d.canvases.find((c) => c.id === canvasId);
+      if (!c) return;
+      c.layers = c.layers.map((l) =>
+        l.id === layerId && l.type === "raster"
+          ? { ...l, strokes: [], flattened }
+          : l
+      ) as Layer[];
+    });
+    set({ dirty: true });
+    get().pushHistory(snapshot);
+  },
 
   setEditingText: (id) => set({ editingTextLayerId: id }),
 

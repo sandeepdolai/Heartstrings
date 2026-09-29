@@ -13,6 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { ColorPanel } from "./panels/ColorPanel";
 import { TextPanel } from "./panels/TextPanel";
 import { ElementsPanel } from "./panels/ElementsPanel";
+import { ImageAdjustPanel } from "./panels/ImageAdjustPanel";
 
 export function ToolPanel() {
   const tool = useEditorStore((s) => s.tool);
@@ -34,12 +35,14 @@ export function ToolPanel() {
   const baseOpen =
     tool === "brush" ||
     tool === "eraser" ||
+    tool === "blur" ||
     tool === "color" ||
     tool === "text" ||
     tool === "select-area" ||
     tool === "image" ||
     tool === "elements" ||
-    (tool === "select" && activeLayer?.type === "text");
+    (tool === "select" &&
+      (activeLayer?.type === "text" || activeLayer?.type === "image"));
 
   if (!baseOpen || dismissed) return null;
 
@@ -71,11 +74,13 @@ export function ToolPanel() {
       <div className="min-h-0 flex-1">
         {tool === "brush" && <BrushPanel eraser={false} />}
         {tool === "eraser" && <BrushPanel eraser />}
+        {tool === "blur" && <BlurPanel />}
         {tool === "color" && <ColorPanel />}
         {tool === "text" && <TextPanel />}
         {(tool === "image" || tool === "elements") && <ElementsPanel />}
         {tool === "select-area" && <SelectionAreaPanel />}
         {tool === "select" && activeLayer?.type === "text" && <TextPanel />}
+        {tool === "select" && activeLayer?.type === "image" && <ImageAdjustPanel />}
       </div>
     </aside>
   );
@@ -133,7 +138,14 @@ function SliderRow({
         step={step}
         onValueChange={(v) => onChange(v[0])}
         aria-label={label}
-        className="text-editor-dim"
+        className={cn(
+          "text-editor-dim",
+          // Editor panels are always dark: explicit high-contrast slider
+          // colors so the fill level reads at a glance (same as shared.tsx).
+          "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
+          "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
+          "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
+        )}
       />
     </div>
   );
@@ -251,6 +263,81 @@ const BRUSH_PRESETS = [
   { id: "soft", label: "Soft paint", size: 64, opacity: 55, dot: 16 },
   { id: "wash", label: "Ink wash", size: 120, opacity: 35, dot: 22 },
 ] as const;
+
+/** Soft-focus nib personalities — size × strength pairs. */
+const BLUR_PRESETS = [
+  { id: "kiss", label: "Kiss", size: 70, strength: 2, dot: 8 },
+  { id: "glow", label: "Glow", size: 130, strength: 4, dot: 14 },
+  { id: "mist", label: "Mist", size: 220, strength: 8, dot: 20 },
+] as const;
+
+function BlurPanel() {
+  const blur = useEditorStore((s) => s.blur);
+  const setBlurTool = useEditorStore((s) => s.setBlurTool);
+
+  return (
+    <PanelShell
+      title="Soft focus"
+      hint="Paint over artwork to soften it — dreamy backgrounds, gentle vignettes. Linger to deepen; one undo step brings it back."
+    >
+      <SliderRow
+        label="Nib size"
+        value={blur.size}
+        display={`${Math.round(blur.size)} px`}
+        min={20}
+        max={320}
+        step={1}
+        onChange={(size) => setBlurTool({ size })}
+      />
+      <SliderRow
+        label="Strength"
+        value={blur.strength}
+        display={blur.strength <= 2 ? "Feather" : blur.strength <= 5 ? "Glow" : "Mist"}
+        min={1}
+        max={10}
+        step={1}
+        onChange={(strength) => setBlurTool({ strength })}
+      />
+
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-editor-text">Presets</span>
+        <div className="grid grid-cols-3 gap-2">
+          {BLUR_PRESETS.map((p) => {
+            const active =
+              Math.round(blur.size) === p.size && blur.strength === p.strength;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={active}
+                title={`${p.label} — ${p.size}px nib, strength ${p.strength}`}
+                onClick={() => setBlurTool({ size: p.size, strength: p.strength })}
+                className={cn(
+                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  active
+                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
+                )}
+              >
+                <span className="grid h-6 w-6 place-items-center" aria-hidden="true">
+                  {/* a soft blurred halo instead of a hard dot */}
+                  <span
+                    className="rounded-full bg-current blur-[1.5px] transition-transform duration-200 group-hover:scale-110"
+                    style={{ width: p.dot, height: p.dot }}
+                  />
+                </span>
+                <span className="text-[11px] font-medium leading-none">{p.label}</span>
+                <span className="text-[9px] tabular-nums leading-none text-editor-dim/70">
+                  {p.size}px · {p.strength}×
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </PanelShell>
+  );
+}
 
 function SelectionAreaPanel() {
   const selectionShape = useEditorStore((s) => s.selectionShape);

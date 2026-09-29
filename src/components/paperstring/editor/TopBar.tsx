@@ -174,7 +174,8 @@ export function TopBar({
           ) : saveState === "error" ? (
             <CloudUpload className="h-3.5 w-3.5" />
           ) : saveState === "saved" ? (
-            <Check className="h-3.5 w-3.5" />
+            /* keyed on state so each save pops the check afresh */
+            <Check key="saved-check" className="ps-pop-in h-3.5 w-3.5" />
           ) : null}
           <span className="hidden lg:inline">{saveLabel[saveState]}</span>
         </div>
@@ -286,6 +287,7 @@ const SHORTCUTS: [string, string][] = [
   ["V", "Select & transform"],
   ["B", "Brush"],
   ["E", "Eraser"],
+  ["F", "Soft focus (blur brush)"],
   ["T", "Text"],
   ["C", "Color tools"],
   ["S", "Keep-inside selection"],
@@ -295,7 +297,7 @@ const SHORTCUTS: [string, string][] = [
   ["Ctrl + ⇧ + Z", "Redo"],
   ["Ctrl + S", "Save"],
   ["Del", "Delete active layer"],
-  ["[ / ]", "Brush or eraser size (⇧ = ×10)"],
+  ["[ / ]", "Brush, eraser or soft-focus size (⇧ = ×10)"],
   ["Alt + ← / →", "Previous / next page"],
   ["PgUp / PgDn", "Previous / next page"],
   ["Ctrl + ⇧ + ← / →", "Move page earlier / later"],

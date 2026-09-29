@@ -16,6 +16,7 @@ export type ToolId =
   | "select"
   | "brush"
   | "eraser"
+  | "blur"
   | "text"
   | "color"
   | "select-area"
@@ -94,11 +95,27 @@ export interface TextLayer extends BaseLayer {
   underline: boolean;
 }
 
+/** Per-image color adjustments (non-destructive — a filter applied at draw
+ *  time, so editor previews and 4K publishes stay pixel-identical).
+ *  Neutral = omitted field entirely (old projects stay byte-clean). */
+export interface ImageAdjust {
+  brightness: number; // 0.5–1.5 (1 = original)
+  contrast: number; // 0.5–1.5
+  saturate: number; // 0–2 (0 = mono)
+}
+
+export const IMAGE_ADJUST_NEUTRAL: ImageAdjust = {
+  brightness: 1,
+  contrast: 1,
+  saturate: 1,
+};
+
 export interface ImageLayer extends BaseLayer {
   type: "image";
   src: string; // data URL (persisted with project)
   naturalWidth: number;
   naturalHeight: number;
+  adjust?: ImageAdjust;
 }
 
 export interface StickerLayer extends BaseLayer {

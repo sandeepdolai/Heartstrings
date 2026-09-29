@@ -174,7 +174,15 @@ export function CanvasWorkspace() {
                       setActiveCanvas(page.id);
                     }
                   }}
-                  className="block cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor"
+                  className={cn(
+                    "block cursor-pointer rounded-lg outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor",
+                    // inactive pages offer a quiet lift so "click to edit"
+                    // reads before the first tap; the active page already
+                    // wears its halo and stays anchored
+                    page.id === activeCanvasId
+                      ? ""
+                      : "hover:-translate-y-1 motion-reduce:hover:translate-y-0"
+                  )}
                 >
                   <PageCanvas
                     page={page}

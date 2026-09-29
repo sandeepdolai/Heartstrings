@@ -24,9 +24,13 @@ import {
 import {
   layerAABB,
   layerContentBox,
+  applySoftFocus,
+  getRasterBitmap,
   onEngineContentLoaded,
   pointInLayer,
+  registerSyncImage,
   renderPage,
+  toLocal,
 } from "@/lib/paperstring/render";
 import { useEditorStore, type HistoryEntry } from "@/lib/paperstring/editor-store";
 import { LogoMark } from "@/components/paperstring/brand";
@@ -43,6 +47,7 @@ interface Props {
 type Gesture =
   | { kind: "none" }
   | { kind: "draw" }
+  | { kind: "blur"; layerId: string }
   | { kind: "move"; startX: number; startY: number; layer: Layer }
   | {
       kind: "scale";
@@ -65,6 +70,8 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const gestureRef = useRef<Gesture>({ kind: "none" });
   const gestureSnapshotRef = useRef<HistoryEntry | null>(null);
+  /** Live soft-focus preview bitmap while a blur gesture runs. */
+  const blurPreviewRef = useRef<HTMLCanvasElement | null>(null);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [engineTick, setEngineTick] = useState(0);
   const factor = width / CANVAS_W;
@@ -78,6 +85,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   );
   const brush = useEditorStore((s) => s.brush);
   const eraserSize = useEditorStore((s) => s.eraserSize);
+  const blurTool = useEditorStore((s) => s.blur);
 
   useEffect(
     () => onEngineContentLoaded(() => setEngineTick((t) => t + 1)),
@@ -101,8 +109,13 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
     ctx.scale(w / CANVAS_W, h / CANVAS_H);
+    const g = gestureRef.current;
     renderPage(ctx, page, {
       liveStroke: liveStroke?.layerId ? liveStroke : null,
+      liveBlur:
+        g.kind === "blur" && blurPreviewRef.current
+          ? { layerId: g.layerId, canvas: blurPreviewRef.current }
+          : null,
       hideLayerId: editingTextLayerId ?? undefined,
     });
   }, [page, width, liveStroke, editingTextLayerId]);
@@ -145,6 +158,25 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     [page]
   );
 
+  /** One soft-focus pass at canvas-units (ux, uy) on the live preview bitmap. */
+  const applyBlurAt = useCallback(
+    (layer: Layer, ux: number, uy: number) => {
+      const preview = blurPreviewRef.current;
+      if (!preview || layer.type !== "raster") return;
+      const { blur } = useEditorStore.getState();
+      // Map the pointer into the bitmap's local (untransformed) space —
+      // same math as pointInLayer, so the effect lands under the cursor even
+      // when the raster layer has been moved, rotated or scaled.
+      const [lx, ly] = toLocal(layer, ux, uy);
+      const bx = lx / layer.scale + CANVAS_W / 2;
+      const by = ly / layer.scale + CANVAS_H / 2;
+      const radius = blur.size / 2 / layer.scale;
+      applySoftFocus(preview, bx, by, radius, blur.strength);
+      setEngineTick((t) => t + 1); // repaint with the liveBlur override
+    },
+    []
+  );
+
   /* ── pointer interactions ─────────────────────────────────────────── */
 
   const onPointerDown = useCallback(
@@ -176,6 +208,26 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           };
           store.beginStroke(layer.id, stroke);
           gestureRef.current = { kind: "draw" };
+          break;
+        }
+        case "blur": {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          let layer = store.getActiveLayer();
+          if (!layer || layer.type !== "raster") {
+            layer = store.addRasterLayer();
+          } else if (!layer.visible) {
+            store.updateLayer(layer.id, { visible: true });
+          }
+          // Seed the preview with the layer's current bitmap, then blur live.
+          const src = getRasterBitmap(layer);
+          const preview = document.createElement("canvas");
+          preview.width = CANVAS_W;
+          preview.height = CANVAS_H;
+          preview.getContext("2d")!.drawImage(src, 0, 0);
+          blurPreviewRef.current = preview;
+          gestureSnapshotRef.current = store.captureHistory();
+          gestureRef.current = { kind: "blur", layerId: layer.id };
+          applyBlurAt(layer, ux, uy);
           break;
         }
         case "text": {
@@ -254,7 +306,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       // Brush cursor preview
       if (
         active &&
-        (store.tool === "brush" || store.tool === "eraser") &&
+        (store.tool === "brush" || store.tool === "eraser" || store.tool === "blur") &&
         e.pointerType === "mouse"
       ) {
         const rect = overlayRef.current!.getBoundingClientRect();
@@ -269,6 +321,13 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
 
       if (g.kind === "draw") {
         store.extendStroke([ux, uy]);
+      } else if (g.kind === "blur") {
+        // Read layers fresh from the store — the gesture may have created the
+        // raster layer after this callback's `page` closure was taken.
+        const layer = store.canvases
+          .find((c) => c.id === page.id)
+          ?.layers.find((l) => l.id === g.layerId);
+        if (layer) applyBlurAt(layer, ux, uy);
       } else if (g.kind === "move") {
         store.updateLayer(
           g.layer.id,
@@ -320,6 +379,37 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         const [ux, uy] = toUnits(e.clientX, e.clientY);
         store.extendStroke([ux, uy]);
         store.commitStroke();
+      } else if (g.kind === "blur") {
+        // Flatten the softened preview into the layer's bitmap — one undo entry.
+        const preview = blurPreviewRef.current;
+        const snapshot = gestureSnapshotRef.current;
+        gestureSnapshotRef.current = null;
+        blurPreviewRef.current = null;
+        if (preview && snapshot) {
+          const [ux, uy] = toUnits(e.clientX, e.clientY);
+          const layer = store.canvases
+            .find((c) => c.id === page.id)
+            ?.layers.find((l) => l.id === g.layerId);
+          if (layer && layer.type === "raster") {
+            // Final pass under the release — applied directly to the preview
+            // (the ref is already cleared, so applyBlurAt can't see it).
+            const { blur } = store;
+            const [lx, ly] = toLocal(layer, ux, uy);
+            applySoftFocus(
+              preview,
+              lx / layer.scale + CANVAS_W / 2,
+              ly / layer.scale + CANVAS_H / 2,
+              blur.size / 2 / layer.scale,
+              blur.strength
+            );
+          }
+          const flattened = preview.toDataURL("image/png");
+          // Prime the decode cache so the committed bitmap renders instantly.
+          const img = new Image();
+          img.onload = () => registerSyncImage(flattened, img);
+          img.src = flattened;
+          store.commitBlur(page.id, g.layerId, flattened, snapshot);
+        }
       } else if (
         g.kind === "move" ||
         g.kind === "scale" ||
@@ -331,7 +421,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         // keep pendingClip alive for apply/cancel in the panel
       }
     },
-    [page.layers, toUnits]
+    [page.id, toUnits]
   );
 
   /* ── selection chrome (active layer) ──────────────────────────────── */
@@ -449,23 +539,31 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           "absolute inset-0 rounded-lg",
           active ? "touch-none" : "cursor-pointer",
           tool === "select" && active && "cursor-default",
-          (tool === "brush" || tool === "eraser" || tool === "eyedropper") &&
+          (tool === "brush" || tool === "eraser" || tool === "eyedropper" || tool === "blur") &&
             active &&
             "cursor-none",
           tool === "text" && active && "cursor-text"
         )}
       >
         {/* brush size cursor — white ring with a dark inner hairline so it
-            stays visible over light AND dark artwork */}
-        {cursor && active && (tool === "brush" || tool === "eraser") && (
+            stays visible over light AND dark artwork; the soft-focus nib
+            gets a dashed ring so blur reads differently from paint */}
+        {cursor && active && (tool === "brush" || tool === "eraser" || tool === "blur") && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute rounded-full border border-white/95 bg-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(0,0,0,0.35)]"
+            className={cn(
+              "pointer-events-none absolute rounded-full bg-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(0,0,0,0.35)]",
+              tool === "blur"
+                ? "border border-dashed border-white/90"
+                : "border border-white/95"
+            )}
             style={{
               left: cursor.x,
               top: cursor.y,
-              width: (tool === "brush" ? brush.size : eraserSize) * factor,
-              height: (tool === "brush" ? brush.size : eraserSize) * factor,
+              width:
+                (tool === "brush" ? brush.size : tool === "eraser" ? eraserSize : blurTool.size) * factor,
+              height:
+                (tool === "brush" ? brush.size : tool === "eraser" ? eraserSize : blurTool.size) * factor,
               transform: "translate(-50%, -50%)",
             }}
           />

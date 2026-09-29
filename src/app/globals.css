@@ -257,6 +257,26 @@
   transform-origin: center;
 }
 
+/* Quiet confirmation pop — save status checkmark, panel badges, etc. */
+@keyframes ps-pop-in {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.ps-pop-in {
+  animation: ps-pop-in 380ms var(--ease-flip) both;
+  transform-origin: center;
+}
+
 /* Hide scrollbar but keep scrolling (mobile canvas strip) */
 .no-scrollbar {
   -ms-overflow-style: none;
@@ -269,7 +289,8 @@
 @media (prefers-reduced-motion: reduce) {
   .ps-float,
   .ps-heartbeat,
-  .ps-draw-line {
+  .ps-draw-line,
+  .ps-pop-in {
     animation: none;
   }
   html {

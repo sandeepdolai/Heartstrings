@@ -2,11 +2,12 @@
 
 /**
  * ToolRail — the vertical tool strip (desktop) / horizontal bar (mobile).
- * Keyboard shortcuts: V select · B brush · E eraser · T text · C color ·
- * S select-area · K elements.
+ * Keyboard shortcuts: V select · B brush · E eraser · F soft focus · T text ·
+ * C color · S select-area · K elements.
  */
 
 import {
+  Droplets,
   ImagePlus,
   Layers,
   MousePointer2,
@@ -36,6 +37,7 @@ const TOOLS: {
   { id: "select", label: "Select & transform", shortcut: "V", icon: MousePointer2 },
   { id: "brush", label: "Brush", shortcut: "B", icon: Paintbrush },
   { id: "eraser", label: "Eraser", shortcut: "E", icon: Eraser },
+  { id: "blur", label: "Soft focus", shortcut: "F", icon: Droplets },
   { id: "text", label: "Text", shortcut: "T", icon: Type },
   { id: "color", label: "Color & eyedropper", shortcut: "C", icon: Palette },
   { id: "select-area", label: "Keep-inside selection", shortcut: "S", icon: SquareDashedMousePointer },
@@ -55,13 +57,16 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
         data-tour="tools"
         className={cn(
           "z-20 flex shrink-0 items-center gap-1 border-editor-border bg-editor",
-          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5",
+          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around gap-0.5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5",
           "md:h-full md:w-14 md:flex-col md:border-r md:px-1.5 md:py-3"
         )}
       >
         {TOOLS.map((t) => {
           const Icon = t.icon;
           const activeTool = tool === t.id || (t.id === "color" && tool === "eyedropper");
+          // On phones the rail stays one tidy row: the color tool folds away
+          // (the brush panel's Color row opens the same panel + eyedropper).
+          const hideOnMobile = t.id === "color";
           return (
             <Tooltip key={t.id}>
               <TooltipTrigger asChild>
@@ -71,7 +76,8 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   aria-pressed={activeTool}
                   onClick={() => setTool(t.id)}
                   className={cn(
-                    "relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150",
+                    "relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 max-md:h-10 max-md:w-10",
+                    hideOnMobile && "max-md:hidden",
                     activeTool
                       ? "bg-smoke text-night shadow-lg"
                       : "text-editor-dim hover:bg-editor-raised hover:text-editor-text"
@@ -101,7 +107,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                 aria-label="Layers"
                 data-tour="layers-mobile"
                 onClick={onOpenLayers}
-                className="grid h-11 w-11 place-items-center rounded-xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:hidden"
+                className="grid h-11 w-10 place-items-center rounded-xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:hidden"
               >
                 <Layers className="h-5 w-5" />
               </button>

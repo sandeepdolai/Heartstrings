@@ -46,18 +46,21 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   const [tourOpen, setTourOpen] = useState(false);
-  /* transient HUD for brush/eraser size changes via [ / ] keys */
+  /* transient HUD for brush/eraser/soft-focus size changes via [ / ] keys */
   const [sizeHud, setSizeHud] = useState<{
     value: number;
-    tool: "brush" | "eraser";
+    tool: "brush" | "eraser" | "blur";
   } | null>(null);
   const sizeHudTimer = useRef<number | null>(null);
 
-  const flashSizeHud = useCallback((value: number, tool: "brush" | "eraser") => {
-    setSizeHud({ value, tool });
-    if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
-    sizeHudTimer.current = window.setTimeout(() => setSizeHud(null), 1000);
-  }, []);
+  const flashSizeHud = useCallback(
+    (value: number, tool: "brush" | "eraser" | "blur") => {
+      setSizeHud({ value, tool });
+      if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
+      sizeHudTimer.current = window.setTimeout(() => setSizeHud(null), 1000);
+    },
+    []
+  );
 
   useEffect(
     () => () => {
@@ -222,7 +225,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
 
-  /* ── keyboard shortcuts (V/B/E/T/C/S/K/I · undo/redo · save · delete) */
+  /* ── keyboard shortcuts (V/B/E/F/T/C/S/K/I · undo/redo · save · delete) */
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -299,19 +302,25 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
       }
       if (mod || e.altKey) return;
 
-      // Brush / eraser size: [ smaller, ] larger (Shift = ×10 step).
-      // Shift+[ / Shift+] surface as "{" / "}" — both count.
+      // Brush / eraser / soft-focus size: [ smaller, ] larger (Shift = ×10
+      // step). Shift+[ / Shift+] surface as "{" / "}" — both count.
       const sizeKey = e.key === "[" || e.key === "{" ? "[" : e.key === "]" || e.key === "}" ? "]" : null;
       if (sizeKey) {
         e.preventDefault();
         const bigStep = e.shiftKey ? 10 : 1;
         const delta = sizeKey === "[" ? -bigStep : bigStep;
-        const { tool, brush, eraserSize, setBrush, setEraserSize } = store;
+        const { tool, brush, eraserSize, blur, setBrush, setEraserSize, setBlurTool } = store;
         if (tool === "eraser") {
           const next = Math.round(Math.min(220, Math.max(2, eraserSize + delta)));
           if (next !== eraserSize) {
             setEraserSize(next);
             flashSizeHud(next, "eraser");
+          }
+        } else if (tool === "blur") {
+          const next = Math.round(Math.min(320, Math.max(20, blur.size + delta)));
+          if (next !== blur.size) {
+            setBlurTool({ size: next });
+            flashSizeHud(next, "blur");
           }
         } else {
           const next = Math.round(Math.min(200, Math.max(1, brush.size + delta)));
@@ -327,6 +336,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         case "v": store.setTool("select"); break;
         case "b": store.setTool("brush"); break;
         case "e": store.setTool("eraser"); break;
+        case "f": store.setTool("blur"); break;
         case "t": store.setTool("text"); break;
         case "c": store.setTool("color"); break;
         case "s": store.setTool("select-area"); break;
@@ -417,15 +427,27 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                     width: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
                     height: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
                     background:
-                      sizeHud.tool === "brush" ? "#e8446a" : "transparent",
+                      sizeHud.tool === "brush"
+                        ? "#e8446a"
+                        : sizeHud.tool === "blur"
+                          ? "radial-gradient(circle, rgba(181,181,181,0.65), rgba(181,181,181,0.05))"
+                          : "transparent",
                     border:
                       sizeHud.tool === "eraser"
                         ? "1.5px dashed #b5b5b5"
-                        : "none",
+                        : sizeHud.tool === "blur"
+                          ? "1.5px dotted #b5b5b5"
+                          : "none",
+                    filter:
+                      sizeHud.tool === "blur" ? "blur(0.75px)" : undefined,
                   }}
                 />
                 <span className="text-[11px] uppercase tracking-[0.18em] text-editor-dim">
-                  {sizeHud.tool === "eraser" ? "Eraser" : "Brush"}
+                  {sizeHud.tool === "eraser"
+                    ? "Eraser"
+                    : sizeHud.tool === "blur"
+                      ? "Soft focus"
+                      : "Brush"}
                 </span>
                 <span className="text-sm tabular-nums text-editor-text">
                   {sizeHud.value} px

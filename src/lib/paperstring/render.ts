@@ -11,7 +11,9 @@ import {
   CANVAS_W,
   CANVAS_H,
   PUBLISH_SCALE,
+  IMAGE_ADJUST_NEUTRAL,
   type CanvasPageData,
+  type ImageAdjust,
   type Layer,
   type RasterLayer,
   type Stroke,
@@ -199,6 +201,62 @@ export function getRasterBitmap(layer: RasterLayer): HTMLCanvasElement {
 }
 
 const syncImages = new Map<string, HTMLImageElement>();
+
+/** Prime the sync image cache with an already-decoded image (used right after
+ *  a soft-focus commit so the new flattened bitmap renders without a flash). */
+export function registerSyncImage(src: string, img: HTMLImageElement) {
+  syncImages.set(src, img);
+}
+
+/* ── soft-focus brush ──────────────────────────────────────────────────── */
+
+/** One localized blur pass on a bitmap: samples the region around (x, y),
+ *  blurs it, masks it to a feathered circle, and composites it back. Repeated
+ *  passes accumulate — lingering deepens the soft focus, like an airbrush. */
+export function applySoftFocus(
+  target: HTMLCanvasElement,
+  x: number,
+  y: number,
+  radius: number,
+  strength: number
+) {
+  const tctx = target.getContext("2d");
+  if (!tctx || radius < 1) return;
+  const r = Math.min(radius, 480);
+  const margin = Math.ceil(r * 1.5 + strength);
+  const sx = Math.max(0, Math.floor(x - margin));
+  const sy = Math.max(0, Math.floor(y - margin));
+  const ex = Math.min(target.width, Math.ceil(x + margin));
+  const ey = Math.min(target.height, Math.ceil(y + margin));
+  const rw = ex - sx;
+  const rh = ey - sy;
+  if (rw < 2 || rh < 2) return;
+
+  const patch = makeCanvas(rw, rh);
+  const pctx = patch.getContext("2d")!;
+  // 1 — the blurred copy of this region
+  pctx.filter = `blur(${strength}px)`;
+  pctx.drawImage(target, sx, sy, rw, rh, 0, 0, rw, rh);
+  pctx.filter = "none";
+  // 2 — feathered circular mask (soft edge blends into the crisp original)
+  pctx.globalCompositeOperation = "destination-in";
+  const grad = pctx.createRadialGradient(
+    x - sx,
+    y - sy,
+    Math.max(1, r * 0.25),
+    x - sx,
+    y - sy,
+    r
+  );
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.75, "rgba(255,255,255,0.85)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  pctx.fillStyle = grad;
+  pctx.fillRect(0, 0, rw, rh);
+  // 3 — composite back over the original
+  pctx.globalCompositeOperation = "source-over";
+  tctx.drawImage(patch, sx, sy);
+}
 
 let flushListeners: Array<() => void> = [];
 /** Subscribe to async content loads (fonts/images) that require re-render. */
@@ -425,15 +483,34 @@ function drawTextLayer(ctx: CanvasRenderingContext2D, l: TextLayer) {
   ctx.restore();
 }
 
+/* ── image adjustments (ctx.filter — draw-time, publish parity free) ──── */
+
+/** CSS filter string for an image layer's adjustments ("" when neutral). */
+export function imageFilterCss(a?: ImageAdjust): string {
+  if (!a) return "";
+  const parts: string[] = [];
+  if (Math.abs(a.brightness - IMAGE_ADJUST_NEUTRAL.brightness) > 0.001)
+    parts.push(`brightness(${a.brightness.toFixed(3)})`);
+  if (Math.abs(a.contrast - IMAGE_ADJUST_NEUTRAL.contrast) > 0.001)
+    parts.push(`contrast(${a.contrast.toFixed(3)})`);
+  if (Math.abs(a.saturate - IMAGE_ADJUST_NEUTRAL.saturate) > 0.001)
+    parts.push(`saturate(${a.saturate.toFixed(3)})`);
+  return parts.join(" ");
+}
+
 /* ── single layer draw (transform + opacity) ────────────────────────────── */
 
-function drawLayerContent(ctx: CanvasRenderingContext2D, layer: Layer) {
+function drawLayerContent(
+  ctx: CanvasRenderingContext2D,
+  layer: Layer,
+  overrideBitmap?: HTMLCanvasElement
+) {
   ctx.save();
   ctx.translate(layer.x, layer.y);
   ctx.rotate(layerRotationRad(layer));
   switch (layer.type) {
     case "raster": {
-      const bmp = getRasterBitmap(layer);
+      const bmp = overrideBitmap ?? getRasterBitmap(layer);
       ctx.scale(layer.scale, layer.scale);
       ctx.drawImage(bmp, -CANVAS_W / 2, -CANVAS_H / 2);
       break;
@@ -448,6 +525,8 @@ function drawLayerContent(ctx: CanvasRenderingContext2D, layer: Layer) {
         );
         const s = fit * layer.scale;
         ctx.scale(s, s);
+        const filter = imageFilterCss(l.adjust);
+        if (filter) ctx.filter = filter; // reset by ctx.restore() below
         ctx.drawImage(img, -l.naturalWidth / 2, -l.naturalHeight / 2);
       } else {
         loadImage(l.src)
@@ -492,6 +571,8 @@ function drawLayerContent(ctx: CanvasRenderingContext2D, layer: Layer) {
 export interface RenderExtras {
   /** Live in-progress stroke preview (drawn on the active raster layer). */
   liveStroke?: { layerId: string; stroke: Stroke } | null;
+  /** Live in-progress soft-focus preview — replaces the raster layer's bitmap. */
+  liveBlur?: { layerId: string; canvas: HTMLCanvasElement } | null;
   /** Layer hidden while its DOM text editor is open. */
   hideLayerId?: string;
 }
@@ -533,7 +614,7 @@ export function renderPage(
       mctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
       mctx.save();
       mctx.globalAlpha = layer.opacity;
-      drawLayerContent(mctx, layer);
+      drawLayerContent(mctx, layer, liveBlurFor(layer));
       if (isLive) {
         mctx.save();
         mctx.globalAlpha = extras.liveStroke!.stroke.opacity;
@@ -572,9 +653,15 @@ export function renderPage(
       ctx.save();
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = blendOp(layer);
-      drawLayerContent(ctx, layer);
+      drawLayerContent(ctx, layer, liveBlurFor(layer));
       ctx.restore();
     }
+  }
+
+  function liveBlurFor(l: Layer): HTMLCanvasElement | undefined {
+    return extras.liveBlur?.layerId === l.id && l.type === "raster"
+      ? extras.liveBlur!.canvas
+      : undefined;
   }
 }
 
