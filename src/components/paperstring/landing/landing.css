@@ -1,0 +1,15 @@
+/*
+   Landing-local display-serif utility.
+
+   The global `.font-display` rule in globals.css resolves to an undefined
+   custom property (--font-display is declared inside `@theme inline`, so it
+   is never emitted as a real CSS variable), which makes every `font-display`
+   heading silently fall back to Inter. Until that rule is fixed at the
+   foundation level, landing components use this self-contained equivalent.
+   It resolves --font-fraunces (defined on <body> by next/font) directly.
+*/
+
+.ps-serif {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+}

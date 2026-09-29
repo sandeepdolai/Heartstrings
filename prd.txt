@@ -1,0 +1,493 @@
+PAPERSTRING — PRODUCT REQUIREMENTS DOCUMENT
+Version: 1.0 — Consolidated Draft
+Date: September 29, 2026
+Status: For Review — Product, Design & Engineering
+Platform: Web — Desktop, iPad, Tablet and Mobile Browsers
+
+DOCUMENT NOTES
+This document consolidates the complete PRD into one file. Requirements originate from the product brief. Proposed implementation decisions, performance targets and scope assumptions require review. References to ibisPaint X are behavioral reference requirements, not independently verified claims about that application's limits or capabilities. Exact reference behavior must be validated before implementation. Motion refinements discussed subsequently are identified as proposals rather than silently treated as approved changes.
+
+1. OVERVIEW
+
+PaperString is a graphic creation website for everyday people rather than professional graphic designers. Users create beautiful, heartfelt graphics expressing LOVE, EMOTION and FRIENDSHIP, then share them with others.
+
+PaperString is fundamentally a “show-off” experience: a creator builds a project containing multiple canvases, like pages in a book. After saving, the creator generates a shareable URL. Recipients open it without an account and flip through the finished canvases using a signature paper flip animation.
+
+The product has two strictly separated experiences:
+- Editor Mode: authenticated creation, editing, canvas management, saving and sharing.
+- Viewer Mode: unauthenticated, view-only presentation of finished canvases with paper-flip navigation and no editing UI.
+
+2. PROBLEM & VISION
+
+Problem hypothesis
+Everyday users need an approachable way to create personal, multi-page visual messages without having to learn a professional design workflow. Sharing individual images can lose the sequence and emotional presentation of a visual story. These hypotheses should be validated through user research rather than treated as established market findings.
+
+Vision
+“Anyone can make something beautiful for someone they love — and share it like a flip-book that opens straight to the heart.”
+
+Product principles
+P1. Emotional expression: support love, friendship, gratitude and meaningful memories.
+P2. Creator capability, viewer simplicity: powerful tools in the editor; an uncluttered presentation for recipients.
+P3. Reference fidelity: match the specified ibisPaint X interactions after validating the relevant behavior.
+P4. High quality by default: 4K output, with no user-facing quality selector.
+P5. Content-first design: minimal monochrome interface that lets colorful creations stand out.
+P6. Strict mode separation: paper flips belong to viewing, never editing.
+
+3. TARGET USERS
+
+Everyday Creators
+Non-designers creating love notes, friendship books, birthday messages, thank-you pages, scrapbooks and shared memories. They may be unfamiliar with layers and need understandable controls without losing the requested tool capabilities.
+
+Sharers
+Creators distributing finished projects through messaging services, email or other channels using a URL.
+
+Viewers / Recipients
+Friends, partners and family members receiving a link. They must be able to open and experience the project without an account, login, application installation or email capture.
+
+Device priorities
+Support desktop, iPad, tablets and phones. Relative device usage and demographic assumptions remain research questions; the brief does not establish a mobile-majority audience.
+
+4. GOALS & SUCCESS METRICS
+
+G1. Make expressive graphic creation approachable for non-designers.
+G2. Enable creators to make and save multi-canvas visual stories.
+G3. Remove recipient authentication friction.
+G4. Make the viewer paper flip a memorable signature experience.
+G5. Preserve reliable, high-quality creations across supported devices.
+
+Proposed launch metrics — indicative, not committed targets
+- Sign-up conversion: completed creator registrations / eligible landing sessions. Initial target: 25%.
+- Activation: new creators saving a project with at least two canvases within seven days / new creators. Initial target: 60%.
+- Share rate: saved projects with a generated share URL / saved projects in the measurement cohort. Initial target: 50%.
+- Shared-project open rate: shared projects receiving at least one successful viewer open within seven days / newly shared projects. Initial target: 70%.
+- Full flip-through: viewer sessions reaching the last canvas / successfully started multi-canvas viewer sessions. Initial target: 40%.
+- Viewer-to-creator conversion: attributable consenting viewers registering within seven days / attributable viewers. Initial target: 8%; privacy-preserving attribution requires review.
+- D7 creator retention: activated creators returning on day seven / eligible activated creators. Initial target: 30%.
+- Viewer failure rate: sessions unable to render the first canvas / attempted viewer sessions. Initial target: below 0.5%.
+
+Metric windows, bot filtering, consent, identity rules and reporting cohorts must be finalized before instrumentation. Conversion goals must not introduce promotional or editing UI into the clean viewer experience.
+
+5. CORE FEATURES & FUNCTIONAL REQUIREMENTS
+
+5.1 Projects, Canvases and Sharing
+
+FR-1.1. An authenticated creator can create a project containing one or more canvases.
+FR-1.2. Canvases are portrait pages by default. Exact dimensions and aspect ratio remain to be approved.
+FR-1.3. Creators can add canvases with no product-imposed numerical cap.
+FR-1.4. Creators can delete canvases. Mobile deletion must require confirmation; confirmation on other devices is proposed. Do not claim deletion is irreversible until undo behavior is settled.
+FR-1.5. Saving persists the project, its canvas sequence, layers and required assets.
+FR-1.6. After a successful save, the creator can generate and copy a shareable URL.
+FR-1.7. The URL opens Viewer Mode without requiring authentication.
+FR-1.8. A viewer starts on the first canvas, then moves forward or backward in sequence. Handling deletion or future reordering of the original first canvas requires a defined policy.
+FR-1.9. Only the authenticated project owner can edit the project. Authorization must be enforced server-side.
+FR-1.10. Saving and sharing must display clear progress, success and failure states. A failed save must not be represented as a successfully published project.
+
+5.2 Workspace and Active-Layer Rules
+
+FR-2.1. Desktop, iPad and tablet editors provide one continuous grid workspace containing all canvases. Users edit directly in the grid, without opening a canvas in a separate editing screen.
+FR-2.2. A large grid may scroll; “all canvases” means one shared workspace, not that an unlimited number must fit inside the physical viewport simultaneously.
+FR-2.3. Mobile displays one canvas at a time, with previous/next controls and a page indicator such as “Page 2 / 5.” Swipe navigation may supplement explicit controls.
+FR-2.4. All editor page changes are simple and instant, without paper flips.
+FR-2.5. The active canvas and its active layer must be unambiguous. Switching canvases must not accidentally apply an operation to another canvas.
+FR-2.6. Editing operations affect only the active layer. Explicit exceptions are insertion of new layers, deliberate two-layer merging and project/canvas structural operations.
+FR-2.7. Color selection changes tool state, not other layers. Eyedropper sampling scope must be validated separately.
+FR-2.8. Drawing gestures must not be mistaken for mobile page-navigation gestures.
+
+5.3 Layers
+
+FR-3.1. Support layers without a product-imposed numerical cap.
+FR-3.2. Provide an accessible layer panel with clear active-layer indication. Basic add, select, reorder, hide/show and opacity controls are proposed for a usable layer workflow.
+FR-3.3. Support clipping with behavior matched to the validated ibisPaint X reference, including interactions with layer ordering, transparency and visibility.
+FR-3.4. Support explicitly merging two layers into one. Validate eligible layer pairs, merge direction and the treatment of clipping and editable text before implementation.
+FR-3.5. Unrelated layers must remain unchanged by a merge.
+FR-3.6. On mobile, the layer panel may collapse to preserve canvas space; the active layer must remain identifiable.
+
+5.4 Text Tool
+
+FR-4.1. Provide an advanced text tool modeled on the specified ibisPaint X behavior.
+FR-4.2. Every text insertion creates a new layer and makes that layer active.
+FR-4.3. Supply a PaperString-provided font collection.
+FR-4.4. Allow importing a custom font from the user's device or file picker. Approved formats and size limits require validation; TTF and OTF are proposed initial candidates.
+FR-4.5. Support editing text content, font, size and color, plus move, rotation and reference-validated transforms.
+FR-4.6. Define a reference checklist for additional advanced text controls before implementation; do not invent parity features.
+FR-4.7. Saved text must render consistently for viewers without requiring recipients to install fonts.
+FR-4.8. Invalid fonts or import failures must produce actionable errors without losing existing work.
+
+5.5 Drawing Tool
+
+FR-5.1. Provide one clean brush pen for freehand drawing, not the full ibisPaint X brush library.
+FR-5.2. Allow adjustment of brush size.
+FR-5.3. Allow adjustment of brush opacity.
+FR-5.4. Allow brush color selection using the color tools.
+FR-5.5. Brush strokes affect only the active layer.
+FR-5.6. Pressure sensitivity and stroke stabilization are not implicitly required; their inclusion and exact behavior need approval.
+
+5.6 Color Tools
+
+FR-6.1. Provide an eyedropper. Validate whether it samples the active layer, the composite canvas, or selectable modes against the reference behavior.
+FR-6.2. Provide a color palette.
+FR-6.3. Provide HSV sliders.
+FR-6.4. Provide RGB sliders.
+FR-6.5. Provide color history.
+FR-6.6. Provide full RGB and HSB color selection. HSV and HSB terminology must be presented consistently.
+FR-6.7. Match reference interactions and define color-value ranges, alpha handling and history persistence in the detailed design specification.
+
+5.7 Eraser
+
+FR-7.1. Erase only pixels/content on the active layer, returning erased areas to transparency.
+FR-7.2. Do not erase content on underlying or unrelated layers.
+FR-7.3. Confirm how erasing interacts with editable text and other non-raster layers; do not silently rasterize without an approved behavior.
+
+5.8 Selection / Keep-Inside Operation
+
+FR-8.1. Allow the creator to define an area on the active canvas.
+FR-8.2. Applying the selection retains active-layer content inside the selected area and removes or masks content outside it.
+FR-8.3. Other layers remain unchanged.
+FR-8.4. Whether this operation creates a reversible mask or destructively clears pixels is unresolved. Both approaches must not be described as interchangeable.
+FR-8.5. Selection shapes, boundary handling, apply/cancel controls and reference parity require design validation.
+
+5.9 Transform
+
+FR-9.1. Provide move and rotation for the active layer or its selected element.
+FR-9.2. Scaling and other transforms must follow the approved ibisPaint X behavior checklist.
+FR-9.3. Applying or canceling a transform must not modify unrelated layers.
+FR-9.4. Define bounds, pivot behavior and touch controls before implementation.
+
+5.10 Undo / Redo
+
+FR-10.1. Support undo and redo without a product-imposed history-count cap.
+FR-10.2. Define history coverage for drawing, erasing, text changes, transformations, imports, masking, merges and structural operations.
+FR-10.3. History behavior after refresh, reopening, saving or switching devices remains an explicit product decision.
+FR-10.4. Do not silently truncate retained history; storage and resource exhaustion behavior must be reviewed.
+
+5.11 Image Uploads
+
+FR-11.1. Allow image uploads from the user's device/file picker.
+FR-11.2. Each imported image creates its own new active layer on the target canvas.
+FR-11.3. Image placement, movement and image-related editing follow the approved ibisPaint X behavior checklist.
+FR-11.4. The product ambition is support for all image formats/types. Engineering must produce an explicit format/decoder matrix; universal support is not a verified implementation guarantee.
+FR-11.5. Define treatment of animated, vector, multipage, layered, RAW, HDR and color-profile-bearing formats.
+FR-11.6. Unsupported, corrupt, unsafe or oversized files must fail clearly without damaging the project.
+FR-11.7. Any conversion must preserve transparency, orientation and appearance as far as the approved pipeline supports, with disclosed limitations.
+
+5.12 Elements Library
+
+FR-12.1. Provide a dedicated “Elements Library” section in the editor.
+FR-12.2. Include PaperString-provided stickers.
+FR-12.3. Include PaperString-provided images.
+FR-12.4. Include PaperString-provided premade templates.
+FR-12.5. Selecting an item adds it to the active canvas on its own new layer, consistent with the original brief.
+FR-12.6. Do not assume templates expand into multiple editable layers or replace entire projects. Such behavior requires an approved change to the single-layer insertion requirement.
+
+5.13 Quality
+
+FR-Q.1. High quality is the default throughout PaperString; no user-facing quality selector is permitted.
+FR-Q.2. The required default output resolution is 4K. Exact portrait pixel dimensions, aspect ratio and color space must be agreed before implementation.
+FR-Q.3. Preserve full-resolution project content and high-quality viewer rendering.
+FR-Q.4. A proposed optimization is viewport-sized editor previews backed by full-resolution masters. This must be approved if “4K everywhere” requires literal full-resolution rendering for every intermediate frame.
+FR-Q.5. Do not suggest that enlarging a low-resolution upload restores missing detail.
+FR-Q.6. File export is not implied by shareable web viewing; export formats are an open scope decision.
+
+5.14 Animations — FR-13 Motion Requirements
+
+FR-13.1. Motion throughout the site should be rich, smooth, polished and emotionally satisfying, fitting love, emotion and friendship.
+FR-13.2. The signature paper flip is exclusive to Viewer Mode.
+FR-13.3. Editor page switching must remain simple and instant, with no paper-flip animation.
+FR-13.4. Menus, panels, dialogs and general interactions should follow a coherent, restrained motion language that does not hide content or block input.
+
+Proposed motion refinements following the trade-off discussion
+FR-13.P1. Use tiered motion: expressive viewer flips, fast functional editor micro-transitions. A proposed editor duration range is 100–200 ms, excluding page switches, drawing and direct manipulation, which must respond immediately.
+FR-13.P2. Define shared duration/easing tokens. A 600 ms flip or 150 ms panel transition is an example, not an approved specification.
+FR-13.P3. Respect reduced-motion preferences with a non-spatial transition or instant page replacement. Accessibility fallback is an explicit exception to the normal flip behavior.
+FR-13.P4. Target smooth 60 fps motion on an agreed mid-range device test matrix. Define frame-time tolerances and realistic test scenes before using this as a release gate.
+
+Motion trade-offs
+- Emotion versus performance: rich flips and 4K pages compete for graphics memory and rendering time.
+- Polish versus development cost: prototypes, gesture handling and cross-device tuning add effort.
+- Delight versus usability: repeated decorative transitions can slow creation.
+- Consistency versus complexity: shared motion tokens reduce inconsistent implementations.
+- Immersion versus accessibility: spatial motion requires a reduced-motion alternative.
+- Signature versus overuse: limiting flips to viewing preserves their distinctiveness.
+- Richness versus minimalism: interface motion must not compete with the artwork.
+
+6. USER FLOWS
+
+Flow 1 — Creator Sign-up / Login
+1. Visitor chooses Create or Sign In.
+2. PaperString offers Continue with Google or Continue with Email.
+3. Google path: complete the provider authentication flow and return to PaperString. Cancellation or failure returns to a recoverable sign-in screen.
+4. Email path: complete the approved email authentication flow. Email/password is the current proposal; verification and recovery must be supported if selected.
+5. After authentication, a new creator can create a project; a returning creator can reopen a saved project.
+6. Preserve the intended destination through authentication where possible.
+
+Flow 2 — Create and Edit Multiple Canvases
+1. Creator chooses New Project.
+2. Project opens with an initial blank portrait canvas and an editable active layer; initial-layer details require design confirmation.
+3. Desktop, iPad and tablet users edit directly in a continuous multi-canvas grid.
+4. Mobile users edit one page at a time and use previous/next controls with a page indicator.
+5. Creator adds canvases without a numerical product cap.
+6. Creator selects a canvas and layer, then draws, adds text, imports images or inserts library elements.
+7. New text, image and library insertions each create a new active layer.
+8. Creator applies clipping, merging, selection, transforms or undo/redo as needed.
+9. Creator deletes a canvas when desired; mobile requires confirmation.
+10. Switching editor pages never plays a flip animation.
+
+Flow 3 — Save and Generate a Share URL
+1. Creator chooses Save.
+2. System persists project state and assets, then confirms success or presents a retryable failure.
+3. Creator chooses Share.
+4. System prepares a coherent saved viewer representation and generates a URL only when it is ready to view.
+5. Share panel states: “Anyone with this link can view — no account needed.”
+6. Creator copies the URL and sends it through a chosen external channel.
+7. Subsequent edits follow the approved publishing policy; live updates versus explicit republishing remains unresolved.
+8. Autosave is proposed as protection against work loss, not a substitute for defining publication semantics.
+
+Flow 4 — Open and View a Shared Project
+1. Recipient opens the shared URL in a supported browser.
+2. No authentication, sign-up wall or email capture appears.
+3. The first canvas loads in the clean viewer.
+4. Recipient moves forward with the approved navigation control or gesture; the paper flip reveals the next canvas.
+5. Recipient moves backward through earlier canvases with the reverse flip behavior.
+6. First/last-page boundaries prevent invalid navigation; a single-page project remains viewable without suggesting additional pages.
+7. Reduced-motion users receive the approved alternative if that proposal is adopted.
+8. Invalid, unavailable, expired or revoked links display a clear, non-editable message where those lifecycle states are supported.
+
+7. EDITOR VS. VIEWER MODES
+
+Access: Editor requires an authenticated owner; Viewer requires only a valid share URL.
+Purpose: Editor creates and changes content; Viewer presents finished content.
+Tools: Editor exposes editing tools; Viewer exposes none.
+Desktop/tablet layout: Editor uses the shared canvas grid; Viewer presents one canvas at a time.
+Mobile layout: Editor presents one editable canvas with navigation and an indicator; Viewer presents finished pages with flip navigation.
+Layers: Editor allows layer management; Viewer never exposes the layer panel or source editing state.
+Canvas management: Only Editor supports add/delete.
+Saving and sharing: Only Editor exposes these controls.
+Navigation: Editor switches instantly; Viewer uses paper flips, subject to an approved accessibility fallback.
+
+Separation requirements
+SEP-1. Viewer pages must not render editing controls, selection handles, upload actions or edit-related menus, including when opened by the signed-in creator.
+SEP-2. Viewer navigation controls are allowed only to support viewing; their final appearance requires design approval.
+SEP-3. Viewer rendering must not depend on downloading the editor bundle or exposing private source-layer data.
+SEP-4. Hiding UI is not security: all edit requests must enforce owner authorization on the server.
+SEP-5. Viewer-to-creator promotional calls to action are not approved; they could conflict with the “finished canvases only” requirement.
+
+8. ACCOUNTS & AUTHENTICATION
+
+AUTH-1. Creators must authenticate before creating, editing or saving projects.
+AUTH-2. Support Google sign-up and sign-in through the provider's supported authentication flow.
+AUTH-3. Support email sign-up and sign-in. Email/password is proposed; passwordless email remains an open alternative.
+AUTH-4. If using passwords, provide secure password storage, verification and password recovery.
+AUTH-5. Handle expired sessions without silently discarding unsaved work. Reauthentication must return the creator to an appropriate recovery state.
+AUTH-6. Use secure session handling and HTTPS throughout.
+AUTH-7. Define account-linking behavior when Google and email identities share an email address; do not link solely on an unverified address.
+AUTH-8. Never require viewer authentication, including on otherwise healthy private-browser sessions.
+AUTH-9. Projects are private to the creator until sharing is enabled. A shared link grants viewing access, not editing access.
+AUTH-10. Clarify that anyone possessing a share URL may forward it; an unguessable URL is not identity-based recipient access control.
+
+9. DESIGN & BRANDING
+
+Overall direction
+Modern, minimal and sophisticated. Keep interface chrome understated so users' colorful creations carry the emotion. Warmth should come from content and carefully chosen interactions, not visual clutter.
+
+Brand palette
+Night — #131313: primary dark surface or primary dark text.
+Onyx — #3C3C3C: secondary dark surface and strong UI details.
+Dim Gray — #646464: secondary elements, subject to contrast validation.
+Silver — #B5B5B5: subtle borders and secondary elements, subject to contrast validation.
+White Smoke — #F3F3F3: light surfaces and light foregrounds.
+
+DES-1. Treat these five colors as the brand palette, not mandatory foreground/background pairings.
+DES-2. Validate text, icons, focus states and disabled-state clarity against the selected accessibility standard.
+DES-3. Do not force artwork to grayscale; the palette applies to interface branding.
+DES-4. Finalize UI typography separately from the provided creative font library.
+DES-5. Keep essential controls discoverable for people unfamiliar with layers.
+DES-6. Use icons with understandable labels or accessible names.
+DES-7. Keep viewer chrome minimal and exclude promotional/edit-related additions unless explicitly approved.
+DES-8. Define consistent loading, empty, upload-error, save-error and unavailable-link states.
+
+10. TECHNICAL / NON-FUNCTIONAL REQUIREMENTS
+
+NFR-1. Performance targets
+Proposed targets: usable editor shell within three seconds and first viewer canvas within two seconds under agreed test conditions. Specify device, network, cache state, project complexity and percentile before committing. Do not imply all project assets must load within these times.
+
+NFR-2. Rendering and quality
+Maintain approved 4K masters and predictable rendering of text, transparency, masks and clipping. Consider pre-rendered viewer pages to protect source data and reduce viewer workload. Architecture remains an engineering decision.
+
+NFR-3. Resource scalability
+No product-imposed count caps on canvases, layers or undo/redo. Physical memory, storage and compute are finite: use lazy loading, viewport rendering, tiled storage or other validated techniques. Off-screen optimization must preserve the single grid workspace and avoid silent data loss. “Unlimited” does not mean constant performance at arbitrary scale.
+
+NFR-4. Storage and persistence
+Persist ownership, canvas sequence, layers, source assets and the approved history scope. Keep published-view assets separate from private editable state where appropriate. Define backups, retention, restore procedures and account storage policy before launch.
+
+NFR-5. Save reliability
+Make saves atomic or versioned so viewers never receive a mixture of partially saved pages. Retry safely and surface failures. Define autosave and multi-device conflict behavior rather than silently overwriting changes.
+
+NFR-6. Security
+Enforce ownership on every protected read/write. Use hard-to-guess share tokens, appropriate rate limits and secure sessions. Validate uploads by content rather than extension alone. Isolate decoders and sanitize active content such as SVG before rendering. Protect against unauthorized asset access.
+
+NFR-7. Privacy
+Avoid collecting artwork, text, recipients or full share tokens in analytics logs. Define indexing policy, search-engine directives and social link preview behavior. Do not describe shared content as confidential merely because it is unlisted.
+
+NFR-8. Browser support
+Proposed support matrix: the latest two major versions of Chrome, Safari, Firefox and Edge, plus representative iOS/iPadOS Safari and Android Chrome devices. Finalize versions and hardware in release testing.
+
+NFR-9. Accessibility
+Proposed baseline: WCAG 2.2 AA for applicable interface functionality. Support keyboard access, visible focus, accessible control names, readable contrast and touch targets. Provide non-gesture navigation alternatives. Define artwork descriptions and reduced-motion behavior.
+
+NFR-10. Motion performance
+Benchmark representative 4K projects during forward/backward flips and rapid input. Minimize unnecessary simultaneous animations. Performance fallback must not reduce stored source quality or expose a quality selector.
+
+NFR-11. Input
+Support mouse and touch. Validate stylus compatibility on supported tablets; pressure-specific behavior is a separate scope decision. Account for browser scrolling and gesture conflicts.
+
+NFR-12. Upload processing
+Publish an approved format/decoder matrix and operational size limits. Cover font processing as well as images. Display progress and clear errors. Do not claim support for a format until tested.
+
+NFR-13. Observability
+Monitor save failures, authentication failures, rendering failures, upload failures and animation performance without logging sensitive artwork content. Track proposed product metrics under the approved consent policy.
+
+NFR-14. Content rights and abuse
+Confirm rights to provided fonts, stickers, images and templates. Define user-upload terms, abuse reporting and takedown processes appropriate for publicly reachable share links.
+
+11. PLATFORM-SPECIFIC BEHAVIOR
+
+Desktop
+All canvases share a scrollable grid workspace. Edit directly in the grid with pointer and keyboard support. Selecting another canvas changes the active editing context instantly, without opening a separate editing screen or playing a flip.
+
+iPad / Tablet
+Use the same shared grid model with touch-optimized controls and scroll/zoom behavior. Stylus support should be validated. The brief explicitly requests a grid on tablets; responsive breakpoints must not silently substitute the mobile single-page model.
+
+Mobile
+Show one editable canvas at a time. Provide previous/next navigation and a page indicator. Optional swipes must not conflict with drawing. Support unlimited-count canvas addition and confirmed deletion. Page changes are instant, with no flip animation. Tools and layer panels may be collapsible without removing functionality.
+
+Viewer — All Platforms
+Present one finished canvas at a time. Start with the first page and support forward/backward paper flips. Fit the page appropriately without unintended cropping or distortion. No editing UI. Handle orientation changes without losing the current page. Provide an approved reduced-motion alternative if adopted.
+
+12. OUT OF SCOPE
+
+Explicit exclusions from the product brief
+OOS-1. A full brush library: only one brush pen is required.
+OOS-2. Editing tools or edit-related controls in Viewer Mode.
+OOS-3. Viewer login, sign-up walls or required viewer accounts.
+OOS-4. Paper-flip animations during editing.
+OOS-5. A separate open-one-canvas editor flow on desktop, iPad or tablet.
+OOS-6. User-selectable quality settings.
+
+Proposed v1 exclusions — require product approval
+OOS-P1. Native iOS or Android applications; deliver the web product first.
+OOS-P2. Real-time collaboration or multi-owner editing.
+OOS-P3. Viewer comments and reactions.
+OOS-P4. Public discovery feeds and social profiles.
+OOS-P5. Embedded audio or video in canvases.
+OOS-P6. Offline editing.
+OOS-P7. Print, PDF and downloadable image export.
+OOS-P8. Monetization, subscriptions and paid tiers.
+OOS-P9. Named version snapshots separate from undo/redo history.
+OOS-P10. Arbitrary page-jump navigation, page reordering and public viewer promotional calls to action unless approved separately.
+
+These proposed exclusions must not be used to silently limit the required canvas count, layer count, history depth or image-format ambition. Persistent undo scope and operational resource limits remain open decisions.
+
+13. OPEN QUESTIONS
+
+Q1. Paper flip specification
+Owner: Design / Engineering.
+What is the exact visual treatment, duration, curl behavior, direction, shadow, gesture threshold and cancellation behavior? How are rapid repeated inputs handled?
+
+Q2. 4K definition
+Owner: Product / Engineering / Design.
+Which exact portrait dimensions and aspect ratio define 4K? Does “4K everywhere” permit responsive previews backed by 4K masters? What color space is required?
+
+Q3. Save and publish policy
+Owner: Product / Engineering.
+Do edits automatically update an existing share URL, or must the creator republish? Are links tied to a snapshot or the current project? What does an already-open viewer see after an update?
+
+Q4. Link lifecycle
+Owner: Product / Engineering.
+Can creators revoke, regenerate or delete links? Do they expire? Does deleting a project immediately invalidate all shared assets and cached pages?
+
+Q5. Storage and hosting
+Owner: Engineering / Product.
+Which hosting and storage architecture will be used? What are retention, backup and account-storage policies? How will operational limits coexist with no product-imposed count caps?
+
+Q6. Image compatibility and upload limits
+Owner: Engineering / Product.
+What exact formats and variants must launch support? How are RAW, HEIC/HEIF, animated, multipage, vector and layered images handled? What are maximum file size and decoded-pixel limits?
+
+Q7. Custom fonts
+Owner: Engineering / Content / Product.
+Which formats are accepted? Are imported fonts project-specific or account-wide? How are embedding rights, missing fonts and cross-device rendering handled?
+
+Q8. Motion refinement approval
+Owner: Product / Design / Engineering.
+Approve tiered motion, reduced-motion fallback, duration tokens and a measured 60 fps acceptance target? Which devices and workload define the benchmark?
+
+Q9. Viewer navigation controls
+Owner: Design / Product.
+Use subtle previous/next controls, tap zones, swipes, keyboard arrows or a combination? Should viewers see a page count? Arbitrary page jumps are not required by the original brief.
+
+Q10. Canvas sequence and deletion
+Owner: Product / Design.
+Can canvases be reordered? What becomes the opening page if the original first canvas is deleted? Can the final remaining canvas be deleted? Is canvas deletion undoable?
+
+Q11. Selection behavior
+Owner: Product / Design / Engineering.
+Does keeping the inside area create a reversible mask or destructively remove outside pixels? Which selection shapes and apply/cancel interactions match the intended reference?
+
+Q12. ibisPaint X behavioral baseline
+Owner: Design / Engineering.
+Which version and platform form the reference? Capture approved examples for text, clipping, merging, transforms, image placement, color controls and layer-type restrictions. Resolve conflicts with the explicit PaperString brief instead of assuming parity.
+
+Q13. History scope
+Owner: Product / Engineering.
+Is undo/redo maintained per canvas or per project? Does history persist after save, reload or device changes? Which structural operations are included? How is resource exhaustion communicated?
+
+Q14. Elements Library and templates
+Owner: Product / Design / Content.
+What initial categories and assets are required? Are templates single-layer assets as stated, or should layered templates be added as an explicit scope change? Are search and filtering needed at launch?
+
+Q15. Email authentication
+Owner: Product / Engineering.
+Use passwords, magic links or another email flow? What verification, recovery and Google/email account-linking policies apply?
+
+Q16. Autosave and concurrent sessions
+Owner: Product / Engineering.
+What autosave cadence and recovery behavior are required? How are conflicting changes from two devices resolved without silent loss?
+
+Q17. Monetization
+Owner: Product.
+Will there be paid plans, watermarks or quotas? Any proposal must preserve agreed quality, viewer access and clean presentation requirements unless explicitly changed.
+
+Q18. Branding and onboarding
+Owner: Design / Product.
+What is the UI typeface? Are light/dark themes required? How should layer concepts be introduced without obstructing creation?
+
+Q19. Viewer branding and growth
+Owner: Product / Design.
+Is any “Made with PaperString” attribution permitted? A create-your-own call to action is not assumed because it conflicts with the stated clean, finished-canvases-only viewer.
+
+Q20. Privacy and accessibility
+Owner: Product / Design / Engineering.
+What are search-indexing and social-preview defaults? Will creators supply accessible descriptions? What analytics can be collected without exposing personal artwork or recipient identities?
+
+Q21. Release scope and metrics
+Owner: Product / Engineering.
+Approve the proposed v1 exclusions, numerical targets, supported devices and browser versions. What usability testing establishes that non-designers can complete the core flows?
+
+RELEASE ACCEPTANCE SUMMARY
+
+AC-1. A creator can authenticate through Google and the approved email method.
+AC-2. A creator can create, save and reopen a multi-canvas project without loss of content.
+AC-3. Desktop/tablet users edit directly in a shared grid; mobile users navigate a single-page editor with a page indicator.
+AC-4. No editor page transition invokes the paper flip.
+AC-5. Active-layer tests confirm unrelated layers remain unchanged across drawing, erasing, masking and transforms.
+AC-6. Text, image and library insertions each create a new active layer.
+AC-7. Clipping, two-layer merging and reference-dependent tools pass the approved behavioral checklist.
+AC-8. Undo/redo works across the agreed operation set and persistence scope without a numerical product cap.
+AC-9. A successfully generated link opens without authentication, begins at the first canvas and supports forward/backward viewing.
+AC-10. Viewer pages expose no editing controls or private editable source data; unauthorized edit requests fail server-side.
+AC-11. Approved 4K dimensions and rendering fidelity are verified; there is no quality-selection control.
+AC-12. Upload errors, failed saves, invalid links, single-page projects and first/last-page boundaries behave predictably.
+AC-13. Agreed accessibility, motion-performance and browser/device checks pass.
+AC-14. Blocking open questions are resolved before engineering treats ambiguous requirements as implementation-ready.
+
+END OF DOCUMENT
