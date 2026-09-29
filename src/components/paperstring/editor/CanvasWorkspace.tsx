@@ -7,7 +7,7 @@
  * changes are always instant — no flip animations (FR-2.4, OOS-4).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripHorizontal, MoreHorizontal, Plus, Trash2, Type } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { CANVAS_W, CANVAS_H, type CanvasPageData } from "@/lib/paperstring/types";
@@ -48,6 +48,10 @@ export function CanvasWorkspace() {
   const reorderCanvas = useEditorStore((s) => s.reorderCanvas);
   const [isMobile, setIsMobile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** Grid scroll container (desktop) — root for the windowing observer. */
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  /** Live per-page card elements, for scroll-follow on active-page changes. */
+  const pageEls = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -56,6 +60,22 @@ export function CanvasWorkspace() {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
+
+  /* Follow the active page: when it changes (filmstrip jump, keyboard nav,
+     context-menu move, undo), bring its card smoothly into view if it is
+     off-screen. No-op while it is already visible — so editing in place
+     never drifts. Desktop grid only; mobile is one page at a time already. */
+  useEffect(() => {
+    if (isMobile) return;
+    const el = activeCanvasId ? pageEls.current.get(activeCanvasId) : null;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [activeCanvasId, canvases.length, isMobile]);
 
   const activeIdx = Math.max(
     0,
@@ -151,7 +171,7 @@ export function CanvasWorkspace() {
           onReorder={reorderCanvas}
         />
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
       {/* subtle dot-grid — the quiet graph-paper feel of a real studio desk */}
       <div
         aria-hidden="true"
@@ -159,7 +179,15 @@ export function CanvasWorkspace() {
       />
       <div className="relative flex flex-wrap items-start justify-center gap-10 px-8 py-10">
         {canvases.map((page, i) => (
-          <div key={page.id} className="group relative">
+          <div
+            key={page.id}
+            data-page-idx={i}
+            ref={(el) => {
+              if (el) pageEls.current.set(page.id, el);
+              else pageEls.current.delete(page.id);
+            }}
+            className="group relative"
+          >
             <ContextMenu>
               <ContextMenuTrigger asChild>
                 <div
@@ -184,11 +212,11 @@ export function CanvasWorkspace() {
                       : "hover:-translate-y-1 motion-reduce:hover:translate-y-0"
                   )}
                 >
-                  <PageCanvas
+                  <VirtualPageCanvas
                     page={page}
                     active={page.id === activeCanvasId}
                     welcome={isPristinePage(page)}
-                    width={300}
+                    scrollerRef={scrollerRef}
                   />
                 </div>
               </ContextMenuTrigger>
@@ -287,6 +315,92 @@ export function CanvasWorkspace() {
         onClose={() => setConfirmDelete(null)}
       />
       </div>
+    </div>
+  );
+}
+
+/* ── windowed page rendering (NFR-1) ───────────────────────────────── */
+
+/** Books at or above this many pages render their grid windowed: pages far
+ *  outside the scroll viewport mount as a cheap same-size placeholder and
+ *  swap in ~900px before they enter view. Shorter books render every page
+ *  directly — zero behavior change for the common case. */
+const WINDOW_FROM = 12;
+
+/** One grid page card with lazy mounting. The host wrapper always stays in
+ *  the DOM (identical 300×533 box either way) so the observer never loses its
+ *  target and the grid layout never shifts while cards swap. The active page
+ *  never unmounts once mounted — gestures, text editors and previews that
+ *  live inside the card must survive scrolling. */
+function VirtualPageCanvas({
+  page,
+  active,
+  welcome,
+  scrollerRef,
+}: {
+  page: CanvasPageData;
+  active: boolean;
+  welcome: boolean;
+  scrollerRef: RefObject<HTMLDivElement | null>;
+}) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const activeRef = useRef(active);
+  // Keep the observer's liveness check current (sanctioned pattern — refs
+  // are updated in effects, never during render).
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+  const [near, setNear] = useState(false);
+  const windowed = useEditorStore((s) => s.canvases.length >= WINDOW_FROM);
+
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) setNear(en.isIntersecting || activeRef.current);
+      },
+      { root: scrollerRef.current ?? null, rootMargin: "900px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [scrollerRef]);
+
+  /* Short books render eagerly — no windowing, no placeholders, ever.
+     The host wrapper renders in BOTH branches so the observer attaches on
+     the very first mount: a book that later grows past the windowing
+     threshold must not leave its early cards observer-less (and thus
+     stuck on the placeholder). `near` keeps tracking either way, so the
+     moment windowing turns on, every card already has the right state. */
+  if (!windowed) {
+    return (
+      <div ref={hostRef}>
+        <PageCanvas page={page} active={active} welcome={welcome} width={300} />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={hostRef}>
+      {near ? (
+        <PageCanvas page={page} active={active} welcome={welcome} width={300} />
+      ) : (
+        /* a resting page — same box, same ring and shadow language as a
+           rendered card, but ghosted: dashed inner page, quiet center dot */
+        <div
+          aria-hidden="true"
+          className="grid aspect-[9/16] w-[300px] place-items-center rounded-lg bg-white/[0.02] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.65),0_6px_16px_-8px_rgba(0,0,0,0.4)] ring-1 ring-black/15 transition-colors duration-300 hover:bg-white/[0.045]"
+        >
+          <span className="flex flex-col items-center gap-3">
+            <span className="grid h-16 w-10 place-items-center rounded-[7px] border border-dashed border-[#5a5a5a]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#6a6a6a]/70" />
+            </span>
+            <span className="text-[9px] font-medium uppercase tracking-[0.3em] text-editor-dim/50">
+              resting
+            </span>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

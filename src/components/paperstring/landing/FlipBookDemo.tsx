@@ -66,6 +66,18 @@ export function FlipBookDemo() {
     []
   );
 
+  // Warm the cache before the first turn: every page of the hero stack
+  // starts fetching/decoding in parallel with the top sheet, so the very
+  // first drag-to-turn reveals a finished page instead of a half-loaded
+  // one (the <img> tags then hit a warm cache).
+  useEffect(() => {
+    for (const p of PAGES) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = p.src;
+    }
+  }, []);
+
   const flip = useCallback(() => {
     if (flipping || dragRef.current?.active) return;
     const cycle = () => setOrder((o) => [...o.slice(1), o[0]]);
@@ -186,7 +198,7 @@ export function FlipBookDemo() {
                   <PageArt
                     src={PAGES[pageIdx].src}
                     alt=""
-                    eager={depth === 0}
+                    eager
                     className="h-full w-full rounded-md object-cover"
                   />
                 </div>

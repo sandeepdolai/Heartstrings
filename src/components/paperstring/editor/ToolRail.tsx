@@ -2,12 +2,13 @@
 
 /**
  * ToolRail — the vertical tool strip (desktop) / horizontal bar (mobile).
- * Keyboard shortcuts: V select · B brush · E eraser · F soft focus · T text ·
- * C color · S select-area · K elements.
+ * Keyboard shortcuts: V select · B brush · E eraser · F soft focus · D smudge ·
+ * T text · C color · S select-area · K elements.
  */
 
 import {
   Droplets,
+  Fingerprint,
   ImagePlus,
   Layers,
   MousePointer2,
@@ -38,6 +39,7 @@ const TOOLS: {
   { id: "brush", label: "Brush", shortcut: "B", icon: Paintbrush },
   { id: "eraser", label: "Eraser", shortcut: "E", icon: Eraser },
   { id: "blur", label: "Soft focus", shortcut: "F", icon: Droplets },
+  { id: "smudge", label: "Smudge", shortcut: "D", icon: Fingerprint },
   { id: "text", label: "Text", shortcut: "T", icon: Type },
   { id: "color", label: "Color & eyedropper", shortcut: "C", icon: Palette },
   { id: "select-area", label: "Keep-inside selection", shortcut: "S", icon: SquareDashedMousePointer },
@@ -65,8 +67,10 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
           const Icon = t.icon;
           const activeTool = tool === t.id || (t.id === "color" && tool === "eyedropper");
           // On phones the rail stays one tidy row: the color tool folds away
-          // (the brush panel's Color row opens the same panel + eyedropper).
-          const hideOnMobile = t.id === "color";
+          // (the brush panel's Color row opens the same panel + eyedropper),
+          // and so does the photo tool — the Elements panel carries the very
+          // same photo uploader, so nothing is lost.
+          const hideOnMobile = t.id === "color" || t.id === "image";
           return (
             <Tooltip key={t.id}>
               <TooltipTrigger asChild>

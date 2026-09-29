@@ -32,6 +32,7 @@ export type EditorTool =
   | "brush"
   | "eraser"
   | "blur"
+  | "smudge"
   | "text"
   | "color"
   | "select-area"
@@ -77,6 +78,8 @@ export interface EditorState {
   eraserSize: number;
   /** Soft-focus brush: nib diameter (canvas units) and blur strength per pass. */
   blur: { size: number; strength: number };
+  /** Smudge brush: finger diameter (canvas units) and drag opacity 1–10. */
+  smudge: { size: number; strength: number };
   colorHistory: string[];
   textDefaults: TextDefaults;
   selectionShape: "rect" | "ellipse";
@@ -104,6 +107,7 @@ export interface EditorState {
   setBrush: (patch: Partial<EditorState["brush"]>) => void;
   setEraserSize: (size: number) => void;
   setBlurTool: (patch: Partial<EditorState["blur"]>) => void;
+  setSmudgeTool: (patch: Partial<{ size: number; strength: number }>) => void;
   pushColorHistory: (color: string) => void;
   setTextDefaults: (patch: Partial<TextDefaults>) => void;
   setSelectionShape: (shape: "rect" | "ellipse") => void;
@@ -152,8 +156,8 @@ export interface EditorState {
   commitStroke: () => void;
   cancelStroke: () => void;
 
-  /** Flatten a soft-focus gesture into the raster layer's bitmap — one undo
-   *  entry from the caller-supplied pre-gesture snapshot. */
+  /** Flatten a soft-focus OR smudge gesture into the raster layer's bitmap —
+   *  one undo entry from the caller-supplied pre-gesture snapshot. */
   commitBlur: (
     canvasId: string,
     layerId: string,
@@ -211,6 +215,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   brush: { size: 18, opacity: 1, color: "#e8446a" },
   eraserSize: 40,
   blur: { size: 110, strength: 4 },
+  smudge: { size: 90, strength: 5 },
   colorHistory: ["#e8446a", "#131313", "#f7c948", "#8ab8e0", "#7cc47f", "#ffffff"],
   textDefaults: {
     fontFamily: "Fraunces",
@@ -283,6 +288,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setBlurTool: (patch) =>
     set((s) => ({ blur: { ...s.blur, ...patch } })),
+
+  setSmudgeTool: (patch) =>
+    set((s) => ({ smudge: { ...s.smudge, ...patch } })),
 
   pushColorHistory: (color) =>
     set((s) => ({

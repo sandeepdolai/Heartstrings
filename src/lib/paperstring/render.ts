@@ -259,6 +259,77 @@ export function applySoftFocus(
 }
 
 let flushListeners: Array<() => void> = [];
+
+/* ── smudge brush ──────────────────────────────────────────────────── */
+
+/** Stamp alpha per smudge pass, from the 1–10 strength slider.
+ *  1 → a whisper-drag (≈17%), 10 → a firm wet finger (≈80%). */
+function smudgeAlpha(strength: number): number {
+  return Math.min(0.85, Math.max(0.15, 0.1 + strength * 0.07));
+}
+
+/**
+ * One directional smudge pass: samples the circular region around the
+ * PREVIOUS pointer position and re-stamps it (partially, feathered) at the
+ * CURRENT position — a wet finger dragging pigment along the gesture path.
+ * Repeated passes along the path accumulate into continuous streaks.
+ * `from`/`to` are in the bitmap's local (untransformed) space.
+ */
+export function applySmudge(
+  target: HTMLCanvasElement,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  radius: number,
+  strength: number
+) {
+  const tctx = target.getContext("2d");
+  if (!tctx || radius < 3) return;
+  const r = Math.min(radius, 480);
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  // A dab in place is an identity copy — skip the work entirely.
+  if (Math.hypot(dx, dy) < 1) return;
+
+  // Sample the source region (clamped to the bitmap bounds — never negative).
+  const sx0 = Math.max(0, Math.floor(fromX - r));
+  const sy0 = Math.max(0, Math.floor(fromY - r));
+  const sx1 = Math.min(target.width, Math.ceil(fromX + r));
+  const sy1 = Math.min(target.height, Math.ceil(fromY + r));
+  const sw = sx1 - sx0;
+  const sh = sy1 - sy0;
+  if (sw < 4 || sh < 4) return;
+
+  const patch = makeCanvas(sw, sh);
+  const pctx = patch.getContext("2d")!;
+  // 1 — copy what the finger is carrying
+  pctx.drawImage(target, sx0, sy0, sw, sh, 0, 0, sw, sh);
+  // 2 — feather it to a soft round fingertip (destination-in radial mask,
+  //     same family as applySoftFocus so the two tools feel like siblings)
+  pctx.globalCompositeOperation = "destination-in";
+  const grad = pctx.createRadialGradient(
+    fromX - sx0,
+    fromY - sy0,
+    Math.max(1, r * 0.45),
+    fromX - sx0,
+    fromY - sy0,
+    r
+  );
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.8, "rgba(255,255,255,0.75)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  pctx.fillStyle = grad;
+  pctx.fillRect(0, 0, sw, sh);
+  pctx.globalCompositeOperation = "source-over";
+  // 3 — lay it down at the displaced position, partially: the patch origin
+  //     is shifted so the sampled `from` circle lands centered on `to`.
+  tctx.save();
+  tctx.globalAlpha = smudgeAlpha(strength);
+  tctx.drawImage(patch, sx0 + dx, sy0 + dy);
+  tctx.restore();
+}
+
 /** Subscribe to async content loads (fonts/images) that require re-render. */
 export function onEngineContentLoaded(cb: () => void): () => void {
   flushListeners.push(cb);
@@ -571,7 +642,9 @@ function drawLayerContent(
 export interface RenderExtras {
   /** Live in-progress stroke preview (drawn on the active raster layer). */
   liveStroke?: { layerId: string; stroke: Stroke } | null;
-  /** Live in-progress soft-focus preview — replaces the raster layer's bitmap. */
+  /** Live in-progress bitmap override for the active raster layer — the
+   *  working canvas of a soft-focus OR smudge gesture (replaces the layer's
+   *  bitmap while the pointer is down). */
   liveBlur?: { layerId: string; canvas: HTMLCanvasElement } | null;
   /** Layer hidden while its DOM text editor is open. */
   hideLayerId?: string;

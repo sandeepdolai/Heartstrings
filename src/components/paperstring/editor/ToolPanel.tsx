@@ -36,6 +36,7 @@ export function ToolPanel() {
     tool === "brush" ||
     tool === "eraser" ||
     tool === "blur" ||
+    tool === "smudge" ||
     tool === "color" ||
     tool === "text" ||
     tool === "select-area" ||
@@ -75,6 +76,7 @@ export function ToolPanel() {
         {tool === "brush" && <BrushPanel eraser={false} />}
         {tool === "eraser" && <BrushPanel eraser />}
         {tool === "blur" && <BlurPanel />}
+        {tool === "smudge" && <SmudgePanel />}
         {tool === "color" && <ColorPanel />}
         {tool === "text" && <TextPanel />}
         {(tool === "image" || tool === "elements") && <ElementsPanel />}
@@ -324,6 +326,86 @@ function BlurPanel() {
                   <span
                     className="rounded-full bg-current blur-[1.5px] transition-transform duration-200 group-hover:scale-110"
                     style={{ width: p.dot, height: p.dot }}
+                  />
+                </span>
+                <span className="text-[11px] font-medium leading-none">{p.label}</span>
+                <span className="text-[9px] tabular-nums leading-none text-editor-dim/70">
+                  {p.size}px · {p.strength}×
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </PanelShell>
+  );
+}
+
+/* ── smudge ───────────────────────────────────────────────────────── */
+
+/** Smudge finger personalities — size × strength pairs. */
+const SMUDGE_PRESETS = [
+  { id: "caress", label: "Caress", size: 60, strength: 3, dot: 10 },
+  { id: "blend", label: "Blend", size: 120, strength: 6, dot: 16 },
+  { id: "drag", label: "Drag", size: 220, strength: 9, dot: 22 },
+] as const;
+
+function SmudgePanel() {
+  const smudge = useEditorStore((s) => s.smudge);
+  const setSmudgeTool = useEditorStore((s) => s.setSmudgeTool);
+
+  return (
+    <PanelShell
+      title="Smudge"
+      hint="Drag your finger through the artwork and it follows — soften edges, pull color, turn strokes into mist. One undo step brings it all back."
+    >
+      <SliderRow
+        label="Finger size"
+        value={smudge.size}
+        display={`${Math.round(smudge.size)} px`}
+        min={30}
+        max={320}
+        step={1}
+        onChange={(size) => setSmudgeTool({ size })}
+      />
+      <SliderRow
+        label="Drag"
+        value={smudge.strength}
+        display={
+          smudge.strength <= 3 ? "Whisper" : smudge.strength <= 6 ? "Smear" : "Drag"
+        }
+        min={1}
+        max={10}
+        step={1}
+        onChange={(strength) => setSmudgeTool({ strength })}
+      />
+
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-editor-text">Presets</span>
+        <div className="grid grid-cols-3 gap-2">
+          {SMUDGE_PRESETS.map((p) => {
+            const active =
+              Math.round(smudge.size) === p.size && smudge.strength === p.strength;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={active}
+                title={`${p.label} — ${p.size}px finger, drag ${p.strength}`}
+                onClick={() => setSmudgeTool({ size: p.size, strength: p.strength })}
+                className={cn(
+                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  active
+                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
+                )}
+              >
+                <span className="grid h-6 w-9 place-items-center" aria-hidden="true">
+                  {/* a smeared streak — the dot trailing off to the right,
+                      like a finger dragging through wet ink */}
+                  <span
+                    className="h-[9px] rounded-full bg-gradient-to-r from-current via-current/60 to-transparent transition-all duration-200 group-hover:[transform:scaleX(1.15)]"
+                    style={{ width: p.dot + 8 }}
                   />
                 </span>
                 <span className="text-[11px] font-medium leading-none">{p.label}</span>

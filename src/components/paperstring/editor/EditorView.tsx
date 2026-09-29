@@ -46,15 +46,15 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   const [tourOpen, setTourOpen] = useState(false);
-  /* transient HUD for brush/eraser/soft-focus size changes via [ / ] keys */
+  /* transient HUD for brush/eraser/soft-focus/smudge size changes via [ / ] keys */
   const [sizeHud, setSizeHud] = useState<{
     value: number;
-    tool: "brush" | "eraser" | "blur";
+    tool: "brush" | "eraser" | "blur" | "smudge";
   } | null>(null);
   const sizeHudTimer = useRef<number | null>(null);
 
   const flashSizeHud = useCallback(
-    (value: number, tool: "brush" | "eraser" | "blur") => {
+    (value: number, tool: "brush" | "eraser" | "blur" | "smudge") => {
       setSizeHud({ value, tool });
       if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
       sizeHudTimer.current = window.setTimeout(() => setSizeHud(null), 1000);
@@ -302,14 +302,14 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
       }
       if (mod || e.altKey) return;
 
-      // Brush / eraser / soft-focus size: [ smaller, ] larger (Shift = ×10
-      // step). Shift+[ / Shift+] surface as "{" / "}" — both count.
+      // Brush / eraser / soft-focus / smudge size: [ smaller, ] larger
+      // (Shift = ×10 step). Shift+[ / Shift+] surface as "{" / "}" — both count.
       const sizeKey = e.key === "[" || e.key === "{" ? "[" : e.key === "]" || e.key === "}" ? "]" : null;
       if (sizeKey) {
         e.preventDefault();
         const bigStep = e.shiftKey ? 10 : 1;
         const delta = sizeKey === "[" ? -bigStep : bigStep;
-        const { tool, brush, eraserSize, blur, setBrush, setEraserSize, setBlurTool } = store;
+        const { tool, brush, eraserSize, blur, smudge, setBrush, setEraserSize, setBlurTool, setSmudgeTool } = store;
         if (tool === "eraser") {
           const next = Math.round(Math.min(220, Math.max(2, eraserSize + delta)));
           if (next !== eraserSize) {
@@ -321,6 +321,12 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
           if (next !== blur.size) {
             setBlurTool({ size: next });
             flashSizeHud(next, "blur");
+          }
+        } else if (tool === "smudge") {
+          const next = Math.round(Math.min(320, Math.max(30, smudge.size + delta)));
+          if (next !== smudge.size) {
+            setSmudgeTool({ size: next });
+            flashSizeHud(next, "smudge");
           }
         } else {
           const next = Math.round(Math.min(200, Math.max(1, brush.size + delta)));
@@ -337,6 +343,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         case "b": store.setTool("brush"); break;
         case "e": store.setTool("eraser"); break;
         case "f": store.setTool("blur"); break;
+        case "d": store.setTool("smudge"); break;
         case "t": store.setTool("text"); break;
         case "c": store.setTool("color"); break;
         case "s": store.setTool("select-area"); break;
@@ -431,7 +438,9 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                         ? "#e8446a"
                         : sizeHud.tool === "blur"
                           ? "radial-gradient(circle, rgba(181,181,181,0.65), rgba(181,181,181,0.05))"
-                          : "transparent",
+                          : sizeHud.tool === "smudge"
+                            ? "linear-gradient(90deg, rgba(181,181,181,0.9), rgba(232,68,106,0.45), rgba(181,181,181,0.1))"
+                            : "transparent",
                     border:
                       sizeHud.tool === "eraser"
                         ? "1.5px dashed #b5b5b5"
@@ -447,7 +456,9 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                     ? "Eraser"
                     : sizeHud.tool === "blur"
                       ? "Soft focus"
-                      : "Brush"}
+                      : sizeHud.tool === "smudge"
+                        ? "Smudge"
+                        : "Brush"}
                 </span>
                 <span className="text-sm tabular-nums text-editor-text">
                   {sizeHud.value} px

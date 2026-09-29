@@ -25,6 +25,7 @@ import {
   layerAABB,
   layerContentBox,
   applySoftFocus,
+  applySmudge,
   getRasterBitmap,
   onEngineContentLoaded,
   pointInLayer,
@@ -48,6 +49,7 @@ type Gesture =
   | { kind: "none" }
   | { kind: "draw" }
   | { kind: "blur"; layerId: string }
+  | { kind: "smudge"; layerId: string; lastLx: number; lastLy: number }
   | { kind: "move"; startX: number; startY: number; layer: Layer }
   | {
       kind: "scale";
@@ -70,7 +72,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const gestureRef = useRef<Gesture>({ kind: "none" });
   const gestureSnapshotRef = useRef<HistoryEntry | null>(null);
-  /** Live soft-focus preview bitmap while a blur gesture runs. */
+  /** Live preview bitmap while a soft-focus or smudge gesture runs. */
   const blurPreviewRef = useRef<HTMLCanvasElement | null>(null);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [engineTick, setEngineTick] = useState(0);
@@ -86,6 +88,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   const brush = useEditorStore((s) => s.brush);
   const eraserSize = useEditorStore((s) => s.eraserSize);
   const blurTool = useEditorStore((s) => s.blur);
+  const smudgeTool = useEditorStore((s) => s.smudge);
 
   useEffect(
     () => onEngineContentLoaded(() => setEngineTick((t) => t + 1)),
@@ -113,7 +116,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     renderPage(ctx, page, {
       liveStroke: liveStroke?.layerId ? liveStroke : null,
       liveBlur:
-        g.kind === "blur" && blurPreviewRef.current
+        (g.kind === "blur" || g.kind === "smudge") && blurPreviewRef.current
           ? { layerId: g.layerId, canvas: blurPreviewRef.current }
           : null,
       hideLayerId: editingTextLayerId ?? undefined,
@@ -177,6 +180,34 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     []
   );
 
+  /** One smudge pass on the live preview bitmap: drags the sample under the
+   *  cursor from its previous position to the current one. Returns the local
+   *  coords so the gesture can update its own last-position. */
+  const applySmudgeAt = useCallback(
+    (layer: Layer, fromLx: number, fromLy: number, ux: number, uy: number) => {
+      const preview = blurPreviewRef.current;
+      if (!preview || layer.type !== "raster") return null;
+      const { smudge } = useEditorStore.getState();
+      const [lx, ly] = toLocal(layer, ux, uy);
+      const bx = lx / layer.scale + CANVAS_W / 2;
+      const by = ly / layer.scale + CANVAS_H / 2;
+      const fromBx = fromLx / layer.scale + CANVAS_W / 2;
+      const fromBy = fromLy / layer.scale + CANVAS_H / 2;
+      applySmudge(
+        preview,
+        fromBx,
+        fromBy,
+        bx,
+        by,
+        smudge.size / 2 / layer.scale,
+        smudge.strength
+      );
+      setEngineTick((t) => t + 1); // repaint with the liveBitmap override
+      return [lx, ly] as const;
+    },
+    []
+  );
+
   /* ── pointer interactions ─────────────────────────────────────────── */
 
   const onPointerDown = useCallback(
@@ -228,6 +259,33 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           gestureSnapshotRef.current = store.captureHistory();
           gestureRef.current = { kind: "blur", layerId: layer.id };
           applyBlurAt(layer, ux, uy);
+          break;
+        }
+        case "smudge": {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          let layer = store.getActiveLayer();
+          if (!layer || layer.type !== "raster") {
+            layer = store.addRasterLayer();
+          } else if (!layer.visible) {
+            store.updateLayer(layer.id, { visible: true });
+          }
+          // Seed the preview with the layer's current bitmap, then record
+          // where the finger lands. The smear happens on the first move —
+          // an in-place dab is an identity copy, so there is nothing to do yet.
+          const src = getRasterBitmap(layer);
+          const preview = document.createElement("canvas");
+          preview.width = CANVAS_W;
+          preview.height = CANVAS_H;
+          preview.getContext("2d")!.drawImage(src, 0, 0);
+          blurPreviewRef.current = preview;
+          gestureSnapshotRef.current = store.captureHistory();
+          const [lx, ly] = toLocal(layer, ux, uy);
+          gestureRef.current = {
+            kind: "smudge",
+            layerId: layer.id,
+            lastLx: lx,
+            lastLy: ly,
+          };
           break;
         }
         case "text": {
@@ -306,7 +364,10 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       // Brush cursor preview
       if (
         active &&
-        (store.tool === "brush" || store.tool === "eraser" || store.tool === "blur") &&
+        (store.tool === "brush" ||
+          store.tool === "eraser" ||
+          store.tool === "blur" ||
+          store.tool === "smudge") &&
         e.pointerType === "mouse"
       ) {
         const rect = overlayRef.current!.getBoundingClientRect();
@@ -328,6 +389,18 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           .find((c) => c.id === page.id)
           ?.layers.find((l) => l.id === g.layerId);
         if (layer) applyBlurAt(layer, ux, uy);
+      } else if (g.kind === "smudge") {
+        // Same freshness rule as blur: resolve the layer from the live store.
+        const layer = store.canvases
+          .find((c) => c.id === page.id)
+          ?.layers.find((l) => l.id === g.layerId);
+        if (layer) {
+          const next = applySmudgeAt(layer, g.lastLx, g.lastLy, ux, uy);
+          if (next) {
+            g.lastLx = next[0];
+            g.lastLy = next[1];
+          }
+        }
       } else if (g.kind === "move") {
         store.updateLayer(
           g.layer.id,
@@ -405,6 +478,39 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           }
           const flattened = preview.toDataURL("image/png");
           // Prime the decode cache so the committed bitmap renders instantly.
+          const img = new Image();
+          img.onload = () => registerSyncImage(flattened, img);
+          img.src = flattened;
+          store.commitBlur(page.id, g.layerId, flattened, snapshot);
+        }
+      } else if (g.kind === "smudge") {
+        // Flatten the smeared preview into the layer's bitmap — one undo entry.
+        // Shares the blur commit path: it is the same raster-flatten operation.
+        const preview = blurPreviewRef.current;
+        const snapshot = gestureSnapshotRef.current;
+        gestureSnapshotRef.current = null;
+        blurPreviewRef.current = null;
+        if (preview && snapshot) {
+          const [ux, uy] = toUnits(e.clientX, e.clientY);
+          const layer = store.canvases
+            .find((c) => c.id === page.id)
+            ?.layers.find((l) => l.id === g.layerId);
+          if (layer && layer.type === "raster") {
+            // One last drag from the previous sample to the release point,
+            // applied directly to the preview (the ref is already cleared).
+            const { smudge } = store;
+            const [lx, ly] = toLocal(layer, ux, uy);
+            applySmudge(
+              preview,
+              g.lastLx / layer.scale + CANVAS_W / 2,
+              g.lastLy / layer.scale + CANVAS_H / 2,
+              lx / layer.scale + CANVAS_W / 2,
+              ly / layer.scale + CANVAS_H / 2,
+              smudge.size / 2 / layer.scale,
+              smudge.strength
+            );
+          }
+          const flattened = preview.toDataURL("image/png");
           const img = new Image();
           img.onload = () => registerSyncImage(flattened, img);
           img.src = flattened;
@@ -539,7 +645,11 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           "absolute inset-0 rounded-lg",
           active ? "touch-none" : "cursor-pointer",
           tool === "select" && active && "cursor-default",
-          (tool === "brush" || tool === "eraser" || tool === "eyedropper" || tool === "blur") &&
+          (tool === "brush" ||
+            tool === "eraser" ||
+            tool === "eyedropper" ||
+            tool === "blur" ||
+            tool === "smudge") &&
             active &&
             "cursor-none",
           tool === "text" && active && "cursor-text"
@@ -547,23 +657,39 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       >
         {/* brush size cursor — white ring with a dark inner hairline so it
             stays visible over light AND dark artwork; the soft-focus nib
-            gets a dashed ring so blur reads differently from paint */}
-        {cursor && active && (tool === "brush" || tool === "eraser" || tool === "blur") && (
+            gets a dashed ring, the smudge finger a thicker solid one */}
+        {cursor &&
+          active &&
+          (tool === "brush" || tool === "eraser" || tool === "blur" || tool === "smudge") && (
           <div
             aria-hidden="true"
             className={cn(
               "pointer-events-none absolute rounded-full bg-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(0,0,0,0.35)]",
               tool === "blur"
                 ? "border border-dashed border-white/90"
-                : "border border-white/95"
+                : tool === "smudge"
+                  ? "border-2 border-solid border-white/90"
+                  : "border border-white/95"
             )}
             style={{
               left: cursor.x,
               top: cursor.y,
               width:
-                (tool === "brush" ? brush.size : tool === "eraser" ? eraserSize : blurTool.size) * factor,
+                (tool === "brush"
+                  ? brush.size
+                  : tool === "eraser"
+                    ? eraserSize
+                    : tool === "blur"
+                      ? blurTool.size
+                      : smudgeTool.size) * factor,
               height:
-                (tool === "brush" ? brush.size : tool === "eraser" ? eraserSize : blurTool.size) * factor,
+                (tool === "brush"
+                  ? brush.size
+                  : tool === "eraser"
+                    ? eraserSize
+                    : tool === "blur"
+                      ? blurTool.size
+                      : smudgeTool.size) * factor,
               transform: "translate(-50%, -50%)",
             }}
           />

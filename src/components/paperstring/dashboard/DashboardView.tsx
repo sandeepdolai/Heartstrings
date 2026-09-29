@@ -464,30 +464,40 @@ export function DashboardView({ user }: { user: PsUser }) {
                   </AlertDescription>
                 </Alert>
               ) : projects.length === 0 ? (
-                <div className="rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
-                  <LogoMark
-                    className="mx-auto h-10 w-auto text-silver dark:text-silver/60"
-                    strokeWidth={4}
-                  />
-                  <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
-                    Your first book is one click away
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim dark:text-silver/80">
-                    Love notes, friendship books, thank-you pages — start with a
-                    blank page and see where the heart takes you.
-                  </p>
-                  <Button
-                    onClick={() => createBook.mutate()}
-                    disabled={createBook.isPending}
-                    className="mt-8 h-11 rounded-full px-6"
+                <div className="relative rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
+                  {/* a quiet ghost page behind the promise — the shape of
+                      what is one click away */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 sm:block"
                   >
-                    {createBook.isPending ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Plus className="size-4" aria-hidden="true" />
-                    )}
-                    Create your first book
-                  </Button>
+                    <div className="h-56 w-[126px] rounded-lg border border-dashed border-silver/40" />
+                  </div>
+                  <div className="relative">
+                    <LogoMark
+                      className="ps-float mx-auto h-10 w-auto text-silver motion-reduce:animate-none dark:text-silver/60"
+                      strokeWidth={4}
+                    />
+                    <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
+                      Your first book is one click away
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim dark:text-silver/80">
+                      Love notes, friendship books, thank-you pages — start with a
+                      blank page and see where the heart takes you.
+                    </p>
+                    <Button
+                      onClick={() => createBook.mutate()}
+                      disabled={createBook.isPending}
+                      className="mt-8 h-11 rounded-full px-6"
+                    >
+                      {createBook.isPending ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Plus className="size-4" aria-hidden="true" />
+                      )}
+                      Create your first book
+                    </Button>
+                  </div>
                 </div>
               ) : visibleProjects.length === 0 ? (
                 <div className="rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
