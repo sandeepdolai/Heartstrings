@@ -153,3 +153,24 @@ Stage Summary:
 - Files created: editor/panels/{shared.tsx,ColorPanel.tsx,TextPanel.tsx,ElementsPanel.tsx}, editor/{fonts-context.tsx,LayersPanel.tsx,ShareDialog.tsx}; rewritten: editor/EditorView.tsx; edited: editor/{ToolPanel,TopBar,PageCanvas,CanvasWorkspace}.tsx, lib/paperstring/{types,editor-store,render}.ts, app/api/projects/[id]/route.ts.
 - Editor is FEATURE-COMPLETE vs PRD §5 (FR-1.10 save/share states, FR-2 workspace, FR-3 layers+merge+clip, FR-4 text+font import, FR-5 brush, FR-6 color tools, FR-7 eraser, FR-8 keep-inside, FR-9 transforms, FR-10 uncapped-feel undo, FR-11 uploads, FR-12 elements, FR-Q 4K publish, FR-13.3 no flips in editor).
 - Known minor: brush cursor ring uses dark tones (low contrast on dark pages); template SVG art layers render text with generic serif (embedded font family "Georgia"); mobile ToolPanel overlays canvas bottom while open (by design, dismissible). All PageString views now production-quality; pushed to GitHub.
+
+---
+Task ID: 6
+Agent: main (Z.ai Code) — scheduled webDevReview round
+Task: QA sweep of untested editor paths + fix discovered bugs + mobile parity features + polish
+
+Work Log:
+- Reviewed worklog + dev.log (healthy, no errors) + PRD release acceptance summary (AC-1..14 all covered by prior phases).
+- agent-browser QA on previously untested paths: sign-in (existing account) → dashboard (cover + Shared badge render) → editor: merge-down (VLM-verified flattened art intact), eraser, duplicate page, keep-inside selection flow.
+- CRITICAL BUG FOUND (FR-8 broken end-to-end): after finishing a keep-inside drag, the browser click event bubbles to CanvasWorkspace's page-card wrapper whose onClick → setActiveCanvas clears pendingClip even when the page is already active — the confirmation card ("Keep inside this area?") appeared mid-gesture and vanished on release, making the feature unusable. FIXED: setActiveCanvas is now a no-op when the canvas is unchanged (store-level guard). Re-verified: selection persists after release → apply mask → sticker clipped + "Unmask" control appears (VLM confirmed).
+- FR-10.1 parity fix: undo/redo were hidden below md — touch creators had no undo access. Now always visible in the TopBar (compact 32px on mobile, title max-width tightened to 32vw, Share label icon-only below sm; verified no header overflow at 375px).
+- Feature: keyboard-shortcuts cheatsheet popover in the TopBar (Keyboard icon, 12 entries incl. tools, undo/redo/save/delete) — discoverable documentation, works on touch too.
+- Feature: mobile page actions — "Page X / Y" indicator now has a ⋯ menu with Duplicate page / Delete page (delete flows into the existing confirm dialog; FR-1.3/1.4). Verified duplicate + undo on mobile.
+- Styling: brush-size cursor now a white ring with dark inner/outer hairlines (visible over light AND dark artwork); ShareDialog/TopBar dark-panel tokens kept consistent.
+- Feature: viewer sets document.title to "<book title> — PaperString" for shared links (verified: "QA Love Notes — PaperString").
+- QA: 0 console errors across the round; lint clean; dev.log clean.
+
+Stage Summary:
+- Files changed: editor-store.ts (setActiveCanvas guard — the round's critical fix), TopBar.tsx (mobile undo/redo + shortcuts popover + responsive share), CanvasWorkspace.tsx (MobilePageMenu + mobile page indicator row), PageCanvas.tsx (cursor contrast; probe removed), ViewerView.tsx (document.title).
+- Remaining known minor: mobile ToolPanel overlays canvas bottom while open (by design, dismissible); template SVG art text uses websafe Georgia (intentional for baked SVG rendering); swipe page-navigation deliberately NOT implemented to honor FR-2.8 (drawing gestures must not be mistaken for page nav).
+- Recommended next round: (a) editor onboarding hint for first-time creators (one-time coach marks), (b) viewer preload/OG meta polish, (c) long-book publish performance (chunked renders).

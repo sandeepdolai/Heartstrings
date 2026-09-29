@@ -6,10 +6,24 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, CloudUpload, Loader2, Redo2, Share2, Undo2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CloudUpload,
+  Keyboard,
+  Loader2,
+  Redo2,
+  Share2,
+  Undo2,
+} from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -102,13 +116,15 @@ export function TopBar({
             type="button"
             onClick={startEditing}
             aria-label="Rename project"
-            className="min-w-0 max-w-[42vw] truncate rounded-md px-2.5 py-1.5 text-sm font-medium text-editor-text transition hover:bg-editor-raised sm:max-w-xs"
+            className="min-w-0 max-w-[32vw] truncate rounded-md px-2.5 py-1.5 text-sm font-medium text-editor-text transition hover:bg-editor-raised sm:max-w-xs"
           >
             {title || "Untitled book"}
           </button>
         )}
 
-        <div className="mx-auto hidden items-center gap-1 md:flex">
+        {/* undo / redo — visible on every viewport so touch creators keep
+            FR-10.1 parity (no keyboard required) */}
+        <div className="mx-auto flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -116,9 +132,9 @@ export function TopBar({
                 aria-label="Undo"
                 disabled={!canUndo}
                 onClick={undo}
-                className="grid h-9 w-9 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent"
+                className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent md:h-9 md:w-9"
               >
-                <Undo2 className="h-4.5 w-4.5" />
+                <Undo2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
@@ -130,9 +146,9 @@ export function TopBar({
                 aria-label="Redo"
                 disabled={!canRedo}
                 onClick={redo}
-                className="grid h-9 w-9 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent"
+                className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent md:h-9 md:w-9"
               >
-                <Redo2 className="h-4.5 w-4.5" />
+                <Redo2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
@@ -160,6 +176,39 @@ export function TopBar({
           <span className="hidden lg:inline">{saveLabel[saveState]}</span>
         </div>
 
+        {/* keyboard shortcuts cheatsheet */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts"
+              className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text sm:ml-0 md:h-9 md:w-9"
+            >
+              <Keyboard className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            side="bottom"
+            className="w-64 border-editor-border-strong bg-editor-panel text-editor-text"
+          >
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
+              Shortcuts
+            </p>
+            <ul className="grid gap-1.5 text-xs">
+              {SHORTCUTS.map(([keys, label]) => (
+                <li key={keys} className="flex items-center justify-between gap-3">
+                  <span className="text-editor-dim">{label}</span>
+                  <kbd className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 font-mono text-[10px] text-editor-text">
+                    {keys}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
+
         <div className="flex shrink-0 items-center gap-2">
           <Button
             variant="ghost"
@@ -186,10 +235,25 @@ export function TopBar({
             className="gap-1.5 rounded-full bg-smoke text-night hover:bg-white"
           >
             <Share2 className="h-4 w-4" />
-            {shareToken ? "Shared" : "Share"}
+            <span className="hidden sm:inline">{shareToken ? "Shared" : "Share"}</span>
           </Button>
         </div>
       </TooltipProvider>
     </header>
   );
 }
+
+const SHORTCUTS: [string, string][] = [
+  ["V", "Select & transform"],
+  ["B", "Brush"],
+  ["E", "Eraser"],
+  ["T", "Text"],
+  ["C", "Color tools"],
+  ["S", "Keep-inside selection"],
+  ["K", "Stickers & templates"],
+  ["I", "Add a photo"],
+  ["Ctrl + Z", "Undo"],
+  ["Ctrl + ⇧ + Z", "Redo"],
+  ["Ctrl + S", "Save"],
+  ["Del", "Delete active layer"],
+];

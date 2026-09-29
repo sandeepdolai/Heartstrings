@@ -419,11 +419,12 @@ function PageCanvasInner({ page, active, width }: Props) {
           tool === "text" && active && "cursor-text"
         )}
       >
-        {/* brush size cursor */}
+        {/* brush size cursor — white ring with a dark inner hairline so it
+            stays visible over light AND dark artwork */}
         {cursor && active && (tool === "brush" || tool === "eraser") && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute rounded-full border border-night/70 bg-night/10"
+            className="pointer-events-none absolute rounded-full border border-white/95 bg-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(0,0,0,0.35)]"
             style={{
               left: cursor.x,
               top: cursor.y,

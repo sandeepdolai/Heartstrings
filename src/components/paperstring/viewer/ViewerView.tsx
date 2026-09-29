@@ -115,6 +115,15 @@ function ViewerBook({ title, pages }: { title: string; pages: string[] }) {
   const [titleDimmed, setTitleDimmed] = useState(false);
   const single = pages.length <= 1;
 
+  // The recipient's browser tab carries the book's name.
+  useEffect(() => {
+    const prev = document.title;
+    document.title = `${title} — PaperString`;
+    return () => {
+      document.title = prev;
+    };
+  }, [title]);
+
   // The title arrives bright, then recedes after 3s; hover/focus restores it.
   useEffect(() => {
     const t = window.setTimeout(() => setTitleDimmed(true), 3000);

@@ -8,11 +8,17 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { PageCanvas } from "./PageCanvas";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +28,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 export function CanvasWorkspace() {
@@ -64,9 +69,15 @@ export function CanvasWorkspace() {
                     (9 / 16)
                 )}
               />
-              <p className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-editor-dim">
-                Page {activeIdx + 1} / {canvases.length}
-              </p>
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-editor-dim">
+                  Page {activeIdx + 1} / {canvases.length}
+                </p>
+                <MobilePageMenu
+                  pageId={mobilePage.id}
+                  onConfirmDelete={setConfirmDelete}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -98,6 +109,10 @@ export function CanvasWorkspace() {
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+        <DeleteConfirmDialog
+          pageId={confirmDelete}
+          onClose={() => setConfirmDelete(null)}
+        />
       </div>
     );
   }
@@ -197,6 +212,49 @@ function PageActions({
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </>
+  );
+}
+
+/** Mobile page menu (FR-1.3/1.4 parity): duplicate + confirm-then-delete. */
+function MobilePageMenu({
+  pageId,
+  onConfirmDelete,
+}: {
+  pageId: string;
+  onConfirmDelete: (id: string) => void;
+}) {
+  const duplicateCanvas = useEditorStore((s) => s.duplicateCanvas);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Page options"
+          className="grid h-6 w-6 place-items-center rounded-md text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="center"
+        className="border-editor-border-strong bg-editor-panel text-editor-text"
+      >
+        <DropdownMenuItem
+          onClick={() => {
+            duplicateCanvas(pageId);
+            toast.success("Page duplicated");
+          }}
+        >
+          <Copy className="h-4 w-4" /> Duplicate page
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-[#f08ca0] focus:text-[#f5a8bb]"
+          onClick={() => onConfirmDelete(pageId)}
+        >
+          <Trash2 className="h-4 w-4" /> Delete page
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

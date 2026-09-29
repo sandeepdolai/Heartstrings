@@ -284,7 +284,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   markSaved: () => set({ dirty: false }),
 
-  setActiveCanvas: (id) => set({ activeCanvasId: id, pendingClip: null }),
+  setActiveCanvas: (id) =>
+    set((s) =>
+      // no-op when already active — wrapper clicks on the active page must
+      // not abort a just-finished keep-inside selection (FR-8)
+      s.activeCanvasId === id
+        ? {}
+        : { activeCanvasId: id, pendingClip: null }
+    ),
 
   addCanvas: () => {
     const page = newCanvasPage();
