@@ -65,7 +65,7 @@ export function SectionHeading({
     >
       <p
         className={cn(
-          "text-xs font-medium uppercase tracking-[0.25em]",
+          "text-xs font-medium uppercase tracking-[0.18em]",
           dark ? "text-silver" : "text-dim"
         )}
       >
@@ -142,7 +142,7 @@ export function PageArt({
    ──────────────────────────────────────────────────────────── */
 
 export const pillPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-night text-smoke transition-all duration-200 hover:bg-onyx hover:shadow-[0_10px_28px_-10px_rgba(19,19,19,0.45)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke";
+  "inline-flex items-center justify-center gap-2 rounded-full bg-night text-smoke transition-all duration-200 hover:bg-onyx hover:-translate-y-0.5 hover:shadow-lift-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke";
 
 export const ghostAction =
   "inline-flex items-center justify-center gap-2 rounded-full text-night/80 transition-colors duration-200 hover:bg-night/5 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke";

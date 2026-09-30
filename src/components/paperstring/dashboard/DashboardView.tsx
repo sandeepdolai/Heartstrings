@@ -323,7 +323,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     aria-label="Search your books"
                     autoComplete="off"
                     enterKeyHint="search"
-                    className="h-11 rounded-full border-silver/60 bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring"
+                    className="h-10 rounded-full border-silver/60 bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring"
                   />
                   {search !== "" && (
                     <button
@@ -341,7 +341,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
-                      className="h-11 rounded-full border-silver/60 bg-paper px-4 hover:bg-smoke"
+                      className="h-10 rounded-full border-silver/60 bg-paper px-4 hover:bg-smoke"
                     >
                       <ArrowUpDown
                         className="size-4 text-dim"
@@ -380,7 +380,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                 <div
                   role="group"
                   aria-label="Library layout"
-                  className="ml-auto flex h-11 items-center gap-1 rounded-full border border-silver/60 bg-paper p-1"
+                  className="ml-auto flex h-10 items-center gap-0.5 rounded-full border border-silver/50 bg-paper p-1"
                 >
                   <button
                     type="button"
@@ -389,7 +389,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     title="Grid layout"
                     onClick={() => setViewMode("grid")}
                     className={cn(
-                      "grid size-9 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      "grid size-8 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                       viewMode === "grid"
                         ? "bg-night text-smoke shadow-sm"
                         : "text-dim hover:text-night"
@@ -404,7 +404,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     title="List layout"
                     onClick={() => setViewMode("list")}
                     className={cn(
-                      "grid size-9 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      "grid size-8 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                       viewMode === "list"
                         ? "bg-night text-smoke shadow-sm"
                         : "text-dim hover:text-night"

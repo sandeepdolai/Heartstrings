@@ -260,7 +260,7 @@ export function ProjectCard({
             openInEditor();
           }
         }}
-        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-silver/30 bg-card p-3 transition-all duration-200 hover:border-silver/60 hover:shadow-[0_10px_28px_-16px_rgba(19,19,19,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.995]"
+        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-silver/30 bg-card p-3 transition-all duration-200 hover:border-silver/60 hover:shadow-lift-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.995]"
       >
         {/* thumb */}
         <div className="relative h-[4.25rem] w-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-silver/40">
@@ -277,6 +277,10 @@ export function ProjectCard({
               <LogoMark
                 className="h-6 w-auto text-dim/50"
                 strokeWidth={4}
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-2 rounded-md border border-dashed border-silver/60"
               />
             </div>
           )}
@@ -300,7 +304,7 @@ export function ProjectCard({
 
         {/* shared / private chip */}
         {shareToken ? (
-          <span className="hidden shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke sm:inline-flex">
+          <span className="hidden shrink-0 items-center rounded-full bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25 sm:inline-flex">
             Shared
           </span>
         ) : (
@@ -372,7 +376,7 @@ export function ProjectCard({
           openInEditor();
         }
       }}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-silver/30 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:border-silver/60 hover:shadow-[0_18px_40px_-16px_rgba(19,19,19,0.28)] focus-visible:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:translate-y-0 active:scale-[0.99]"
+      className="group cursor-pointer overflow-hidden rounded-2xl border border-silver/30 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:border-silver/60 hover:shadow-lift-lg focus-visible:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:translate-y-0 active:scale-[0.99]"
     >
       {/* Cover */}
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -389,6 +393,12 @@ export function ProjectCard({
             <LogoMark
               className="h-12 w-auto text-dim/50"
               strokeWidth={3.8}
+            />
+            {/* a dashed frame reads as a blank page awaiting art — not a
+                finished heart cover */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-3 rounded-lg border-2 border-dashed border-silver/60"
             />
             <span className="sr-only">No cover yet</span>
           </div>
@@ -429,7 +439,7 @@ export function ProjectCard({
             {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
           </p>
           {shareToken ? (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke">
+            <span className="inline-flex shrink-0 items-center rounded-full bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25">
               Shared
             </span>
           ) : (

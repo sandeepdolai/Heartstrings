@@ -11,7 +11,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { toast } from "sonner";
-import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Info, Loader2 } from "lucide-react";
 
 import { psNavigate } from "@/lib/paperstring/navigation";
 import type { PsUser } from "@/lib/paperstring/types";
@@ -193,7 +193,7 @@ export function AuthView({
           <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
             {isSignup ? "Create your studio" : "Welcome back"}
           </h1>
-          <p className="mt-2 text-sm text-dim">
+          <p className="mt-2.5 text-sm text-onyx/75">
             {isSignup
               ? "Free forever. Make someone's day."
               : "Sign in to keep creating."}
@@ -211,7 +211,7 @@ export function AuthView({
           <Button
             type="button"
             variant="outline"
-            className="mt-8 h-11 w-full rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+            className="mt-8 h-11 w-full rounded-full border-silver/60 bg-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
             onClick={() =>
               toast.info(
                 "Google sign-in is being configured for this environment — use email for now."
@@ -231,7 +231,10 @@ export function AuthView({
           </div>
 
           {serverError && (
-            <Alert variant="destructive" className="mb-5">
+            <Alert
+              variant="destructive"
+              className="mb-5 animate-in fade-in slide-in-from-top-1"
+            >
               <AlertDescription className="text-sm">
                 {serverError}
               </AlertDescription>
@@ -248,6 +251,7 @@ export function AuthView({
                   placeholder="Ada Lovelace"
                   autoComplete="name"
                   autoFocus
+                  className="h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? "name-error" : undefined}
                   {...register("name")}
@@ -267,6 +271,7 @@ export function AuthView({
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
+                className="h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
                 {...register("email")}
@@ -286,7 +291,7 @@ export function AuthView({
                   type={showPassword ? "text" : "password"}
                   placeholder="At least 8 characters"
                   autoComplete={isSignup ? "new-password" : "current-password"}
-                  className="pr-12"
+                  className="pr-12 h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
                   aria-invalid={!!errors.password}
                   aria-describedby={
                     errors.password ? "password-error" : undefined
@@ -338,7 +343,17 @@ export function AuthView({
               onClick={toggleMode}
               className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              {isSignup ? "Sign in" : "Create an account"}
+              {isSignup ? (
+                "Sign in"
+              ) : (
+                <>
+                  Create an account
+                  <ArrowRight
+                    className="ml-0.5 inline h-3.5 w-3.5"
+                    aria-hidden="true"
+                  />
+                </>
+              )}
             </button>
           </p>
 

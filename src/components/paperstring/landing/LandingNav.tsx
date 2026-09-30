@@ -118,7 +118,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
               <button
                 type="button"
                 onClick={startCreating}
-                className={cn(pillPrimary, "h-10 px-5 text-sm font-medium")}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-night/20 bg-paper/60 px-5 text-sm font-medium text-night transition-all duration-200 hover:border-night/40 hover:bg-paper hover:shadow-lift-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke"
               >
                 Start creating
               </button>

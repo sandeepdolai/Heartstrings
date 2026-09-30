@@ -43,7 +43,7 @@ export function ClosingCta({ user }: { user: PsUser | null }) {
             <button
               type="button"
               onClick={startCreating}
-              className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-smoke px-8 text-sm font-medium text-night transition-all duration-200 hover:bg-white hover:shadow-[0_14px_40px_-10px_rgba(243,243,243,0.35)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-smoke focus-visible:ring-offset-2 focus-visible:ring-offset-night"
+              className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-smoke px-8 text-sm font-medium text-night transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_14px_40px_-10px_rgba(243,243,243,0.35)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-smoke focus-visible:ring-offset-2 focus-visible:ring-offset-night"
             >
               Start creating
               <ArrowRight

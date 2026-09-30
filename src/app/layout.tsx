@@ -63,7 +63,9 @@ export default function RootLayout({
       >
         {/* Light mode only — no ThemeProvider, no theme toggle, ever. */}
         {children}
-        <Toaster position="bottom-center" closeButton richColors />
+        {/* Top-center toasts — bottom-center toasts overlapped dashboard
+            cards and the editor's mobile tool rail. */}
+        <Toaster position="top-center" closeButton richColors offset={18} />
       </body>
     </html>
   );

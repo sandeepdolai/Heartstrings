@@ -32,7 +32,7 @@ const STACK_TRANSFORMS: readonly (string | undefined)[] = [
 ];
 
 const PAGE_FRAME =
-  "rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-[0_1px_2px_rgba(19,19,19,0.06),0_10px_28px_-14px_rgba(19,19,19,0.28)]";
+  "rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-paper";
 
 /**
  * The hero's signature moment: a small stack of sample pages that turns
@@ -225,7 +225,7 @@ export function FlipBookDemo() {
                 }}
               >
                 {/* front — the artwork */}
-                <div className="ps-backface-hidden absolute inset-0 rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-[0_1px_2px_rgba(19,19,19,0.06),0_14px_32px_-12px_rgba(19,19,19,0.3)]">
+                <div className="ps-backface-hidden absolute inset-0 rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-paper-hover">
                   <PageArt
                     src={PAGES[topIdx].src}
                     alt=""
@@ -234,7 +234,7 @@ export function FlipBookDemo() {
                   />
                 </div>
                 {/* back — plain paper, a small beating heart */}
-                <div className="ps-backface-hidden absolute inset-0 rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-[0_1px_2px_rgba(19,19,19,0.06),0_14px_32px_-12px_rgba(19,19,19,0.3)] [transform:rotateY(180deg)]">
+                <div className="ps-backface-hidden absolute inset-0 rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-paper-hover [transform:rotateY(180deg)]">
                   <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-md border border-silver/20 bg-smoke/40">
                     <LogoMark className="ps-heartbeat h-8 w-9 text-silver" />
                     <p className="ps-serif text-sm italic text-dim">for you</p>
@@ -258,7 +258,7 @@ export function FlipBookDemo() {
           onClick={flip}
           disabled={flipping}
           aria-label="Flip the page"
-          className="absolute -bottom-3 -right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-night text-smoke shadow-[0_10px_24px_-6px_rgba(19,19,19,0.45)] transition-all duration-200 hover:scale-105 hover:bg-onyx active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke"
+          className="absolute -bottom-3 -right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-night text-smoke shadow-lift-md transition-all duration-200 hover:scale-105 hover:bg-onyx active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke"
         >
           <BookOpen className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
@@ -271,7 +271,7 @@ export function FlipBookDemo() {
             key={page.src}
             className={cn(
               "h-1.5 rounded-full transition-all duration-300",
-              i === topIdx ? "w-5 bg-night" : "w-1.5 bg-silver"
+              i === topIdx ? "w-5 bg-heart" : "w-1.5 bg-silver"
             )}
           />
         ))}

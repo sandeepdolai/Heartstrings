@@ -25,6 +25,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // Hide the floating Next.js dev-tools badge — it reads as a UI bug to
+  // users reviewing the preview (multiple UX audits flagged it).
+  devIndicators: false,
 };
 
 export default nextConfig;

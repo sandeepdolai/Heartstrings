@@ -24,11 +24,11 @@ const rise: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: "easeOut" } },
 };
 
-/** A small silver hand-drawn stroke under the italic word — the string motif. */
+/** The red string of fate — a hand-drawn stroke under the italic word. */
 function StringUnderline() {
   return (
     <svg
-      className="absolute -bottom-1.5 left-0 h-2.5 w-full text-silver"
+      className="absolute -bottom-1.5 left-0 h-2.5 w-full text-heart/80"
       viewBox="0 0 120 12"
       preserveAspectRatio="none"
       fill="none"
@@ -37,7 +37,7 @@ function StringUnderline() {
       <path
         d="M3 9C28 3 66 2.5 117 7.5"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="3"
         strokeLinecap="round"
       />
     </svg>
@@ -62,7 +62,7 @@ export function Hero({ user }: { user: PsUser | null }) {
         >
           <motion.p
             variants={reduce ? undefined : rise}
-            className="text-xs font-medium uppercase tracking-[0.25em] text-dim"
+            className="text-xs font-medium uppercase tracking-[0.18em] text-onyx/70"
           >
             For love, friendship &amp; everything heartfelt
           </motion.p>
@@ -81,7 +81,7 @@ export function Hero({ user }: { user: PsUser | null }) {
 
           <motion.p
             variants={reduce ? undefined : rise}
-            className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-dim sm:text-lg lg:mx-0"
+            className="mx-auto mt-6 max-w-[42ch] text-base leading-relaxed text-onyx/80 sm:text-lg lg:mx-0"
           >
             PaperString is a cozy creative studio for everyday people — paint,
             write and sticker your heart out across multiple pages, then share
@@ -90,7 +90,7 @@ export function Hero({ user }: { user: PsUser | null }) {
 
           <motion.div
             variants={reduce ? undefined : rise}
-            className="mt-9 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
+            className="mt-10 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
           >
             <button
               type="button"
@@ -111,14 +111,14 @@ export function Hero({ user }: { user: PsUser | null }) {
 
           <motion.ul
             variants={reduce ? undefined : rise}
-            className="mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 lg:justify-start"
+            className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 border-t border-silver/40 pt-6 lg:justify-start"
           >
             {ASSURANCES.map(({ icon: Icon, text }) => (
               <li
                 key={text}
                 className="flex items-center gap-2 text-[13px] text-dim"
               >
-                <Icon className="h-4 w-4" aria-hidden="true" />
+                <Icon className="h-4 w-4 text-night/60" aria-hidden="true" />
                 {text}
               </li>
             ))}

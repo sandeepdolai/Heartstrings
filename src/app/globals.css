@@ -50,6 +50,30 @@
   --color-smoke: #f3f3f3;
   --color-paper: #ffffff;
 
+  /* ── The one accent — "the red string of fate" ──────────────────
+     Warm rose already living in the product (heart sticker, title
+     underline, active-tool dot). Elevated to tokens so the whole app
+     shares ONE emotional color: love-moments, shared states, the
+     string motif. Used sparingly — hierarchy stays paper+ink. */
+  --color-heart: #e8446a;
+  --color-heart-strong: #d6385c;
+  --color-heart-deep: #b52a4b; /* 4.5:1+ on paper / heart-tint surfaces */
+
+  /* ── Elevation — layered paper shadows (one strategy, whisper-quiet).
+     Named for what they mean on a desk: paper objects resting, lifting,
+     floating, and the premium stack treatment for books. */
+  --shadow-lift-sm: 0 1px 2px rgba(19, 19, 19, 0.05), 0 1px 3px rgba(19, 19, 19, 0.04);
+  --shadow-lift-md: 0 2px 4px rgba(19, 19, 19, 0.05), 0 6px 16px -6px rgba(19, 19, 19, 0.14);
+  --shadow-lift-lg:
+    0 1px 2px rgba(19, 19, 19, 0.04), 0 8px 24px -8px rgba(19, 19, 19, 0.16),
+    0 24px 48px -16px rgba(19, 19, 19, 0.12);
+  --shadow-paper:
+    0 0 0 0.5px rgba(19, 19, 19, 0.06), 0 1px 2px rgba(19, 19, 19, 0.05),
+    0 4px 12px -4px rgba(19, 19, 19, 0.1);
+  --shadow-paper-hover:
+    0 0 0 0.5px rgba(19, 19, 19, 0.07), 0 2px 4px rgba(19, 19, 19, 0.05),
+    0 8px 20px -6px rgba(19, 19, 19, 0.14);
+
   /* ── Editor chrome (light studio, iOS-grade) ───────────────── */
   --color-editor: #f3f3f3;
   --color-editor-panel: #ffffff;
@@ -120,6 +144,12 @@
   ::selection {
     background: #131313;
     color: #f3f3f3;
+  }
+  /* The heart accent carries selection inside love-moments (chips,
+     highlights) — one warm thread through the monochrome paper world. */
+  .ps-heart-selection ::selection {
+    background: rgba(232, 68, 106, 0.22);
+    color: #131313;
   }
 }
 

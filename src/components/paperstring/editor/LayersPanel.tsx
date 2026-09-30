@@ -254,7 +254,7 @@ function LayerRow({
             }}
             maxLength={48}
             aria-label="Layer name"
-            className="w-full rounded border border-editor-border-strong bg-editor px-1.5 py-0.5 text-xs text-editor-text outline-none focus:border-[#e8446a]/70"
+            className="w-full rounded border border-editor-border-strong bg-editor px-1.5 py-0.5 text-xs text-editor-text outline-none focus:border-heart/70"
           />
         ) : (
           <div className="flex items-center gap-1.5">
@@ -262,14 +262,14 @@ function LayerRow({
             <span
               className={cn(
                 "truncate text-xs",
-                active ? "text-editor-text" : "text-editor-text/80"
+                active ? "font-semibold text-editor-text" : "font-medium text-editor-text/75"
               )}
             >
               {layer.name}
             </span>
             {layer.clipped && (
               <ArrowDownToLine
-                className="h-3 w-3 shrink-0 text-[#e8446a]"
+                className="h-3 w-3 shrink-0 text-heart"
                 aria-label="Clipped to the layer below"
               />
             )}
@@ -282,7 +282,7 @@ function LayerRow({
             {layer.blendMode && layer.blendMode !== "normal" && (
               <span
                 title={`Blend: ${BLEND_LABELS[layer.blendMode]}`}
-                className="shrink-0 rounded-sm bg-[#e8446a]/10 px-1 py-px text-[8.5px] font-semibold uppercase tracking-wider text-[#c73a56]"
+                className="shrink-0 rounded-sm bg-heart/10 px-1 py-px text-[8.5px] font-semibold uppercase tracking-wider text-heart-deep"
               >
                 {BLEND_LABELS[layer.blendMode]}
               </span>

@@ -39,7 +39,7 @@ export function HowItWorks() {
         <div className="mt-14 grid gap-5 md:grid-cols-3 md:gap-6">
           {STEPS.map((step, i) => (
             <Reveal key={step.n} delay={i * 0.12} className="h-full">
-              <article className="group h-full rounded-2xl border border-silver/30 bg-paper p-6 transition-all duration-200 hover:-translate-y-1 hover:border-silver/50 hover:shadow-[0_18px_40px_-18px_rgba(19,19,19,0.2)] sm:p-8">
+              <article className="group h-full rounded-2xl border border-silver/30 bg-paper p-6 transition-all duration-200 hover:-translate-y-1 hover:border-silver/50 hover:shadow-lift-lg sm:p-8">
                 <div className="flex items-start justify-between">
                   <span className="ps-serif text-4xl text-silver transition-all duration-300 group-hover:text-dim group-hover:italic motion-reduce:transition-none">
                     {step.n}

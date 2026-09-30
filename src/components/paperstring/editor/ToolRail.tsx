@@ -71,8 +71,18 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
           // and so does the photo tool — the Elements panel carries the very
           // same photo uploader, so nothing is lost.
           const hideOnMobile = t.id === "color" || t.id === "image";
+          // Mobile grouping: hairline dividers separate "navigate" (select)
+          // from "paint" (brush…smudge) from "content" (text…elements) so the
+          // row reads as 3 clusters instead of 8 same-weight icons.
+          const startsGroup = t.id === "brush" || t.id === "text";
           return (
             <Tooltip key={t.id}>
+              {startsGroup && (
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-px shrink-0 self-center rounded-full bg-editor-border-strong md:hidden"
+                />
+              )}
               <TooltipTrigger asChild>
                 <button
                   type="button"
@@ -91,7 +101,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   {activeTool && (
                     <span
                       aria-hidden="true"
-                      className="absolute left-1/2 top-1 h-1 w-1 -translate-x-1/2 rounded-full bg-[#e8446a] md:left-0 md:top-1/2 md:h-1.5 md:w-1.5 md:-translate-y-1/2 md:translate-x-0"
+                      className="absolute left-1/2 top-1 h-1 w-1 -translate-x-1/2 rounded-full bg-heart md:left-0 md:top-1/2 md:h-1.5 md:w-1.5 md:-translate-y-1/2 md:translate-x-0"
                     />
                   )}
                 </button>

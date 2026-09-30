@@ -295,12 +295,12 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
             <button
               type="button"
               onClick={next}
-              className="flex h-8 items-center gap-1.5 rounded-full bg-smoke px-4 text-xs font-medium text-night transition hover:bg-white"
+              className="flex h-8 items-center gap-1.5 rounded-full bg-smoke px-4 text-xs font-medium text-night transition hover:bg-white active:scale-[0.97]"
             >
               {isLast ? (
                 <>
                   Start creating
-                  <Heart className="h-3.5 w-3.5" fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                  <Heart className="h-3.5 w-3.5 text-heart" fill="currentColor" strokeWidth={0} aria-hidden="true" />
                 </>
               ) : (
                 "Next"
@@ -312,7 +312,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
         <button
           type="button"
           onClick={() => finish(index)}
-          className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-md text-editor-dim/70 transition hover:bg-editor-raised hover:text-editor-text"
+          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-editor-dim/70 transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]"
           aria-label="Skip the tour"
           title="Skip the tour"
         >
