@@ -720,3 +720,16 @@ Stage Summary:
 - Save = persist + download every page as PNG and JPG; autosave has three layers of protection (2.5s debounce, 20s interval, tab-hide/pagehide flush) so forgetting to save can't lose work.
 - Files: trace.ts (new), cutout.ts (new), export.ts (new), lasso.ts (deleted), editor-store.ts, PageCanvas.tsx, ToolPanel.tsx, ToolRail.tsx, LayersPanel.tsx, TopBar.tsx, EditorView.tsx, types.ts.
 - Next: deploy to the live worker (round-23 split-build recipe: stop dev → OPENNEXT build → wrangler deploy → restart dev via double-fork), then push GitHub.
+
+---
+Task ID: round-24-deploy
+Agent: Z.ai Code (main session)
+Task: Deploy round-24 (cutout + export + autosave) to the live Cloudflare worker.
+
+Work Log:
+- Round-23 split-build recipe executed cleanly end-to-end: stopped dev → NEXT_PRIVATE_STANDALONE=true NEXT_PRIVATE_OUTPUT_TRACE_ROOT=/home/z/my-project OPENNEXT_BUILD=1 `bunx next build --experimental-build-mode compile` (exit 0) → `bun run postinstall` (prisma + gen-cf-client) → `du -s node_modules` cache warm → `timeout 228 ./node_modules/.bin/opennextjs-cloudflare build --skipNextBuild` (exit 0, zero copy errors this time) → `CLOUDFLARE_API_TOKEN=… timeout 225 ./node_modules/.bin/wrangler deploy` (Uploaded paperstring, triggers deployed) → dev restarted via double-fork `(nohup bun run dev &)` — both live (200) and local (200) healthy.
+- Live verification: "freehand photo crop" (cutout) and "Exported " (export pipeline) strings both present in deployed chunk /_next/static/chunks/0nwutvxkyq5yk.js; live title renders; commit c902e86 pushed to GitHub (sandeepdolai/Heartstrings).
+
+Stage Summary:
+- Round-24 is LIVE on https://paperstring.heartstrings.workers.dev and pushed to GitHub; local dev on the same commit.
+- Next session notes: QA with fresh refs after every HMR refresh (stale @refs caused stray clicks — the mystery page-2 + the rail-button "Cutout" click that cleared a pending trace were both QA artifacts, not app bugs); the page grid auto-scrolls to the active page, so screen coordinates go stale when pages change.
