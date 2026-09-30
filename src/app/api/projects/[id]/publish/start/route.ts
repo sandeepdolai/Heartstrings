@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/paperstring/auth-server";
 import { getOwnedProject } from "@/lib/paperstring/server-projects";
 import { startPublishSession } from "@/lib/paperstring/publish-sessions";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -10,6 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * chunked publish (long books). The database is only written by `finish`.
  */
 export async function POST(_req: NextRequest, { params }: Ctx) {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -22,9 +24,9 @@ export async function POST(_req: NextRequest, { params }: Ctx) {
     );
   }
 
-  const session = startPublishSession(id, user.id);
+  const session = await startPublishSession(id, user.id);
   return NextResponse.json(
-    { publishId: session.id },
+    { publishId: session },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { getSessionUser, newShareToken } from "@/lib/paperstring/auth-server";
 import { getOwnedProject } from "@/lib/paperstring/server-projects";
 import { takePublishSession } from "@/lib/paperstring/publish-sessions";
+import { deletePackedText, packText } from "@/lib/paperstring/blob-store";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,6 +21,7 @@ const finishSchema = z.object({
  * (FR-1.6, SEP-3 — viewers get rendered pages only).
  */
 export async function POST(req: NextRequest, { params }: Ctx) {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -41,7 +44,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
     const { publishId, coverImage, regenerate } = parsed.data;
 
-    const taken = takePublishSession(publishId, id, user.id);
+    const taken = await takePublishSession(publishId, id, user.id);
     if (!taken.ok) {
       return NextResponse.json(
         {
@@ -58,15 +61,23 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     const shareToken =
       !owned.project.shareToken || regenerate ? newShareToken() : owned.project.shareToken;
 
+    // Published books are multi-MB (4K page data URLs) — chunk them into
+    // blobs on D1. Pack first, persist, then release the previous blob.
+    const packedPublished = (await packText(
+      JSON.stringify({ title: owned.project.title, pages }),
+      { purpose: "published", projectId: id }
+    )) as string;
+
     const project = await db.project.update({
       where: { id },
       data: {
         ...(coverImage !== undefined ? { coverImage } : {}),
         shareToken,
-        publishedData: JSON.stringify({ title: owned.project.title, pages }),
+        publishedData: packedPublished,
         publishedAt: new Date(),
       },
     });
+    await deletePackedText(owned.project.publishedData);
 
     return NextResponse.json({
       shareToken: project.shareToken,

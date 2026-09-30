@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolveText } from "@/lib/paperstring/blob-store";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -9,6 +11,7 @@ type Ctx = { params: Promise<{ token: string }> };
  * source data (SEP-1/SEP-3). Invalid links get a clean 404 (Flow 4.8).
  */
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  await ensureDb();
   const { token } = await params;
   const project = await db.project.findUnique({
     where: { shareToken: token },
@@ -23,7 +26,15 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   }
 
   try {
-    const published = JSON.parse(project.publishedData) as {
+    // publishedData may be a chunked blob (multi-MB books on D1).
+    const publishedText = await resolveText(project.publishedData);
+    if (!publishedText) {
+      return NextResponse.json(
+        { error: "This link is unavailable. It may have been revoked or never shared." },
+        { status: 404 }
+      );
+    }
+    const published = JSON.parse(publishedText) as {
       title: string;
       pages: string[];
     };

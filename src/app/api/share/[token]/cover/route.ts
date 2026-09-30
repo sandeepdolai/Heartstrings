@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolveText } from "@/lib/paperstring/blob-store";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -42,6 +44,7 @@ function isCompletePng(bytes: Uint8Array): boolean {
  * or malformed links get a clean 404 JSON error — no data leakage.
  */
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  await ensureDb();
   const { token } = await params;
 
   const project = await db.project.findUnique({
@@ -52,10 +55,12 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   let firstPage: unknown;
   if (project?.publishedData) {
     try {
-      const published = JSON.parse(project.publishedData) as {
-        pages?: unknown[];
-      };
-      firstPage = published.pages?.[0];
+      // publishedData may be a chunked blob (multi-MB books on D1).
+      const publishedText = await resolveText(project.publishedData);
+      const published = publishedText
+        ? (JSON.parse(publishedText) as { pages?: unknown[] })
+        : null;
+      firstPage = published?.pages?.[0];
     } catch {
       firstPage = undefined;
     }

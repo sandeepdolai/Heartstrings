@@ -3,9 +3,11 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/paperstring/auth-server";
 import { toSummary } from "@/lib/paperstring/server-projects";
+import { ensureDb } from "@/lib/db-init";
 
 /** GET /api/projects — list the signed-in creator's projects. */
 export async function GET() {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -22,6 +24,7 @@ const createSchema = z.object({
 
 /** POST /api/projects — create a new project with one blank portrait canvas. */
 export async function POST(req: NextRequest) {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
     });
 
     const project = await db.project.create({
-      data: { userId: user.id, title, data },
+      data: { userId: user.id, title, data, pageCount: 1 },
     });
     return NextResponse.json({ project: toSummary(project) });
   } catch (err) {

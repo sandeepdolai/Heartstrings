@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/paperstring/auth-server";
 import { getOwnedProject, toSummary } from "@/lib/paperstring/server-projects";
+import { packText, resolveText } from "@/lib/paperstring/blob-store";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,6 +13,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * Lets creators keep an original safe while trying a variation.
  */
 export async function POST(_req: Request, { params }: Ctx) {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -28,12 +31,21 @@ export async function POST(_req: Request, { params }: Ctx) {
     const title =
       src.title.length > 106 ? `${src.title.slice(0, 106)}… (copy)` : `${src.title} (copy)`;
 
+    // The source project's JSON may live in a chunked blob — resolve it and
+    // pack a fresh copy for the duplicate (never share blob refs between rows).
+    const srcData = await resolveText(src.data);
+    if (srcData == null) {
+      return NextResponse.json({ error: "This project's data is unavailable" }, { status: 410 });
+    }
+    const packed = (await packText(srcData, { purpose: "data" })) as string;
+
     const project = await db.project.create({
       data: {
         userId: user.id,
         title,
-        data: src.data,
+        data: packed,
         coverImage: src.coverImage,
+        pageCount: src.pageCount,
       },
     });
     return NextResponse.json({ project: toSummary(project) }, { status: 201 });

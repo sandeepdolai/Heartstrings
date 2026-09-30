@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/paperstring/auth-server";
 import { getOwnedProject } from "@/lib/paperstring/server-projects";
 import { appendPublishChunk, CHUNK_MAX } from "@/lib/paperstring/publish-sessions";
+import { ensureDb } from "@/lib/db-init";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,7 @@ const chunkSchema = z.object({
  * session. Pages are validated exactly like the legacy single-shot publish.
  */
 export async function POST(req: NextRequest, { params }: Ctx) {
+  await ensureDb();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       );
     }
     const { publishId, pages } = parsed.data;
-    const res = appendPublishChunk(publishId, id, user.id, pages);
+    const res = await appendPublishChunk(publishId, id, user.id, pages);
     if (!res.ok) {
       return NextResponse.json(
         { error: res.error === "overflow" ? "Too many pages for one book" : "Publish session expired — try again" },

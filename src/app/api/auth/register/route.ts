@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, hashPassword } from "@/lib/paperstring/auth-server";
+import { ensureDb } from "@/lib/db-init";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Please tell us your name").max(60),
@@ -10,6 +11,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  await ensureDb();
   try {
     const body = await req.json();
     const parsed = schema.safeParse(body);

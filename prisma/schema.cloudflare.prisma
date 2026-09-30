@@ -1,10 +1,8 @@
+// AUTO-DERIVED from schema.prisma by scripts/gen-cf-client.mjs — do not edit.
 generator client {
-  provider = "prisma-client-js"
-  // queryCompiler = pure-JS/WASM query engine (no native Rust binary —
-  // required to run on Cloudflare Workers); driverAdapters = D1 locally
-  // emulated via better-sqlite3, PrismaD1 on the deployment.
-  previewFeatures = ["queryCompiler", "driverAdapters"]
-  output          = "../src/generated/prisma"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma-cf"
+  runtime  = "cloudflare"
 }
 
 datasource db {

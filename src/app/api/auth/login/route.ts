@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, verifyPassword } from "@/lib/paperstring/auth-server";
+import { ensureDb } from "@/lib/db-init";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
@@ -9,6 +10,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  await ensureDb();
   try {
     const parsed = schema.safeParse(await req.json());
     if (!parsed.success) {

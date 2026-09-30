@@ -1,15 +1,20 @@
 import { db } from "@/lib/db";
-import type { Project } from "@prisma/client";
+import type { Project } from "@/generated/prisma/client";
 import type { ProjectSummary } from "./types";
 
 /** Map a Project row to the client-facing summary shape. */
 export function toSummary(p: Project): ProjectSummary {
-  let pageCount = 0;
-  try {
-    const data = JSON.parse(p.data) as { canvases?: unknown[] };
-    pageCount = Array.isArray(data.canvases) ? data.canvases.length : 0;
-  } catch {
-    pageCount = 0;
+  let pageCount = typeof p.pageCount === "number" ? p.pageCount : 0;
+  if (p.pageCount == null) {
+    // Legacy rows predate the denormalized count — parse inline `data`
+    // (small fallback; chunked blobs resolve to 0 which is corrected on
+    // the next save, which always writes the count).
+    try {
+      const data = JSON.parse(p.data) as { canvases?: unknown[] };
+      pageCount = Array.isArray(data.canvases) ? data.canvases.length : 0;
+    } catch {
+      pageCount = 0;
+    }
   }
   return {
     id: p.id,
