@@ -34,14 +34,16 @@ export interface Stroke {
   pressures?: number[];
 }
 
-/** Reversible keep-inside selection mask (FR-8).
+/** Legacy keep-inside mask (retired with the round-24 Cutout tool).
  *
- *  Two eras share this union:
- *  • "path" — the freehand lasso (current): drag traces an arbitrary
- *    outline; releasing auto-closes the loop back to the start point and the
- *    enclosed area (even-odd fill, like Photoshop's lasso) becomes the mask.
- *  • "rect" | "ellipse" — the retired shape presets. They are no longer
- *    creatable, but old saved projects must keep rendering pixel-identically.
+ *  No layer can gain a clipShape anymore — the Cutout tool performs a REAL
+ *  pixel crop instead (the layer's bitmap becomes the traced region, so its
+ *  bounding box always equals the visible edges and can never detach while
+ *  moving). This union survives only so old saved projects keep rendering
+ *  pixel-identically; the editor migrates image-layer masks to true cutouts
+ *  on load, and raster/text/sticker masks still render through it.
+ *  • "path" — the freehand loop (round-23 lasso era).
+ *  • "rect" | "ellipse" — the round-22-and-earlier shape presets.
  */
 export type ClipShape =
   | { type: "rect" | "ellipse"; x: number; y: number; w: number; h: number }

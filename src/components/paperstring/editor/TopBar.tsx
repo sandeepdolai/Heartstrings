@@ -11,6 +11,9 @@ import {
   Check,
   CloudUpload,
   Compass,
+  FileImage,
+  ImageDown,
+  Images,
   Keyboard,
   Loader2,
   Pencil,
@@ -22,10 +25,14 @@ import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -35,16 +42,27 @@ import {
 
 export type SaveState = "saved" | "dirty" | "saving" | "error";
 
+export interface ExportRequest {
+  /** Which pages to render to files. */
+  scope: "all" | "page";
+  formats: ("png" | "jpg")[];
+}
+
 export function TopBar({
   saveState,
   onSave,
   onShare,
+  onExport,
+  exporting = false,
   shareToken,
   onStartTour,
 }: {
   saveState: SaveState;
   onSave: () => void;
   onShare: () => void;
+  /** Download pages as image files (PNG/JPG) — the Export menu. */
+  onExport?: (req: ExportRequest) => void;
+  exporting?: boolean;
   shareToken: string | null;
   onStartTour?: () => void;
 }) {
@@ -272,12 +290,73 @@ export function TopBar({
         </Popover>
 
         <div className="flex shrink-0 items-center gap-2" data-tour="share">
+          {/* Export — every created page as real image files. The Save button
+              does PNG+JPG for the whole book; this menu adds finer control. */}
+          {onExport && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={exporting}
+                  aria-label="Export as images"
+                  className="gap-1.5 rounded-xl text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]"
+                >
+                  {exporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImageDown className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                className="w-60 border-editor-border-strong bg-editor-panel text-editor-text"
+              >
+                <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
+                  Save as image files · 2160×3840
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => onExport({ scope: "all", formats: ["png", "jpg"] })}
+                >
+                  <Images className="h-3.5 w-3.5 text-editor-dim" />
+                  All pages · PNG + JPG
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => onExport({ scope: "all", formats: ["png"] })}
+                >
+                  <FileImage className="h-3.5 w-3.5 text-editor-dim" />
+                  All pages · PNG only
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => onExport({ scope: "all", formats: ["jpg"] })}
+                >
+                  <FileImage className="h-3.5 w-3.5 text-editor-dim" />
+                  All pages · JPG only
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-editor-border" />
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => onExport({ scope: "page", formats: ["png", "jpg"] })}
+                >
+                  <ImageDown className="h-3.5 w-3.5 text-editor-dim" />
+                  This page · PNG + JPG
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="ghost"
             size="sm"
             onClick={onSave}
             disabled={saveState === "saving"}
-            aria-label="Save"
+            aria-label="Save and download PNG + JPG"
+            title="Save to your studio and download every page as PNG + JPG"
             className={cn(
               "gap-1.5 rounded-xl text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]",
               dirty && saveState !== "saving" && "text-editor-text"
@@ -322,12 +401,12 @@ const SHORTCUTS: [string, string][] = [
   ["D", "Smudge brush"],
   ["T", "Text"],
   ["C", "Color tools"],
-  ["S", "Keep-inside selection"],
+  ["S", "Cutout (crop a photo)"],
   ["K", "Stickers & templates"],
   ["I", "Add a photo"],
   ["Ctrl + Z", "Undo"],
   ["Ctrl + ⇧ + Z", "Redo"],
-  ["Ctrl + S", "Save"],
+  ["Ctrl + S", "Save (and download PNG + JPG)"],
   ["Del", "Delete active layer"],
   ["[ / ]", "Brush, eraser, soft-focus or smudge size (⇧ = ×10)"],
   ["Alt + [ / ]", "Bend selected text (arch ∩ / smile ∪)"],

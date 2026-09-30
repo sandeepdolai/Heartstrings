@@ -15,7 +15,6 @@ import {
   newCanvasPage,
   uid,
   type CanvasPageData,
-  type ClipShape,
   type ImageLayer,
   type Layer,
   type ProjectData,
@@ -87,7 +86,10 @@ export interface EditorState {
 
   /* transient (not persisted, not historicized) */
   liveStroke: { layerId: string; stroke: Stroke } | null;
-  pendingClip: { canvasId: string; shape: ClipShape } | null;
+  /** A completed freehand cutout loop awaiting confirmation (Cutout tool).
+   *  Points are RDP-simplified canvas-unit samples, auto-closed back to the
+   *  start point on release. */
+  pendingTrace: { canvasId: string; points: [number, number][] } | null;
   editingTextLayerId: string | null;
   dirty: boolean;
   /** True while the most recent paint pointer was a stylus (Apple Pencil /
@@ -148,9 +150,17 @@ export interface EditorState {
   moveLayer: (id: string, dir: "up" | "down") => void;
   reorderLayer: (id: string, toIndex: number) => void;
   updateLayer: (id: string, patch: Partial<Layer>, opts?: { history?: boolean }) => void;
+  /** updateLayer, but for ANY canvas — not just the active one. Used by the
+   *  cutout commit (the trace knows its canvas) and the load-time legacy
+   *  mask migration, which walks every page. */
+  patchLayer: (
+    canvasId: string,
+    id: string,
+    patch: Partial<Layer>,
+    opts?: { history?: boolean }
+  ) => void;
   toggleLayerVisible: (id: string) => void;
   toggleLayerClipped: (id: string) => void;
-  applyClipShape: (shape: ClipShape) => void;
   clearClipShape: (id: string) => void;
   mergeDown: (id: string, flattened: string) => void;
 
@@ -235,7 +245,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   liveStroke: null,
   penActive: false,
-  pendingClip: null,
+  pendingTrace: null,
   editingTextLayerId: null,
   dirty: false,
   past: [],
@@ -274,7 +284,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       dirty: false,
       liveStroke: null,
       penActive: false,
-      pendingClip: null,
+      pendingTrace: null,
       editingTextLayerId: null,
       tool: "select",
     }),
@@ -292,7 +302,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       dirty: false,
       liveStroke: null,
       penActive: false,
-      pendingClip: null,
+      pendingTrace: null,
       editingTextLayerId: null,
       tool: "select",
     }),
@@ -301,7 +311,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((s) => ({
       tool,
       prevTool: s.tool,
-      pendingClip: null,
+      pendingTrace: null,
       editingTextLayerId:
         tool === "text" ? s.editingTextLayerId : null,
     })),
@@ -337,10 +347,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setActiveCanvas: (id) =>
     set((s) =>
       // no-op when already active — wrapper clicks on the active page must
-      // not abort a just-finished keep-inside selection (FR-8)
+      // not abort a just-finished cutout trace
       s.activeCanvasId === id
         ? {}
-        : { activeCanvasId: id, pendingClip: null }
+        : { activeCanvasId: id, pendingTrace: null }
     ),
 
   addCanvas: () => {
@@ -634,13 +644,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (layer) get().updateLayer(id, { clipped: !layer.clipped });
   },
 
-  applyClipShape: (shape) => {
-    const { activeCanvasId } = get();
-    if (!activeCanvasId) return;
-    const layer = get().getActiveLayer();
-    if (!layer) return;
-    get().updateLayer(layer.id, { clipShape: shape });
-    set({ pendingClip: null });
+  patchLayer: (canvasId, id, patch, opts) => {
+    if (opts?.history === false) {
+      // normalization pass (e.g. the legacy-mask migration on load) —
+      // no history entry, still marks the project dirty so it persists.
+      get()._mutateNoHistory((d) => {
+        const c = d.canvases.find((c) => c.id === canvasId);
+        if (!c) return;
+        c.layers = c.layers.map((l) =>
+          l.id === id ? ({ ...l, ...patch } as Layer) : l
+        );
+      });
+      set({ dirty: true });
+      return;
+    }
+    get()._commit((d) => {
+      const c = d.canvases.find((c) => c.id === canvasId);
+      if (!c) return;
+      c.layers = c.layers.map((l) => (l.id === id ? ({ ...l, ...patch } as Layer) : l));
+    });
+    set({ dirty: true });
   },
 
   clearClipShape: (id) => get().updateLayer(id, { clipShape: undefined }),
@@ -754,7 +777,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeLayerIds: entry.activeLayerIds,
       dirty: true,
       liveStroke: null,
-      pendingClip: null,
+      pendingTrace: null,
       editingTextLayerId: null,
     });
   },
@@ -775,7 +798,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeLayerIds: entry.activeLayerIds,
       dirty: true,
       liveStroke: null,
-      pendingClip: null,
+      pendingTrace: null,
       editingTextLayerId: null,
     });
   },

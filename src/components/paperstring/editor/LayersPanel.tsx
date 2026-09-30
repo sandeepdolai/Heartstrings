@@ -2,7 +2,7 @@
 
 /**
  * LayersPanel (FR-3) — the layer stack for the active page: select, reorder,
- * hide/show, opacity, clipping, keep-inside masks, duplicate, merge-down and
+ * hide/show, opacity, clipping, cutout/legacy masks, duplicate, merge-down and
  * delete; plus the page background quick-picker. Renders as the right rail on
  * desktop and inside a bottom sheet on mobile (FR-3.6).
  */
@@ -29,6 +29,7 @@ import {
   ArrowDown,
   Merge,
   Lasso,
+  Scissors,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -276,7 +277,7 @@ function LayerRow({
             {layer.clipShape && (
               <Lasso
                 className="h-3 w-3 shrink-0 text-[#f7c948]"
-                aria-label="Keep-inside mask"
+                aria-label="Legacy keep-inside mask — opening this book converts it to a cutout"
               />
             )}
             {layer.blendMode && layer.blendMode !== "normal" && (
@@ -360,7 +361,7 @@ function LayerRow({
           )}
           {layer.clipShape && (
             <DropdownMenuItem onClick={() => useEditorStore.getState().clearClipShape(layer.id)}>
-              <Lasso className="h-3.5 w-3.5" /> Remove keep-inside
+              <Lasso className="h-3.5 w-3.5" /> Remove legacy mask
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="bg-editor-border" />
@@ -578,19 +579,21 @@ function ActiveLayerControls() {
           <button
             type="button"
             onClick={() => useEditorStore.getState().clearClipShape(layer.id)}
+            title="Legacy keep-inside mask — remove it"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#f7c948]/60 bg-[#f7c948]/10 px-2 py-1.5 text-[11px] text-editor-text transition hover:bg-[#f7c948]/20"
           >
             <Lasso className="h-3.5 w-3.5" /> Unmask
           </button>
-        ) : (
+        ) : layer.type === "image" ? (
           <button
             type="button"
             onClick={() => useEditorStore.getState().setTool("select-area")}
+            title="Trace a shape to crop this photo to"
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-2 py-1.5 text-[11px] text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
           >
-            <Lasso className="h-3.5 w-3.5" /> Keep inside
+            <Scissors className="h-3.5 w-3.5" /> Cutout
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );

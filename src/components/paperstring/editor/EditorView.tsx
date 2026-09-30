@@ -17,9 +17,11 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import type { CustomFont, ProjectData, ProjectSummary, PsUser } from "@/lib/paperstring/types";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { renderPageToCoverJpg } from "@/lib/paperstring/render";
+import { exportPagesAsImages } from "@/lib/paperstring/export";
+import { migrateLegacyImageMasks } from "@/lib/paperstring/cutout";
 import { psNavigate } from "@/lib/paperstring/navigation";
 import { LogoMark } from "../brand";
-import { TopBar, type SaveState } from "./TopBar";
+import { TopBar, type SaveState, type ExportRequest } from "./TopBar";
 import { ToolRail } from "./ToolRail";
 import { ToolPanel } from "./ToolPanel";
 import { CanvasWorkspace } from "./CanvasWorkspace";
@@ -88,7 +90,19 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const storeProjectId = useEditorStore((s) => s.projectId);
 
   useEffect(() => {
-    if (loadedProjectRef.current === projectId) return;
+    // Skip only when THIS project is already live in the store — a ["me"]
+    // refetch after a completed load must never re-load and clobber live
+    // edits. But when a previous run was cancelled mid-flight (the user
+    // object was replaced while the fetch was in the air), the store does
+    // NOT have the project yet — fall through and retry, or the editor
+    // orphans into "Opening your book…" forever (found live in QA: HMR
+    // full-reload + me-refetch raced the project fetch).
+    const store = useEditorStore.getState();
+    if (
+      loadedProjectRef.current === projectId &&
+      store.projectId === projectId
+    )
+      return;
     loadedProjectRef.current = projectId;
     let cancelled = false;
     setProject(null);
@@ -111,6 +125,32 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
           .getState()
           .load(projectId, json.project.title, json.project.data, user);
         setProject(json.project);
+        // Load-time upgrade: image layers still carrying a legacy
+        // keep-inside mask (the retired round-23 lasso) become true
+        // cutouts — identical pixels, but the mask's page-anchored,
+        // box-detaching behaviour is gone. Fire-and-forget: failures keep
+        // the legacy mask rendering, and the migration persists with the
+        // next autosave.
+        void (async () => {
+          const count = await migrateLegacyImageMasks(
+            useEditorStore.getState().canvases,
+            (canvasId, layerId, patch) =>
+              useEditorStore
+                .getState()
+                .patchLayer(canvasId, layerId, patch, { history: false })
+          );
+          if (count > 0) {
+            toast.success(
+              count === 1
+                ? "1 photo upgraded from mask to cutout"
+                : `${count} photos upgraded from masks to cutouts`,
+              {
+                description:
+                  "Nothing changed visually — they just move and resize as one piece now.",
+              }
+            );
+          }
+        })();
       } catch (err) {
         if (!cancelled) {
           setLoadError(
@@ -251,6 +291,65 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const saveRef = useRef(save);
   saveRef.current = save;
 
+  /* ── export: every created page as PNG/JPG files ──────────────────── */
+
+  const [exporting, setExporting] = useState(false);
+  const runExport = useCallback(async (req: ExportRequest) => {
+    const s = useEditorStore.getState();
+    if (!s.canvases.length) return;
+    setExporting(true);
+    const loading = toast.loading(
+      req.scope === "all" ? "Rendering every page…" : "Rendering this page…"
+    );
+    try {
+      const pages =
+        req.scope === "all"
+          ? s.canvases
+          : s.canvases.filter((c) => c.id === s.activeCanvasId);
+      const list = pages.length ? pages : s.canvases;
+      const written = await exportPagesAsImages({
+        title: s.title || "Untitled book",
+        pages: list,
+        formats: req.formats,
+      });
+      if (written > 0) {
+        toast.success(`Exported ${written} file${written === 1 ? "" : "s"}`, {
+          id: loading,
+          description:
+            "Check your downloads — PNG keeps every pixel, JPG is share-ready.",
+        });
+      } else {
+        toast.error("Nothing to export", {
+          id: loading,
+          description: "Add some artwork to the page first.",
+        });
+      }
+    } catch (err) {
+      console.error("[editor] export failed", err);
+      toast.error("Export failed", {
+        id: loading,
+        description: "Something went wrong while rendering — try again.",
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+  const runExportRef = useRef(runExport);
+  runExportRef.current = runExport;
+
+  /** Save = persist to the studio AND hand over the graphics as files
+   *  (every page, both formats) — the creator asked for exactly that. */
+  const saveAndExport = useCallback(async () => {
+    await saveRef.current({ force: true });
+    try {
+      await runExportRef.current({ scope: "all", formats: ["png", "jpg"] });
+    } catch (err) {
+      console.error("[editor] save-and-export failed", err);
+    }
+  }, []);
+  const saveAndExportRef = useRef(saveAndExport);
+  saveAndExportRef.current = saveAndExport;
+
   /** Stable identity for the ShareDialog (an inline arrow here would restart
    *  the publish pipeline on every EditorView re-render). */
   const performShareSave = useCallback(
@@ -268,6 +367,76 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
     const t = setTimeout(() => void saveRef.current(), 2500);
     return () => clearTimeout(t);
   }, [ready, dirty, canvasesRev, titleRev]);
+
+  // Autosave safety net: whatever left the store dirty for 20s straight (a
+  // cancelled debounce, a missed edge) gets saved anyway — "forgot to
+  // save" is simply not a failure mode anymore.
+  useEffect(() => {
+    if (!ready) return;
+    const iv = window.setInterval(() => {
+      const s = useEditorStore.getState();
+      if (s.dirty && s.projectId && s.canvases.length) void saveRef.current();
+    }, 20000);
+    return () => window.clearInterval(iv);
+  }, [ready]);
+
+  // Leaving the tab or app: flush immediately. On visibilitychange the
+  // page stays alive, so the full save pipeline (cover render included)
+  // runs fine; on pagehide (tab close) a keepalive PUT fires when the
+  // snapshot is small enough and a plain fetch otherwise — best effort,
+  // the windows above already made the at-risk interval tiny.
+  useEffect(() => {
+    const snapshotBody = (): string | null => {
+      const s = useEditorStore.getState();
+      if (!s.projectId || !s.dirty || !s.canvases.length) return null;
+      const fonts = fontsRef.current.fonts;
+      try {
+        return JSON.stringify({
+          title: s.title,
+          data: {
+            version: 1,
+            canvases: s.canvases,
+            ...(fonts.length ? { fonts } : {}),
+          },
+        } satisfies { title: string; data: ProjectData });
+      } catch {
+        return null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // Dirty-guarded: a CLEAN editor must never force-save on hide — a
+        // stale store could then clobber newer server data (another tab's
+        // save, or an external write) in the unload race.
+        const s = useEditorStore.getState();
+        if (s.dirty) void saveRef.current({ force: true });
+      }
+    };
+    const onPageHide = () => {
+      const s = useEditorStore.getState();
+      const body = snapshotBody();
+      if (!s.projectId || !body) return;
+      const init: RequestInit = {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body,
+      };
+      if (body.length <= 60000) {
+        void fetch(`/api/projects/${s.projectId}`, {
+          ...init,
+          keepalive: true,
+        }).catch(() => {});
+      } else {
+        void fetch(`/api/projects/${s.projectId}`, init).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, []);
 
   /* ── dirty-exit guard ─────────────────────────────────────────────── */
 
@@ -365,7 +534,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
       }
       if (mod && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        void saveRef.current({ force: true });
+        void saveAndExportRef.current();
         return;
       }
       // Move the active page: Ctrl+Shift+←/→ (the keyboard twin of
@@ -540,8 +709,10 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
       <div className="flex h-[100dvh] flex-col overflow-hidden bg-editor text-editor-text">
         <TopBar
           saveState={saveState}
-          onSave={() => void save({ force: true })}
+          onSave={() => void saveAndExportRef.current()}
           onShare={() => setShareOpen(true)}
+          onExport={(req) => void runExportRef.current(req)}
+          exporting={exporting}
           shareToken={shareToken}
           onStartTour={() => setTourOpen(true)}
         />

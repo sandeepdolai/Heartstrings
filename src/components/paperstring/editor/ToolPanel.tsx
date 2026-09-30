@@ -5,10 +5,12 @@
  * sheet (mobile) showing options for the active tool.
  */
 
-import { useEffect, useState } from "react";
-import { Check, Lasso, Scaling, X } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Scissors, X } from "lucide-react";
+import { toast } from "sonner";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
-import { clipShapeBounds, isViableLasso } from "@/lib/paperstring/lasso";
+import { isViableTrace, polygonBBox } from "@/lib/paperstring/trace";
+import { findCutoutTarget, rasterizeImageCutout } from "@/lib/paperstring/cutout";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { ColorPanel } from "./panels/ColorPanel";
@@ -468,40 +470,86 @@ function SmudgePanel() {
 }
 
 function SelectionAreaPanel() {
-  const pendingClip = useEditorStore((s) => s.pendingClip);
-  const applyClipShape = useEditorStore((s) => s.applyClipShape);
+  const pendingTrace = useEditorStore((s) => s.pendingTrace);
   const activeCanvasId = useEditorStore((s) => s.activeCanvasId);
-  const activeLayer = useEditorStore((s) => {
-    const c = s.canvases.find((c) => c.id === s.activeCanvasId);
-    const id = c ? s.activeLayerIds[c.id] : undefined;
-    return c?.layers.find((l) => l.id === id) ?? null;
-  });
-  const shape =
-    pendingClip && pendingClip.canvasId === activeCanvasId ? pendingClip.shape : null;
-  // The lasso is the only creatable selection now (rect/ellipse stay in the
-  // data model for old saved projects but can never be pending here).
-  const hasSelection =
-    !!shape && shape.type === "path" && isViableLasso(shape.points);
-  const bounds = shape ? clipShapeBounds(shape) : null;
+  const activeCanvas = useEditorStore((s) =>
+    s.canvases.find((c) => c.id === s.activeCanvasId) ?? null
+  );
+  const activeLayerId = useEditorStore((s) =>
+    s.activeCanvasId ? s.activeLayerIds[s.activeCanvasId] : undefined
+  );
+  const [busy, setBusy] = useState(false);
+
+  const trace =
+    pendingTrace && pendingTrace.canvasId === activeCanvasId
+      ? pendingTrace
+      : null;
+  const points = trace?.points ?? null;
+  const viable = !!points && isViableTrace(points);
+  // Which photo the loop will cut — computed live so the confirm card can
+  // name it (and so we can guide the user when no photo is underneath).
+  const target =
+    viable && activeCanvas
+      ? findCutoutTarget(activeCanvas, points!, activeLayerId)
+      : null;
+  const bounds = points ? polygonBBox(points) : null;
+  const hasPhotos = !!activeCanvas?.layers.some((l) => l.type === "image");
+
+  const apply = async () => {
+    if (!trace || !points || !target || busy) return;
+    setBusy(true);
+    try {
+      const patch = await rasterizeImageCutout(target, points, target.clipShape);
+      if (!patch) {
+        toast.error("The loop misses the photo", {
+          description: "Trace over the photo itself — only its pixels can be cut.",
+        });
+        return;
+      }
+      useEditorStore.getState().patchLayer(trace.canvasId, target.id, {
+        ...patch,
+        // the crop bakes the adjustments; the mask era ends here
+        adjust: undefined,
+        clipShape: undefined,
+      });
+      useEditorStore.setState({ pendingTrace: null });
+      useEditorStore.getState().setTool("select");
+      toast.success("Photo cut out", {
+        description:
+          "Its box now hugs the cut edges exactly — move and resize it freely.",
+        action: {
+          label: "Undo",
+          onClick: () => useEditorStore.getState().undo(),
+        },
+      });
+    } catch (err) {
+      console.error("[cutout] failed", err);
+      toast.error("Could not cut this photo", {
+        description: "The photo file may be unreadable — try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <PanelShell
-      title="Lasso"
-      hint="Trace a freehand outline on the page — release closes the loop back to its start. Keep what's inside; the rest is masked away. Reversible from the layer list."
+      title="Cutout"
+      hint="Trace a freehand outline over a photo — release closes the loop and the photo is cropped to exactly what you traced. The box hugs the cut edges, so moving and resizing always move the real pixels."
     >
-      {!hasSelection ? (
+      {!viable ? (
         <div className="flex flex-col gap-3 rounded-lg border border-editor-border-strong bg-editor-raised/40 p-3.5">
           <div className="flex items-center gap-2">
-            <Lasso className="h-4 w-4 text-heart" aria-hidden="true" />
+            <Scissors className="h-4 w-4 text-heart" aria-hidden="true" />
             <span className="text-xs font-medium text-editor-text">
-              Freehand keep-inside
+              Freehand photo cutout
             </span>
           </div>
           <ol className="flex flex-col gap-2">
             {[
-              "Drag on the page to trace an outline — it follows your finger exactly, any shape you like.",
+              "Drag over a photo to trace the shape you want to keep — it follows your finger exactly, any shape you like.",
               "Release — the loop seals itself back to the start point.",
-              "Keep the area, then move or delete the layer as usual.",
+              "Confirm the cut — the photo is cropped to your trace, edges and all.",
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-2.5">
                 <span
@@ -516,43 +564,68 @@ function SelectionAreaPanel() {
               </li>
             ))}
           </ol>
+          {!hasPhotos && (
+            <p className="text-[11px] leading-relaxed text-editor-dim/80">
+              No photos on this page yet — add one from Elements (image icon)
+              first.
+            </p>
+          )}
         </div>
-      ) : (
+      ) : target ? (
         <div className="rounded-lg border border-editor-border-strong bg-editor-raised/60 p-3">
           <p className="mb-3 text-xs leading-relaxed text-editor-dim">
-            Keep{" "}
-            <span className="text-editor-text">
-              {activeLayer?.name ?? "the active layer"}
-            </span>{" "}
-            inside this loop?
+            Cut{" "}
+            <span className="text-editor-text">{target.name}</span>{" "}
+            down to this loop? Only the traced shape survives — the rest of
+            the photo is cropped away for good (one undo brings it back).
           </p>
           {bounds && (
             <p className="mb-3 text-[10px] tabular-nums text-editor-dim/70">
-              {Math.round(bounds.w)} × {Math.round(bounds.h)} px area ·{" "}
-              {shape.type === "path" ? `${shape.points.length} points traced` : ""}
+              {Math.round(bounds.x1 - bounds.x0)} ×{" "}
+              {Math.round(bounds.y1 - bounds.y0)} px area · {points!.length}{" "}
+              points traced
             </p>
           )}
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => applyClipShape(shape!)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-smoke px-3 py-2 text-xs font-medium text-night transition hover:bg-white"
+              onClick={() => void apply()}
+              disabled={busy}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-smoke px-3 py-2 text-xs font-medium text-night transition hover:bg-white disabled:opacity-60"
+              )}
             >
-              <Check className="h-3.5 w-3.5" /> Keep inside
+              {busy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Scissors className="h-3.5 w-3.5" />
+              )}{" "}
+              {busy ? "Cutting…" : "Cutout"}
             </button>
             <button
               type="button"
-              onClick={() => useEditorStore.setState({ pendingClip: null })}
+              onClick={() => useEditorStore.setState({ pendingTrace: null })}
+              disabled={busy}
               className="flex items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-3 py-2 text-xs text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
             >
               <X className="h-3.5 w-3.5" /> Cancel
             </button>
           </div>
         </div>
-      )}
-
-      {!activeLayer && (
-        <p className="text-xs text-editor-dim">Select a layer first.</p>
+      ) : (
+        <div className="rounded-lg border border-editor-border-strong bg-editor-raised/60 p-3">
+          <p className="mb-3 text-xs leading-relaxed text-editor-dim">
+            No photo under this loop. The cutout crops photos — paint, text and
+            stickers stay untouched.
+          </p>
+          <button
+            type="button"
+            onClick={() => useEditorStore.setState({ pendingTrace: null })}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-3 py-2 text-xs text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
+          >
+            <X className="h-3.5 w-3.5" /> Clear the loop
+          </button>
+        </div>
       )}
     </PanelShell>
   );

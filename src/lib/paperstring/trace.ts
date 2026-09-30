@@ -1,5 +1,6 @@
 /**
- * Freehand lasso geometry — pure helpers for the keep-inside selection tool.
+ * Freehand trace geometry — pure helpers for the Cutout tool (and the
+ * legacy keep-inside masks still present in old saved projects).
  *
  * Everything works in CANVAS UNITS (1080×1920), mirroring stroke points, so
  * traced paths persist scale-free and render identically in the editor
@@ -11,8 +12,8 @@ import type { ClipShape } from "./types";
 /** Ramer–Douglas–Peucker polyline simplification.
  *  Keeps the traced silhouette within `epsilon` canvas units while collapsing
  *  the hundred-plus near-duplicate samples a 120Hz pointer stream produces —
- *  a 3-second drag drops from ~350 points to a few dozen, so saved project
- *  JSON stays lean and the mask path stays exactly as hand-drawn. */
+ *  a 3-second drag drops from ~350 points to a few dozen, so the stored
+ *  cutout path stays lean and the crop edge stays exactly as hand-drawn. */
 export function simplifyPolyline(
   points: [number, number][],
   epsilon = 2
@@ -58,7 +59,7 @@ function perpendicularDistance(
 
 /** Signed area of a closed polygon (shoelace). |area| in canvas units² —
  *  used to reject degenerate loops (a tap or a hairline scratch) that would
- *  otherwise mask a layer to nothing. */
+ *  otherwise crop a photo down to nothing. */
 export function polygonArea(points: [number, number][]): number {
   let a = 0;
   for (let i = 0, n = points.length; i < n; i++) {
@@ -69,34 +70,62 @@ export function polygonArea(points: [number, number][]): number {
   return Math.abs(a) / 2;
 }
 
-/** Is a traced/pending lasso an actual selectable region?
+/** Is a traced/pending loop an actual cuttable region?
  *  Photoshop's rule of thumb: the loop must come back around — at least a
  *  triangle and a visible sliver of area (~a 22×22 unit square). */
-export function isViableLasso(points: [number, number][]): boolean {
+export function isViableTrace(points: [number, number][]): boolean {
   return points.length >= 3 && polygonArea(points) > 500;
 }
 
-/** Bounding box of any clip shape (canvas units) — panel status lines and
- *  legacy rect/ellipse shapes share one helper. */
-export function clipShapeBounds(shape: ClipShape): {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+/** Axis-aligned bounds of a polygon (canvas units). */
+export function polygonBBox(points: [number, number][]): {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 } {
-  if (shape.type === "path") {
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const [x, y] of shape.points) {
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
-    }
-    if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
-    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  for (const [x, y] of points) {
+    if (x < x0) x0 = x;
+    if (y < y0) y0 = y;
+    if (x > x1) x1 = x;
+    if (y > y1) y1 = y;
   }
-  return { x: shape.x, y: shape.y, w: shape.w, h: shape.h };
+  if (!Number.isFinite(x0)) return { x0: 0, y0: 0, x1: 0, y1: 0 };
+  return { x0, y0, x1, y1 };
+}
+
+/** Any clip shape as a closed polygon in canvas units — path masks pass
+ *  through, the retired rect/ellipse presets are converted (4 corners / a
+ *  64-gon) so the cutout rasterizer and the load-time migration can treat
+ *  every legacy mask the same way. Returns null for degenerate shapes. */
+export function clipShapePolygon(shape: ClipShape): [number, number][] | null {
+  if (shape.type === "path") {
+    return shape.points.length >= 3 ? shape.points : null;
+  }
+  if (shape.type === "rect") {
+    if (shape.w <= 0 || shape.h <= 0) return null;
+    const { x, y, w, h } = shape;
+    return [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+    ];
+  }
+  // ellipse → 64-gon (visually indistinguishable from the fill at any zoom)
+  if (shape.w <= 0 || shape.h <= 0) return null;
+  const cx = shape.x + shape.w / 2;
+  const cy = shape.y + shape.h / 2;
+  const rx = shape.w / 2;
+  const ry = shape.h / 2;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < 64; i++) {
+    const t = (i / 64) * Math.PI * 2;
+    pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]);
+  }
+  return pts;
 }

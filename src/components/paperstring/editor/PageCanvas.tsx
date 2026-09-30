@@ -3,7 +3,7 @@
 /**
  * PageCanvas — one canvas page in the editor: composite render + interaction
  * layer for every tool (select/transform, brush, eraser, text, eyedropper,
- * keep-inside selection), the selection chrome and the live text editor.
+ * freehand cutout trace), the selection chrome and the live text editor.
  */
 
 import {
@@ -34,7 +34,8 @@ import {
   toLocal,
 } from "@/lib/paperstring/render";
 import { useEditorStore, type HistoryEntry } from "@/lib/paperstring/editor-store";
-import { isViableLasso, simplifyPolyline } from "@/lib/paperstring/lasso";
+import { isViableTrace, simplifyPolyline } from "@/lib/paperstring/trace";
+import { findCutoutTarget } from "@/lib/paperstring/cutout";
 import { LogoMark } from "@/components/paperstring/brand";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -99,7 +100,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   const tool = useEditorStore((s) => s.tool);
   const liveStroke = useEditorStore((s) => s.liveStroke);
   const editingTextLayerId = useEditorStore((s) => s.editingTextLayerId);
-  const pendingClip = useEditorStore((s) => s.pendingClip);
+  const pendingTrace = useEditorStore((s) => s.pendingTrace);
   const activeLayerId = useEditorStore(
     (s) => (s.activeCanvasId === page.id ? s.activeLayerIds[page.id] : undefined)
   );
@@ -404,16 +405,14 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           break;
         }
         case "select-area": {
-          // Freehand lasso, Photoshop-style: the drag traces an arbitrary
-          // outline in real time; releasing auto-closes the loop back to the
-          // start point and the enclosed area becomes the keep-inside mask.
+          // Freehand cutout trace, Photoshop-lasso-style: the drag outlines
+          // the shape to cut out of a photo in real time; releasing
+          // auto-closes the loop back to the start point, and the enclosed
+          // region becomes the crop — a REAL pixel cutout, not a mask.
           e.currentTarget.setPointerCapture(e.pointerId);
           gestureRef.current = { kind: "select-area", points: [[ux, uy]] };
           useEditorStore.setState({
-            pendingClip: {
-              canvasId: page.id,
-              shape: { type: "path", points: [[ux, uy]] },
-            },
+            pendingTrace: { canvasId: page.id, points: [[ux, uy]] },
           });
           break;
         }
@@ -544,10 +543,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         if (Math.hypot(ux - last[0], uy - last[1]) >= 2.5) {
           pts.push([ux, uy]);
           useEditorStore.setState({
-            pendingClip: {
-              canvasId: page.id,
-              shape: { type: "path", points: pts.slice() },
-            },
+            pendingTrace: { canvasId: page.id, points: pts.slice() },
           });
         }
       }
@@ -682,20 +678,17 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         }
         gestureSnapshotRef.current = null;
       } else if (g.kind === "select-area") {
-        // Release closes the loop back to the start point (the mask path and
-        // the preview polygon both auto-close). Simplify the traced samples
-        // (RDP) so the stored mask stays lean; a degenerate trace — a tap or
-        // a hairline scratch — cancels itself instead of masking to nothing.
+        // Release closes the loop back to the start point (the crop polygon
+        // auto-seals). Simplify the traced samples (RDP) so the stored cutout
+        // path stays lean; a degenerate trace — a tap or a hairline scratch —
+        // cancels itself instead of cropping a photo to nothing.
         const simplified = simplifyPolyline(g.points, 2);
-        if (isViableLasso(simplified)) {
+        if (isViableTrace(simplified)) {
           useEditorStore.setState({
-            pendingClip: {
-              canvasId: page.id,
-              shape: { type: "path", points: simplified },
-            },
+            pendingTrace: { canvasId: page.id, points: simplified },
           });
         } else {
-          useEditorStore.setState({ pendingClip: null });
+          useEditorStore.setState({ pendingTrace: null });
         }
       }
     },
@@ -823,10 +816,17 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     }
   };
 
-  const pendingShape =
-    pendingClip && pendingClip.canvasId === page.id && tool === "select-area"
-      ? pendingClip.shape
+  const tracePoints =
+    pendingTrace && pendingTrace.canvasId === page.id && tool === "select-area"
+      ? pendingTrace.points
       : null;
+  // Which photo the live loop would cut — highlighted while tracing so the
+  // user always knows what the scissors are about to touch.
+  const cutTarget =
+    tracePoints && tracePoints.length >= 3 && active
+      ? findCutoutTarget(page, tracePoints, activeLayerId)
+      : null;
+  const cutTargetBox = cutTarget ? layerAABB(cutTarget, 10) : null;
 
   return (
     <div
@@ -991,50 +991,48 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         />
       )}
 
-      {/* lasso (keep-inside) selection preview — the dashed rose loop traces
-          the drag in real time; the polygon auto-closes back to the start
-          point, and the anchor dot marks where the loop will seal */}
-      {pendingShape &&
-        (pendingShape.type === "path" ? (
-          <svg
-            aria-hidden="true"
-            viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-          >
-            <polygon
-              points={pendingShape.points.map(([x, y]) => `${x},${y}`).join(" ")}
-              fill="rgba(232,68,106,0.08)"
-              fillRule="evenodd"
-              stroke="#e8446a"
-              strokeWidth={5}
-              strokeDasharray="20 16"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            {pendingShape.points.length > 0 && (
-              <circle
-                cx={pendingShape.points[0][0]}
-                cy={pendingShape.points[0][1]}
-                r={18}
-                fill="#fff"
-                stroke="#e8446a"
-                strokeWidth={5}
-              />
-            )}
-          </svg>
-        ) : (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute border-2 border-dashed border-[#e8446a] bg-[#e8446a]/10"
-            style={{
-              left: pendingShape.x * factor,
-              top: pendingShape.y * factor,
-              width: pendingShape.w * factor,
-              height: pendingShape.h * factor,
-              borderRadius: pendingShape.type === "ellipse" ? "50%" : 8,
-            }}
+      {/* cutout trace preview — the dashed rose loop follows the drag in
+          real time; the polygon auto-closes back to the start point, and the
+          anchor dot marks where the loop will seal. The photo underneath the
+          loop gets a warm dashed halo so it's clear what will be cut. */}
+      {tracePoints && tracePoints.length > 0 && (
+        <svg
+          aria-hidden="true"
+          viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+          className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
+        >
+          <polygon
+            points={tracePoints.map(([x, y]) => `${x},${y}`).join(" ")}
+            fill="rgba(232,68,106,0.08)"
+            fillRule="evenodd"
+            stroke="#e8446a"
+            strokeWidth={5}
+            strokeDasharray="20 16"
+            strokeLinejoin="round"
+            strokeLinecap="round"
           />
-        ))}
+          <circle
+            cx={tracePoints[0][0]}
+            cy={tracePoints[0][1]}
+            r={18}
+            fill="#fff"
+            stroke="#e8446a"
+            strokeWidth={5}
+          />
+        </svg>
+      )}
+      {cutTargetBox && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute z-[1] rounded-[10px] border-2 border-dashed border-[#f7c948] bg-[#f7c948]/[0.08] shadow-[0_0_24px_-6px_rgba(247,201,72,0.55)]"
+          style={{
+            left: cutTargetBox.x0 * factor,
+            top: cutTargetBox.y0 * factor,
+            width: (cutTargetBox.x1 - cutTargetBox.x0) * factor,
+            height: (cutTargetBox.y1 - cutTargetBox.y0) * factor,
+          }}
+        />
+      )}
 
       {/* live text editor */}
       {editingLayer && (
