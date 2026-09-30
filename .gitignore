@@ -62,3 +62,6 @@ server.log
 /mini-services/
 /Caddyfile
 /agent-ctx/
+
+# PaperString: QA screenshots
+/download/
