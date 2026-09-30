@@ -51,28 +51,42 @@ async function initPrisma(): Promise<void> {
   if (globalForPrisma.prisma) return;
 
   // 1) Cloudflare Workers path (OpenNext): D1 binding → driver adapter.
-  try {
+  //    Detected via the documented navigator.userAgent constant instead of
+  //    a try/catch: if anything fails HERE on the worker it must surface as
+  //    its real error (a silent fall-through used to route the worker into
+  //    the better-sqlite3 branch below, whose bundled require("fs") then
+  //    crashed with a misleading "Dynamic require of fs" per request).
+  const onWorkers =
+    typeof navigator !== "undefined" &&
+    navigator.userAgent === "Cloudflare-Workers";
+  if (onWorkers) {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const cf = getCloudflareContext() as
       | { env?: { DB?: D1Like } }
       | undefined;
     const d1 = cf?.env?.DB;
-    if (d1 && typeof d1.prepare === "function") {
-      const { PrismaD1 } = await import("@prisma/adapter-d1");
-      setPrismaClient(
-        new PrismaClientWorkers({ adapter: new PrismaD1(d1 as never) })
+    if (!(d1 && typeof d1.prepare === "function")) {
+      throw new Error(
+        '[db-init] D1 binding "DB" is not available inside the request context'
       );
-      return;
     }
-  } catch {
-    // Not in a Cloudflare request context — local dev, fall through.
+    const { PrismaD1 } = await import("@prisma/adapter-d1");
+    setPrismaClient(
+      new PrismaClientWorkers({ adapter: new PrismaD1(d1 as never) })
+    );
+    return;
   }
 
   // 2) Local path: better-sqlite3 driver adapter on the dev database
   //    (DATABASE_URL is a file: URL pointing at the sandbox's SQLite file).
-  const { PrismaBetterSqlite3 } = await import(
-    "@prisma/adapter-better-sqlite3"
-  );
+  //    The import specifier is intentionally non-literal (and flagged with
+  //    webpackIgnore) so neither Turbopack nor esbuild can resolve it
+  //    statically — the native better-sqlite3 module must never be traced
+  //    into the worker bundle. At runtime on Node it resolves normally.
+  const betterSqlite3Spec = "@prisma/adapter-better-sqlite3";
+  const { PrismaBetterSqlite3 } = (await import(
+    /* webpackIgnore: true */ betterSqlite3Spec
+  )) as typeof import("@prisma/adapter-better-sqlite3");
   const url = process.env.DATABASE_URL ?? "file:./db/custom.db";
   setPrismaClient(
     new PrismaClientNode({

@@ -14,10 +14,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Heart, Link2, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, Heart, Link2, Loader2, RefreshCw, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
+import type { CanvasPageData, RasterLayer } from "@/lib/paperstring/types";
 import { renderPageToPublishPng } from "@/lib/paperstring/render";
 import { psNavigate } from "@/lib/paperstring/navigation";
 import { cn } from "@/lib/utils";
@@ -31,12 +32,24 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-type Stage = "preparing" | "saving" | "rendering" | "uploading" | "publishing" | "ready" | "error";
+type Stage = "preparing" | "empty" | "saving" | "rendering" | "uploading" | "publishing" | "ready" | "error";
 
 /** Books up to this many pages use the legacy single-shot publish. */
 const LEGACY_MAX = 3;
 /** Pages streamed per chunk request in the chunked pipeline. */
 const CHUNK_SIZE = 3;
+
+/** Does this page carry anything the viewer would see? Raster layers count
+ *  only with strokes; any visible text/sticker/photo layer counts; a tinted
+ *  background (anything but plain white) is intentional design, not blank. */
+function pageHasContent(page: CanvasPageData): boolean {
+  if (page.background && page.background.toUpperCase() !== "#FFFFFF") return true;
+  return page.layers.some((l) => {
+    if (!l.visible || l.opacity === 0) return false;
+    if (l.type === "raster") return ((l as RasterLayer).strokes?.length ?? 0) > 0;
+    return true; // text / sticker / image layers are content by existing
+  });
+}
 
 export function ShareDialog({
   open,
@@ -176,6 +189,15 @@ export function ShareDialog({
     // StrictMode double-invokes effects in dev — start the pipeline once per
     // dialog session (explicit retries call run() directly).
     if (startedRef.current) return;
+    // Empty-book guard (live bug report: a link that opened on blank pages
+    // with no warning). If no page carries visible content, stop BEFORE the
+    // pipeline and say so — the recipient would see blank pages. Sharing is
+    // still possible, but only as an explicit choice.
+    const { canvases } = useEditorStore.getState();
+    if (!canvases.some(pageHasContent)) {
+      setStage("empty");
+      return;
+    }
     startedRef.current = true;
     void run();
   }, [open, run]);
@@ -231,6 +253,8 @@ export function ShareDialog({
                   aria-hidden="true"
                 />
               </span>
+            ) : stage === "empty" ? (
+              "This book looks empty"
             ) : (
               "Sharing your book"
             )}
@@ -238,9 +262,48 @@ export function ShareDialog({
           <DialogDescription className="text-editor-dim">
             {stage === "ready"
               ? "Send this link to someone you love — it opens straight into the flipbook."
-              : "We save your pages, prepare every canvas in 4K, then create the link."}
+              : stage === "empty"
+                ? "None of the pages have anything on them yet."
+                : "We save your pages, prepare every canvas in 4K, then create the link."}
           </DialogDescription>
         </DialogHeader>
+
+        {stage === "empty" && (
+          <div className="flex flex-col gap-4 py-1">
+            <div
+              role="alert"
+              className="flex items-start gap-3 rounded-xl border border-[#e8a13a]/30 bg-[#e8a13a]/[0.07] px-3.5 py-3"
+            >
+              <TriangleAlert
+                className="mt-0.5 h-4 w-4 shrink-0 text-[#c07d1d]"
+                aria-hidden="true"
+              />
+              <p className="text-xs leading-relaxed text-[#9a6a17]">
+                Every page is blank right now — a shared link would open on
+                empty pages with nothing on them. Add a sticker, a line or a
+                photo first, then share.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="rounded-xl border-editor-border-strong bg-transparent text-editor-text hover:bg-editor-raised hover:text-editor-text"
+              >
+                Keep editing
+              </Button>
+              <Button
+                onClick={() => {
+                  startedRef.current = true;
+                  void run();
+                }}
+                className="rounded-xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.3)] hover:bg-onyx active:scale-[0.98]"
+              >
+                Share anyway
+              </Button>
+            </div>
+          </div>
+        )}
 
         {busy && (
           <div className="flex flex-col gap-4 py-2" aria-live="polite">

@@ -67,3 +67,9 @@ server.log
 /download/
 src/generated/
 src/generated/prisma-cf/
+
+# OpenNext Cloudflare build output
+.open-next/
+
+# Wrangler local state
+.wrangler/

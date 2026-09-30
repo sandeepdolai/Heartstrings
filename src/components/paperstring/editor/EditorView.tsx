@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import type { CustomFont, ProjectData, ProjectSummary, PsUser } from "@/lib/paperstring/types";
@@ -72,40 +72,60 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
 
   /* ── load the project ─────────────────────────────────────────────── */
 
-  const { data, isLoading, error } = useQuery<FullProject>({
-    queryKey: ["project", projectId],
-    queryFn: async () => {
-      const res = await fetch(`/api/projects/${projectId}`, { cache: "no-store" });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Could not open this project");
-      }
-      return (await res.json()).project as FullProject;
-    },
-    retry: false,
-    staleTime: Infinity,
-  });
-
-  const loadedRef = useRef(false);
+  /* The editor fetches its project DIRECTLY on every mount (no React Query
+   * cache) — this is deliberate. The old useQuery with staleTime: Infinity
+   * cached the first load forever, so re-entering the editor (dashboard →
+   * book, or "Open the book as they'll see it" → back) rehydrated the STALE
+   * pre-edit state: freshly added stickers vanished and a share from there
+   * published blank pages (live bug report). A per-mount no-store fetch
+   * guarantees the canvas always opens on the newest saved state, while the
+   * loadedRef guard keeps a single load per mount (the `user` object may be
+   * replaced by a ["me"] refetch — it must never re-trigger the load and
+   * clobber live edits). */
+  const [project, setProject] = useState<FullProject | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadedProjectRef = useRef<string | null>(null);
   const storeProjectId = useEditorStore((s) => s.projectId);
-  useEffect(() => {
-    if (!data || loadedRef.current) return;
-    loadedRef.current = true;
-    const fonts = data.data?.fonts ?? [];
-    setShareToken(data.shareToken);
-    void registerSavedFonts(fonts).then(() => {
-      setCustomFonts(fonts);
-      useEditorStore.getState().load(projectId, data.title, data.data, user);
-    });
-  }, [data, projectId, user]);
 
-  // Leave the store clean behind us.
-  useEffect(
-    () => () => {
-      useEditorStore.getState().reset();
-    },
-    []
-  );
+  useEffect(() => {
+    if (loadedProjectRef.current === projectId) return;
+    loadedProjectRef.current = projectId;
+    let cancelled = false;
+    setProject(null);
+    setLoadError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, { cache: "no-store" });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? "Could not open this project");
+        }
+        const json = (await res.json()) as { project: FullProject };
+        if (cancelled) return;
+        const fonts = json.project.data?.fonts ?? [];
+        setShareToken(json.project.shareToken);
+        await registerSavedFonts(fonts);
+        if (cancelled) return;
+        setCustomFonts(fonts);
+        useEditorStore
+          .getState()
+          .load(projectId, json.project.title, json.project.data, user);
+        setProject(json.project);
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(
+            err instanceof Error ? err.message : "Could not open this project"
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, user]);
+
+  const isLoading = !project && !loadError;
+  const error = loadError ? new Error(loadError) : null;
 
   const ready = !!storeProjectId;
 
@@ -144,51 +164,86 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
 
   /* ── save (manual + autosave + share pipeline) ────────────────────── */
 
-  const savingRef = useRef(false);
+  const savePromiseRef = useRef<Promise<{ ok: boolean; coverImage?: string }> | null>(
+    null
+  );
   const save = useCallback(
     async ({ force = false }: { force?: boolean } = {}): Promise<{
       ok: boolean;
       coverImage?: string;
     }> => {
-      const s = useEditorStore.getState();
-      if (!s.projectId || !s.canvases.length) return { ok: false };
-      if (savingRef.current) return { ok: true };
-      if (!s.dirty && !force) return { ok: true };
-      savingRef.current = true;
-      setSaveState("saving");
-      try {
-        let coverImage: string | undefined;
+      const begin = useEditorStore.getState();
+      if (!begin.projectId || !begin.canvases.length) return { ok: false };
+      if (savePromiseRef.current) {
+        // A save is already in flight. A debounced autosave can ride along
+        // (its PUT carries the state as of its start, and the next autosave
+        // picks up anything newer). A FORCED save (Share, Ctrl+S) must
+        // guarantee the newest edits persist — wait for the in-flight one,
+        // then save again if the store is still dirty. Returning ok without
+        // persisting (the old behaviour) let share publish stale/empty data.
+        if (!force) return { ok: true };
+        await savePromiseRef.current.catch(() => {});
+        const now = useEditorStore.getState();
+        if (!now.projectId || !now.canvases.length) return { ok: false };
+        if (!now.dirty) return { ok: true }; // the in-flight save carried it
+      }
+      if (!useEditorStore.getState().dirty && !force) return { ok: true };
+      if (savePromiseRef.current) return { ok: true }; // someone raced in
+      const run = (async () => {
+        setSaveState("saving");
         try {
-          coverImage = await renderPageToCoverJpg(s.canvases[0], 360);
+          const s = useEditorStore.getState();
+          let coverImage: string | undefined;
+          try {
+            coverImage = await renderPageToCoverJpg(s.canvases[0], 360);
+          } catch (err) {
+            console.warn("[editor] cover render skipped", err);
+          }
+          const res = await fetch(`/api/projects/${projectId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: s.title,
+              data: {
+                version: 1,
+                canvases: s.canvases,
+                fonts: fontsRef.current.fonts.length
+                  ? fontsRef.current.fonts
+                  : undefined,
+              } satisfies ProjectData,
+              coverImage: coverImage ?? null,
+            }),
+          });
+          if (!res.ok) throw new Error(`save ${res.status}`);
+          const savedCanvases = s.canvases;
+          const savedTitle = s.title;
+          useEditorStore.getState().markSaved();
+          // Edits that landed while this request was in flight set dirty=true,
+          // which markSaved just erased — their autosave timer would have been
+          // cancelled with it. Re-flag so the debounce picks them up. (Every
+          // store mutation produces fresh references, so this comparison is
+          // exact.)
+          const after = useEditorStore.getState();
+          if (
+            !after.dirty &&
+            (after.canvases !== savedCanvases || after.title !== savedTitle)
+          ) {
+            useEditorStore.setState({ dirty: true });
+          }
+          setSaveState("saved");
+          void queryClient.invalidateQueries({ queryKey: ["projects"] });
+          return { ok: true, coverImage };
         } catch (err) {
-          console.warn("[editor] cover render skipped", err);
+          console.error("[editor] save failed", err);
+          setSaveState("error");
+          return { ok: false };
         }
-        const res = await fetch(`/api/projects/${projectId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: s.title,
-            data: {
-              version: 1,
-              canvases: s.canvases,
-              fonts: fontsRef.current.fonts.length
-                ? fontsRef.current.fonts
-                : undefined,
-            } satisfies ProjectData,
-            coverImage: coverImage ?? null,
-          }),
-        });
-        if (!res.ok) throw new Error(`save ${res.status}`);
-        useEditorStore.getState().markSaved();
-        setSaveState("saved");
-        void queryClient.invalidateQueries({ queryKey: ["projects"] });
-        return { ok: true, coverImage };
-      } catch (err) {
-        console.error("[editor] save failed", err);
-        setSaveState("error");
-        return { ok: false };
+      })();
+      savePromiseRef.current = run;
+      try {
+        return await run;
       } finally {
-        savingRef.current = false;
+        if (savePromiseRef.current === run) savePromiseRef.current = null;
       }
     },
     [projectId, queryClient]
@@ -226,6 +281,60 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
+
+  // Leave the store clean behind us — and never lose the last edits on the
+  // way out: the debounced autosave can still be waiting (its 2.5s window)
+  // or a save can be mid-flight when the user navigates to the dashboard or
+  // the shared viewer. Snapshot the newest state BEFORE reset (reset empties
+  // the store synchronously), then flush it after any in-flight save settles
+  // so the newer write always lands last. Found via a live bug report —
+  // stickers added right before sharing/viewing vanished and the link
+  // published blank pages.
+  useEffect(
+    () => () => {
+      const s = useEditorStore.getState();
+      const fonts = fontsRef.current.fonts;
+      let snapshot: string | null = null;
+      if (s.projectId && s.canvases.length && (s.dirty || savePromiseRef.current)) {
+        try {
+          snapshot = JSON.stringify({
+            title: s.title,
+            data: {
+              version: 1,
+              canvases: s.canvases,
+              ...(fonts.length ? { fonts } : {}),
+            },
+            // coverImage omitted on purpose — the exit flush skips the cover
+            // re-render, and the stored cover stays as-is.
+          } satisfies { title: string; data: ProjectData });
+        } catch {
+          snapshot = null; // serialisation issue — nothing more to do here
+        }
+      }
+      useEditorStore.getState().reset();
+      if (!snapshot) return;
+      const projectIdAtExit = s.projectId;
+      void (async () => {
+        // Let any in-flight (older) save finish first so this newer write can
+        // never be overwritten by a late-landing stale response.
+        if (savePromiseRef.current) {
+          await savePromiseRef.current.catch(() => {});
+        }
+        try {
+          await fetch(`/api/projects/${projectIdAtExit}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: snapshot,
+          });
+        } catch {
+          /* best-effort exit flush — the dirty-exit guard already warned on
+             tab close; in-app navigation keeps the page alive so this fetch
+             virtually always completes. */
+        }
+      })();
+    },
+    []
+  );
 
   /* ── keyboard shortcuts (V/B/E/F/T/C/S/K/I · undo/redo · save · delete) */
 

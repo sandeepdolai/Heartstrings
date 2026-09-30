@@ -173,27 +173,43 @@ export function TopBar({
           </Tooltip>
         </div>
 
-        {/* save state */}
-        <div
-          className={cn(
-            "ml-auto hidden items-center gap-1.5 text-xs sm:flex",
-            saveState === "error" && "text-[#c73a56]",
-            saveState === "saving" && "text-editor-dim",
-            (saveState === "saved" || saveState === "dirty") && "text-editor-dim"
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          {saveState === "saving" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : saveState === "error" ? (
-            <CloudUpload className="h-3.5 w-3.5" />
-          ) : saveState === "saved" ? (
-            /* keyed on state so each save pops the check afresh */
-            <Check key="saved-check" className="ps-pop-in h-3.5 w-3.5" />
-          ) : null}
-          <span className="hidden lg:inline">{saveLabel[saveState]}</span>
-        </div>
+        {/* save state — visible on every viewport: a failed save is a
+            data-loss risk, and phones must see it too (previously the whole
+            status was hidden below sm) */}
+        {saveState === "error" ? (
+          <button
+            type="button"
+            onClick={onSave}
+            aria-label="Save failed — tap to retry"
+            title="Save failed — tap to retry"
+            className={cn(
+              "ml-auto flex items-center gap-1.5 text-xs font-medium text-[#c73a56] transition hover:text-[#a72c47]"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden lg:inline">{saveLabel[saveState]}</span>
+          </button>
+        ) : (
+          <div
+            className={cn(
+              "ml-auto flex items-center gap-1.5 text-xs",
+              saveState === "saving" && "text-editor-dim",
+              (saveState === "saved" || saveState === "dirty") && "text-editor-dim"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            {saveState === "saving" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : saveState === "saved" ? (
+              /* keyed on state so each save pops the check afresh */
+              <Check key="saved-check" className="ps-pop-in h-3.5 w-3.5" />
+            ) : null}
+            <span className="hidden lg:inline">{saveLabel[saveState]}</span>
+          </div>
+        )}
 
         {/* keyboard shortcuts cheatsheet */}
         <Popover>
@@ -202,7 +218,7 @@ export function TopBar({
               type="button"
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts"
-              className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text sm:ml-0 md:h-9 md:w-9"
+              className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:h-9 md:w-9"
             >
               <Keyboard className="h-4 w-4" />
             </button>
