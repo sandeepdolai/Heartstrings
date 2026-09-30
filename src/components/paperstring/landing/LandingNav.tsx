@@ -33,7 +33,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
   }, []);
 
   const startCreating = () =>
-    psNavigate(user ? "dashboard" : "auth", { mode: "signup" });
+    psNavigate(user ? "dashboard" : "auth");
   const signIn = () => psNavigate("auth");
 
   /** Close the sheet, then glide to the section (instant if reduced motion). */

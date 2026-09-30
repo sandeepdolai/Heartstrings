@@ -55,16 +55,7 @@ function AppShellInner() {
 
   switch (view) {
     case "auth":
-      return (
-        <AuthView
-          initialMode={
-            params.mode === "signup" || params.mode === "return-editor"
-              ? "signup"
-              : "signin"
-          }
-          returnHint={params.mode === "return-editor"}
-        />
-      );
+      return <AuthView returnHint={params.mode === "return-editor"} />;
     case "dashboard":
       return user ? (
         <DashboardView user={user} />

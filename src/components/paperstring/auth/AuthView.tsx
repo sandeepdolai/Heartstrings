@@ -1,9 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   MotionConfig,
@@ -16,8 +13,6 @@ import {
   Check,
   Copy,
   ExternalLink,
-  Eye,
-  EyeOff,
   Info,
   Loader2,
 } from "lucide-react";
@@ -35,37 +30,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-type AuthMode = "signin" | "signup";
-
-type AuthFormValues = {
-  mode: AuthMode;
-  name: string;
-  email: string;
-  password: string;
-};
-
-const authSchema = z
-  .object({
-    mode: z.enum(["signin", "signup"]),
-    name: z.string().trim(),
-    email: z.email("Enter a valid email address"),
-    password: z.string().min(8, "Use at least 8 characters"),
-  })
-  .superRefine((values, ctx) => {
-    // Name is only collected (and required) in signup mode.
-    if (values.mode === "signup" && !values.name) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["name"],
-        message: "Tell us your name",
-      });
-    }
-  });
+/**
+ * PaperString auth — Google only (round 26).
+ *
+ * Email/password sign-up and sign-in were removed on purpose: one tap with
+ * the Google account everyone already has, zero passwords to store or reset,
+ * zero mail infrastructure to pay for. Existing email accounts (and their
+ * projects) are untouched — signing in with the same Google email links to
+ * them automatically (see /api/auth/google's find-or-link logic).
+ */
 
 /** Google "G" brand mark — the one sanctioned use of color (official brand logo). */
 function GoogleMark({ className }: { className?: string }) {
@@ -214,7 +189,7 @@ function GoogleSetupDialog({
             APIs &amp; Services → Credentials
             <ExternalLink className="size-3" aria-hidden="true" />
           </a>{" "}
-          (any Google account works — the free tier is plenty).
+          with any Google account — it's free, no credit card needed.
         </>
       ),
     },
@@ -264,11 +239,12 @@ function GoogleSetupDialog({
         <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <GoogleMark />
-            Enable Google sign-in
+            Connect Google sign-in
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed text-onyx/75">
-            Google sign-in needs a free OAuth client ID from Google Cloud Console —
-            a one-time setup that takes about two minutes. Here's exactly what to do:
+            Google sign-in is the only way into PaperString, so it needs a free
+            OAuth client ID before anyone can sign in — a one-time setup that
+            takes about two minutes. Here's exactly what to do:
           </DialogDescription>
         </DialogHeader>
 
@@ -295,8 +271,9 @@ function GoogleSetupDialog({
           <Info className="size-4 text-dim" />
           <AlertDescription className="text-xs text-dim">
             After adding <code className="font-mono">GOOGLE_CLIENT_ID</code>, reload
-            this page — the button activates automatically. Email sign-in keeps
-            working the whole time.
+            this page — the button activates automatically. Existing accounts
+            aren't lost: signing in with the same Google email links to them
+            (and all their projects) automatically.
           </AlertDescription>
         </Alert>
 
@@ -306,7 +283,7 @@ function GoogleSetupDialog({
             onClick={() => onOpenChange(false)}
             className="h-10 w-full rounded-full"
           >
-            Got it — use email for now
+            Got it
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -316,17 +293,7 @@ function GoogleSetupDialog({
 
 /* ── Auth view ───────────────────────────────────────────────────────── */
 
-export function AuthView({
-  initialMode,
-  returnHint,
-}: {
-  initialMode: "signin" | "signup";
-  returnHint?: boolean;
-}) {
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-
+export function AuthView({ returnHint }: { returnHint?: boolean }) {
   // Google sign-in state: null = still checking /api/auth/config.
   const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
@@ -338,28 +305,7 @@ export function AuthView({
   const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
 
-  // `mode` lives inside the form values so the resolver can validate
-  // conditionally (name is only required in signup mode) without the
-  // resolver identity ever needing to change.
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    clearErrors,
-    formState: { errors, isSubmitting },
-  } = useForm<AuthFormValues>({
-    resolver: zodResolver(authSchema),
-    defaultValues: {
-      mode: initialMode,
-      name: "",
-      email: "",
-      password: "",
-    },
-  });
-
-  const isSignup = mode === "signup";
-
-  /* — Google: ask the server whether it's configured (the client id is
+  /* — Ask the server whether Google is configured (the client id is
      public by design — Google's SDK needs it on the frontend) — */
   useEffect(() => {
     let cancelled = false;
@@ -378,19 +324,17 @@ export function AuthView({
     };
   }, []);
 
-  /* — Shared success path: install user, leave for the dashboard — */
+  /* — Success path: install user, leave for the dashboard — */
   const completeSignIn = useCallback(
-    (user: PsUser, isNew: boolean) => {
+    (user: PsUser) => {
       queryClient.setQueryData<{ user: PsUser | null }>(["me"], { user });
-      toast.success(
-        isNew ? "Your studio is ready" : "Welcome back to your studio"
-      );
+      toast.success("Welcome back to your studio");
       psNavigate("dashboard");
     },
     [queryClient]
   );
 
-  /* — Google: mount the real GIS button when configured — */
+  /* — Mount the real GIS button when configured — */
   useEffect(() => {
     if (googleEnabled !== true || !googleClientId) return;
     let cancelled = false;
@@ -426,7 +370,7 @@ export function AuthView({
                     json?.error ?? "Google sign-in didn't complete — try again"
                   );
                 }
-                completeSignIn(json.user, false);
+                completeSignIn(json.user);
               })
               .catch((err: Error) => {
                 toast.error(err.message);
@@ -468,7 +412,7 @@ export function AuthView({
 
   /** Fallback for contexts where Google's own button can't run (iframes). */
   const openGoogleInFullTab = () => {
-    const url = `${window.location.pathname}?view=auth&mode=${mode}`;
+    const url = `${window.location.pathname}?view=auth`;
     const win = window.open(url, "_blank", "noopener");
     if (!win) {
       toast.info(
@@ -483,70 +427,10 @@ export function AuthView({
     }
   };
 
-  const toggleMode = () => {
-    const next: AuthMode = isSignup ? "signin" : "signup";
-    setMode(next);
-    setValue("mode", next);
-    setServerError(null);
-    clearErrors("name");
-  };
-
-  const onSubmit = handleSubmit(async (values) => {
-    setServerError(null);
-    try {
-      const res = await fetch(
-        isSignup ? "/api/auth/register" : "/api/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isSignup
-              ? {
-                  name: values.name.trim(),
-                  email: values.email,
-                  password: values.password,
-                }
-              : { email: values.email, password: values.password }
-          ),
-        }
-      );
-
-      let json: { user?: PsUser; error?: string } | null = null;
-      try {
-        json = await res.json();
-      } catch {
-        json = null;
-      }
-
-      if (!res.ok || !json?.user) {
-        const message =
-          json?.error ??
-          (res.ok
-            ? "Something went wrong — please try again"
-            : `Couldn't ${isSignup ? "create your account" : "sign you in"} — please try again`);
-        setServerError(message);
-        toast.error(message);
-        return;
-      }
-
-      // Install the authenticated user straight from the auth response —
-      // same shape as /api/auth/me — and leave for the dashboard immediately.
-      // No refetch round-trip means no window for the auth guard to bounce
-      // us back to this page (the old "success toast but stuck here" bug).
-      completeSignIn(json.user, isSignup);
-    } catch {
-      const message =
-        "Couldn't reach the studio — check your connection and try again";
-      setServerError(message);
-      toast.error(message);
-    }
-  });
-
   return (
     <MotionConfig reducedMotion="user">
-      {/* ── Single centered form (brand panel removed — form stays a
-          centered, narrow column, the pattern serious products use for
-          auth screens) ─────────────────────────────────────────────── */}
+      {/* ── Single centered card — Google is the one and only way in,
+          so the page is a calm, focused moment: mark, message, button. */}
       <main className="flex min-h-screen items-center justify-center bg-smoke ps-grain p-6 sm:p-10">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
@@ -559,12 +443,11 @@ export function AuthView({
           </div>
 
           <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-            {isSignup ? "Create your studio" : "Welcome back"}
+            Welcome back
           </h1>
           <p className="mt-2.5 text-sm text-onyx/75">
-            {isSignup
-              ? "Free forever. Make someone's day."
-              : "Sign in to keep creating."}
+            Sign in with Google — the one account you already have. No
+            passwords, no hassle.
           </p>
 
           {returnHint && (
@@ -576,8 +459,8 @@ export function AuthView({
             </Alert>
           )}
 
-          {/* ── Google sign-in ────────────────────────────────────────
-              Real GIS button when configured; a setup guide otherwise;
+          {/* ── Google sign-in — the only button on the page ──────────
+              Real GIS button when configured; a setup guide until then;
               a full-tab fallback where iframes block Google's UI. */}
           <div className="mt-8">
             {googleEnabled === null ? (
@@ -597,8 +480,12 @@ export function AuthView({
                 onClick={openGoogleInFullTab}
                 className="h-11 w-full rounded-full border-silver/60 bg-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
               >
-                <GoogleMark />
-                Continue with Google
+                {googlePending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <GoogleMark />
+                )}
+                {googlePending ? "Signing you in…" : "Continue with Google"}
                 <ExternalLink className="size-3.5 text-dim" aria-hidden="true" />
               </Button>
             ) : (
@@ -610,144 +497,27 @@ export function AuthView({
               >
                 <GoogleMark />
                 Continue with Google
+                <ArrowRight className="size-3.5 text-dim" aria-hidden="true" />
               </Button>
             )}
           </div>
 
-          <div className="my-7 flex items-center gap-3" aria-hidden="true">
-            <Separator className="flex-1" />
-            <span className="text-xs text-dim">
-              or continue with email
-            </span>
-            <Separator className="flex-1" />
-          </div>
-
-          {serverError && (
-            <Alert
-              variant="destructive"
-              className="mb-5 animate-in fade-in slide-in-from-top-1"
-            >
-              <AlertDescription className="text-sm">
-                {serverError}
+          {googleEnabled === false && (
+            <Alert className="mt-5 animate-in fade-in slide-in-from-top-1 border-silver/50 bg-card/60 py-2.5">
+              <Info className="size-4 text-dim" />
+              <AlertDescription className="text-xs text-dim">
+                Google sign-in isn't connected on this deployment yet — it's a
+                free, one-time setup.{" "}
+                <button
+                  type="button"
+                  onClick={() => setSetupOpen(true)}
+                  className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  Show the 2-minute setup
+                </button>
               </AlertDescription>
             </Alert>
           )}
-
-          <form onSubmit={onSubmit} noValidate className="space-y-5">
-            {isSignup && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Ada Lovelace"
-                  autoComplete="name"
-                  autoFocus
-                  className="h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
-                  aria-invalid={!!errors.name}
-                  aria-describedby={errors.name ? "name-error" : undefined}
-                  {...register("name")}
-                />
-                {errors.name && (
-                  <p id="name-error" className="text-xs text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                autoComplete="email"
-                className="h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-                {...register("email")}
-              />
-              {errors.email && (
-                <p id="email-error" className="text-xs text-destructive">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="At least 8 characters"
-                  autoComplete={isSignup ? "new-password" : "current-password"}
-                  className="pr-12 h-11 rounded-xl border-silver/60 bg-paper shadow-none focus-visible:border-night/50"
-                  aria-invalid={!!errors.password}
-                  aria-describedby={
-                    errors.password ? "password-error" : undefined
-                  }
-                  {...register("password")}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p id="password-error" className="text-xs text-destructive">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-11 w-full rounded-full"
-            >
-              {isSubmitting && (
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              )}
-              {isSubmitting
-                ? isSignup
-                  ? "Creating your studio…"
-                  : "Signing in…"
-                : isSignup
-                  ? "Create account"
-                  : "Sign in"}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-dim">
-            {isSignup ? "Already have an account? " : "New here? "}
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {isSignup ? (
-                "Sign in"
-              ) : (
-                <>
-                  Create an account
-                  <ArrowRight
-                    className="ml-0.5 inline h-3.5 w-3.5"
-                    aria-hidden="true"
-                  />
-                </>
-              )}
-            </button>
-          </p>
 
           <div className="mt-10 text-center">
             <button

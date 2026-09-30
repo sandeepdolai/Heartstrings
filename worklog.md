@@ -759,3 +759,25 @@ Stage Summary:
 - Google Sign-In is fully implemented and production-ready: set GOOGLE_CLIENT_ID (server env, one var) → button goes live automatically; account linking handles both directions (Google→existing email account, email→Google); OAuth-only users get correct guidance on password attempts; Google avatar shows in dashboard.
 - Until credentials are configured, the button honestly explains the 2-minute setup with a copyable origin chip (no fake OAuth).
 - Next candidates from the auth menu discussed with the user: rate limiting/login throttling (cheapest security win), forgot-password flow, password strength meter, session management UI; plus the standing pending items (round-22 UI/UX redesign, round-21 share-link sticker bug if still live on the deployed worker).
+
+---
+Task ID: round-26
+Agent: Z.ai Code (main session)
+Task: Google-only auth — user decision: "Google Account People Are using most… use this Only because We don't have Enough Money, remove all others for now."
+
+Work Log:
+- AuthView.tsx rewritten Google-only: email/password form, signin/signup toggle, name field, show/hide password, zod/react-hook-form validation — all removed. Now: WordMark → "Welcome back" → one-line pitch ("the one account you already have. No passwords, no hassle.") → returnHint alert → THE Google button (4 states: loading skeleton / official GIS button / iframe full-tab fallback / unconfigured → setup dialog) → inline "not connected yet" alert with "Show the 2-minute setup" link → back-to-home.
+- GoogleSetupDialog copy updated: title "Connect Google sign-in", "free, no credit card needed" (money concern), footer button "Got it" (email no longer exists), reassurance that existing accounts + projects link automatically via same-Google-email sign-in.
+- AppShell: AuthView usage simplified (initialMode dropped — Google has no signin/signup modes; returnHint kept for editor-return flow).
+- DELETED src/app/api/auth/register/ and src/app/api/auth/login/ (email auth gone per user instruction — restorable from git if "for now" ends). Kept: me, logout, google, config. hashPassword/verifyPassword remain in auth-server.ts as unused lib functions (no lint issue).
+- Landing CTAs cleaned: Hero/ClosingCta/LandingNav no longer pass mode:"signup" (param now meaningless).
+- INTENTIONAL-STATE WARNING for the QA cron agent: Google-only auth is BY DESIGN (round 26). Do NOT "fix" the missing email form or re-add register/login routes. The auth page showing "Connect Google sign-in" setup guidance while GOOGLE_CLIENT_ID is unset is the expected state, NOT a bug.
+- QA (agent-browser): auth page Google-only (no email fields in a11y tree); setup dialog opens from both the button and the alert link (origin chip + copy intact); landing "Start creating" → auth works; EXISTING SESSION SURVIVES — injected sandeep@dolai.com session → /api/auth/me 200 (user + image field), dashboard renders, sign-out → landing; register/login endpoints now 404; mobile 390×844 clean; zero console/page errors; bun run lint exit 0.
+- NOT deployed to the live worker (paperstring.heartstrings.workers.dev still has working email auth): deploying Google-only WITHOUT GOOGLE_CLIENT_ID configured would lock EVERYONE out of the live site. Deploy after the owner adds the client ID (wrangler secret or var) — then it's one command.
+- Committed + pushed to GitHub.
+
+Stage Summary:
+- Auth is now Google-only by design: one button, one flow, zero password infrastructure, zero mail costs. Existing users/projects untouched — same-Gmail sign-in auto-links accounts.
+- BLOCKED-ON-OWNER: GOOGLE_CLIENT_ID must be configured (free 2-min setup, in-app dialog walks through it) before anyone — including Sandeep — can sign in again once their current session expires. Do NOT sign out until configured, or set the env var first.
+- Live worker intentionally held on the previous commit until the client ID exists.
+- Next: once client ID is set → verify GIS button locally → deploy to worker → then candidates: rate limiting on /api/auth/google, session management UI, or the standing round-22 redesign / round-21 share-page check.

@@ -8,7 +8,7 @@ import { Reveal } from "./shared";
 
 export function ClosingCta({ user }: { user: PsUser | null }) {
   const startCreating = () =>
-    psNavigate(user ? "dashboard" : "auth", { mode: "signup" });
+    psNavigate(user ? "dashboard" : "auth");
 
   return (
     <section

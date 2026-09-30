@@ -48,7 +48,7 @@ export function Hero({ user }: { user: PsUser | null }) {
   const reduce = useReducedMotion();
 
   const startCreating = () =>
-    psNavigate(user ? "dashboard" : "auth", { mode: "signup" });
+    psNavigate(user ? "dashboard" : "auth");
 
   return (
     <section className="ps-grain relative overflow-x-clip bg-smoke">
