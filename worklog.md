@@ -643,3 +643,17 @@ Stage Summary:
 - All 5 surfaces (landing/auth/dashboard/editor/viewer) polished with ZERO functional regressions: round-18 auth redirect, round-21 save/publish pipeline, share flow all re-verified E2E.
 - Live deploy pending: next step is the split-build wrangler deploy (recipe in round-21: compile → generate → opennextjs build --skipNextBuild → deploy) to push the new UI to paperstring.heartstrings.workers.dev.
 - Reference repos kept in .ui-refs/ (ignored) for future rounds.
+
+---
+Task ID: round-22-deploy
+Agent: Z.ai Code (main session)
+Task: Deploy the round-22 UI/UX redesign to the live Cloudflare worker + verify.
+
+Work Log:
+- Stopped dev server to free memory (cold split-build OOMs otherwise), then ran the round-21 recipe: NEXT_PRIVATE_STANDALONE=true + NEXT_PRIVATE_OUTPUT_TRACE_ROOT + OPENNEXT_BUILD=1 → `next build --experimental-build-mode compile` → `generate` → `opennextjs-cloudflare build --skipNextBuild` (output to file — piping the huge stdout killed the Bash tool twice) → `CLOUDFLARE_API_TOKEN=… wrangler deploy`.
+- Deployed paperstring (42752 KiB / gzip 14790 KiB), version 53f7d119-3ba9-460e-96ec-1879fdfa1c8d, live 200 at https://paperstring.heartstrings.workers.dev. Dev server restarted after (preview restored).
+- Live verification: heart-accent CSS present in deployed chunk (081e1jfl42467.css); VLM confirmed red string under "beautiful", outline nav CTA, full render; live login qa.blankbug@example.com → dashboard redirect works (round-18 flow on worker); empty-studio state renders dashed card + CTA; top-center toast clear of content. No live errors.
+
+Stage Summary:
+- Round-22 UI/UX redesign is LIVE. Local dev (port 3000) and production worker both on commit 8756d1c.
+- Deploy quirk for next time: always redirect opennext/wrangler output to a file; stop dev server before cold builds; export CLOUDFLARE_API_TOKEN (new shells lose it).
