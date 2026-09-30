@@ -91,6 +91,10 @@ export interface EditorState {
   pendingClip: { canvasId: string; shape: ClipShape } | null;
   editingTextLayerId: string | null;
   dirty: boolean;
+  /** True while the most recent paint pointer was a stylus (Apple Pencil /
+   *  pen) — drives the editor's pressure chip and HUD copy. Set on
+   *  pointerdown only (low churn). */
+  penActive: boolean;
 
   /* history */
   past: HistoryEntry[];
@@ -154,7 +158,7 @@ export interface EditorState {
 
   /* strokes */
   beginStroke: (layerId: string, stroke: Stroke) => void;
-  extendStroke: (point: [number, number]) => void;
+  extendStroke: (point: [number, number], pressure?: number) => void;
   commitStroke: () => void;
   cancelStroke: () => void;
 
@@ -233,6 +237,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   selectionShape: "rect",
   liveStroke: null,
+  penActive: false,
   pendingClip: null,
   editingTextLayerId: null,
   dirty: false,
@@ -253,6 +258,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       future: [],
       dirty: false,
       liveStroke: null,
+      penActive: false,
       pendingClip: null,
       editingTextLayerId: null,
       tool: "select",
@@ -270,6 +276,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       future: [],
       dirty: false,
       liveStroke: null,
+      penActive: false,
       pendingClip: null,
       editingTextLayerId: null,
       tool: "select",
@@ -659,12 +666,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   beginStroke: (layerId, stroke) =>
     set({ liveStroke: { layerId, stroke } }),
 
-  extendStroke: (point) =>
+  extendStroke: (point, pressure) =>
     set((s) => {
       if (!s.liveStroke) return {};
       const points = [...s.liveStroke.stroke.points, point];
+      // Pressures are recorded only when the gesture started from a pen —
+      // mouse/touch strokes stay pressure-free (constant width, byte-clean).
+      const hadPs = !!s.liveStroke.stroke.pressures;
+      const pressures =
+        hadPs || pressure !== undefined
+          ? [...(s.liveStroke.stroke.pressures ?? []), pressure ?? 0.5]
+          : undefined;
       return {
-        liveStroke: { ...s.liveStroke, stroke: { ...s.liveStroke.stroke, points } },
+        liveStroke: {
+          ...s.liveStroke,
+          stroke: { ...s.liveStroke.stroke, points, pressures },
+        },
       };
     }),
 

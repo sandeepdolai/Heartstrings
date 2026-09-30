@@ -28,6 +28,10 @@ export interface Stroke {
   size: number; // brush diameter in canvas units
   opacity: number; // 0..1 — applied per stroke
   points: [number, number][]; // canvas-unit polyline
+  /** Per-point stylus pressure (0..1), recorded only for pen pointers.
+   *  Absent on mouse/touch/legacy strokes → constant width (old projects
+   *  byte-clean; pressures ride the same z.any payload as points). */
+  pressures?: number[];
 }
 
 /** Reversible keep-inside selection mask (FR-8) */

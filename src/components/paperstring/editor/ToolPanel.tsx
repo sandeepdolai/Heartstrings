@@ -110,6 +110,40 @@ function PanelShell({
   );
 }
 
+/** Stylus discoverability row — a quiet gradient of growing dots that says
+ *  “your pencil's pressure is being read” without a wall of text. The chip
+ *  brightens while a pen is the active pointer (store.penActive). */
+function PressureNote({ verb }: { verb: string }) {
+  const penActive = useEditorStore((s) => s.penActive);
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors duration-300",
+        penActive
+          ? "border-[#e8446a]/40 bg-[#e8446a]/[0.06]"
+          : "border-editor-border-strong bg-editor-raised/40"
+      )}
+      title="Apple Pencil and other pens: press lighter or harder while you draw"
+    >
+      <span className="flex shrink-0 items-center gap-[3px]" aria-hidden="true">
+        {[2.5, 4, 6, 8.5, 11].map((d, i) => (
+          <span
+            key={i}
+            className={cn(
+              "rounded-full transition-colors duration-300",
+              penActive ? "bg-[#e8446a]/70" : "bg-editor-dim/50"
+            )}
+            style={{ width: d, height: d }}
+          />
+        ))}
+      </span>
+      <span className="text-[10px] leading-tight text-editor-dim">
+        Apple Pencil{penActive ? " · live" : ""} — press to {verb}
+      </span>
+    </div>
+  );
+}
+
 function SliderRow({
   label,
   value,
@@ -170,15 +204,18 @@ function BrushPanel({ eraser }: { eraser: boolean }) {
       }
     >
       {eraser ? (
-        <SliderRow
-          label="Size"
-          value={eraserSize}
-          display={`${Math.round(eraserSize)} px`}
-          min={2}
-          max={220}
-          step={1}
-          onChange={setEraserSize}
-        />
+        <>
+          <SliderRow
+            label="Size"
+            value={eraserSize}
+            display={`${Math.round(eraserSize)} px`}
+            min={2}
+            max={220}
+            step={1}
+            onChange={setEraserSize}
+          />
+          <PressureNote verb="erase finer or wider" />
+        </>
       ) : (
         <>
           <SliderRow
@@ -252,6 +289,8 @@ function BrushPanel({ eraser }: { eraser: boolean }) {
               {brush.color.toUpperCase()}
             </span>
           </button>
+
+          <PressureNote verb="taper your strokes" />
         </>
       )}
     </PanelShell>
@@ -337,6 +376,8 @@ function BlurPanel() {
           })}
         </div>
       </div>
+
+      <PressureNote verb="soften more or less" />
     </PanelShell>
   );
 }
@@ -417,6 +458,8 @@ function SmudgePanel() {
           })}
         </div>
       </div>
+
+      <PressureNote verb="smear more or less" />
     </PanelShell>
   );
 }

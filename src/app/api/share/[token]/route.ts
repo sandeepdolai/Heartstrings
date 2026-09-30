@@ -27,7 +27,13 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       title: string;
       pages: string[];
     };
-    return NextResponse.json({ title: published.title, pages: published.pages });
+    // Prefer the LIVE project title: renaming a book after publishing should
+    // flow through to already-shared links (the title is viewer chrome, not
+    // baked artwork — pages stay frozen). Fall back to the publish snapshot
+    // only if the live title is somehow empty (found in Round 16 QA:
+    // "Curve Test Book" links still said "Untitled book").
+    const title = project.title?.trim() || published.title;
+    return NextResponse.json({ title, pages: published.pages });
   } catch {
     return NextResponse.json({ error: "This link is unavailable." }, { status: 404 });
   }

@@ -46,15 +46,16 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
   const [tourOpen, setTourOpen] = useState(false);
-  /* transient HUD for brush/eraser/soft-focus/smudge size changes via [ / ] keys */
+  /* transient HUD for brush/eraser/soft-focus/smudge size changes via [ / ] keys,
+     and for text-curve nudges via Alt+[ / Alt+] */
   const [sizeHud, setSizeHud] = useState<{
     value: number;
-    tool: "brush" | "eraser" | "blur" | "smudge";
+    tool: "brush" | "eraser" | "blur" | "smudge" | "curve";
   } | null>(null);
   const sizeHudTimer = useRef<number | null>(null);
 
   const flashSizeHud = useCallback(
-    (value: number, tool: "brush" | "eraser" | "blur" | "smudge") => {
+    (value: number, tool: "brush" | "eraser" | "blur" | "smudge" | "curve") => {
       setSizeHud({ value, tool });
       if (sizeHudTimer.current !== null) window.clearTimeout(sizeHudTimer.current);
       sizeHudTimer.current = window.setTimeout(() => setSizeHud(null), 1000);
@@ -206,6 +207,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
   const canvasesRev = useEditorStore((s) => s.canvases);
   const titleRev = useEditorStore((s) => s.title);
   const dirty = useEditorStore((s) => s.dirty);
+  const penActive = useEditorStore((s) => s.penActive);
   useEffect(() => {
     if (!ready || !dirty) return;
     const t = setTimeout(() => void saveRef.current(), 2500);
@@ -300,6 +302,30 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         }
         return;
       }
+      // Text curve nudge: Alt+[ / Alt+] bends the selected text ∓5 — the
+      // keyboard sibling of the Curve slider (Round 15 rec d). Runs before
+      // the alt-key bail-out below (page nav uses Alt+arrows, not brackets).
+      if (
+        e.altKey &&
+        !mod &&
+        (e.key === "[" || e.key === "{" || e.key === "]" || e.key === "}")
+      ) {
+        const layer = store.getActiveLayer();
+        if (layer && layer.type === "text") {
+          e.preventDefault();
+          const down = e.key === "[" || e.key === "{";
+          const cur = layer.curve ?? 0;
+          const next = Math.round(
+            Math.max(-100, Math.min(100, cur + (down ? -5 : 5)))
+          );
+          if (next !== cur) {
+            store.updateLayer(layer.id, { curve: next });
+            flashSizeHud(next, "curve");
+          }
+        }
+        return;
+      }
+
       if (mod || e.altKey) return;
 
       // Brush / eraser / soft-focus / smudge size: [ smaller, ] larger
@@ -431,8 +457,14 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                 <span
                   className="rounded-full"
                   style={{
-                    width: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
-                    height: `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
+                    width:
+                      sizeHud.tool === "curve"
+                        ? "18px"
+                        : `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
+                    height:
+                      sizeHud.tool === "curve"
+                        ? "18px"
+                        : `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
                     background:
                       sizeHud.tool === "brush"
                         ? "#e8446a"
@@ -451,17 +483,74 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                       sizeHud.tool === "blur" ? "blur(0.75px)" : undefined,
                   }}
                 />
-                <span className="text-[11px] uppercase tracking-[0.18em] text-editor-dim">
-                  {sizeHud.tool === "eraser"
-                    ? "Eraser"
-                    : sizeHud.tool === "blur"
-                      ? "Soft focus"
-                      : sizeHud.tool === "smudge"
-                        ? "Smudge"
-                        : "Brush"}
+                {sizeHud.tool === "curve" ? (
+                  <svg
+                    width="22"
+                    height="14"
+                    viewBox="0 0 22 14"
+                    fill="none"
+                    aria-hidden="true"
+                    style={{ flex: "0 0 auto" }}
+                  >
+                    <path
+                      d={
+                        sizeHud.value > 0
+                          ? "M1.5 12.5 Q11 -2 20.5 12.5"
+                          : sizeHud.value < 0
+                            ? "M1.5 1.5 Q11 16 20.5 1.5"
+                            : "M1.5 7 H20.5"
+                      }
+                      stroke="#e8446a"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-editor-dim">
+                    {sizeHud.tool === "eraser"
+                      ? "Eraser"
+                      : sizeHud.tool === "blur"
+                        ? "Soft focus"
+                        : sizeHud.tool === "smudge"
+                          ? "Smudge"
+                          : "Brush"}
+                  </span>
+                )}
+                {sizeHud.tool === "curve" ? (
+                  <span className="text-sm tabular-nums text-editor-text">
+                    {sizeHud.value === 0
+                      ? "Flat"
+                      : sizeHud.value > 0
+                        ? `Arch ${sizeHud.value}`
+                        : `Smile ${-sizeHud.value}`}
+                  </span>
+                ) : (
+                  <span className="text-sm tabular-nums text-editor-text">
+                    {sizeHud.value} px
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* stylus confirmation chip — shown while the last paint pointer was
+              a pen: taper + pressure-scaled soft focus/smudge are live */}
+          {penActive && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-6 left-6 z-30 hidden md:block"
+            >
+              <div className="flex items-center gap-2 rounded-full border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#e8446a]/20 to-[#e8446a]/5 text-[#e8446a]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                    <path d="M2 2l7.586 7.586" />
+                    <circle cx="11" cy="11" r="2" />
+                  </svg>
                 </span>
-                <span className="text-sm tabular-nums text-editor-text">
-                  {sizeHud.value} px
+                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-editor-dim">
+                  Pencil · pressure
                 </span>
               </div>
             </div>

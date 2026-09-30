@@ -105,6 +105,80 @@ function traceStrokePath(ctx: CanvasRenderingContext2D, pts: [number, number][])
   ctx.lineTo(last[0], last[1]);
 }
 
+/* ── stylus pressure (Apple Pencil / pen pointers) ───────────────────── */
+
+/** Stylus pressure → width factor. A feather-light touch keeps ~30% of the
+ *  nib size and firm pressure reaches the full setting, with a gentle
+ *  gamma so mid-pressure stays comfortable (Procreate-like feel).
+ *  Also used by the soft-focus and smudge gestures to scale strength. */
+export function pressureFactor(pressure: number | undefined): number {
+  if (pressure === undefined || !Number.isFinite(pressure)) return 1;
+  const p = Math.max(0.05, Math.min(1, pressure));
+  return 0.3 + 0.7 * Math.pow(p, 1.15);
+}
+
+/** Width of stroke sample i (base size × pressure factor). */
+function strokeWidthAt(stroke: Stroke, i: number): number {
+  const p = stroke.pressures?.[i];
+  return stroke.size * pressureFactor(p);
+}
+
+/** Tapered stroke paint for pen pointers: each chain segment is stroked
+ *  separately with the width interpolated between its endpoints' pressures
+ *  (round caps + joins keep the chain visually continuous). Falls back to
+ *  traceStrokePath when there is nothing to taper. */
+function paintTaperedStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
+  const pts = stroke.points;
+  const ps = stroke.pressures;
+  if (!ps || ps.length === 0) {
+    ctx.lineWidth = stroke.size;
+    traceStrokePath(ctx, pts);
+    ctx.stroke();
+    return;
+  }
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = stroke.tool === "eraser" ? "#000" : stroke.color;
+  ctx.fillStyle = ctx.strokeStyle;
+  if (pts.length === 1) {
+    // A pressured tap = a pressured dot.
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], Math.max(0.5, strokeWidthAt(stroke, 0) / 2), 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  // First segment: p0 → mid(p0, p1).
+  ctx.lineWidth = Math.max(0.5, (strokeWidthAt(stroke, 0) + strokeWidthAt(stroke, 1)) / 2);
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  ctx.lineTo((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2);
+  ctx.stroke();
+  // Middle segments: mid(i-1, i) → control p[i] → mid(i, i+1).
+  for (let i = 1; i < pts.length - 1; i++) {
+    ctx.lineWidth = Math.max(0.5, strokeWidthAt(stroke, i));
+    const mx0 = (pts[i - 1][0] + pts[i][0]) / 2;
+    const my0 = (pts[i - 1][1] + pts[i][1]) / 2;
+    const mx1 = (pts[i][0] + pts[i + 1][0]) / 2;
+    const my1 = (pts[i][1] + pts[i + 1][1]) / 2;
+    ctx.beginPath();
+    ctx.moveTo(mx0, my0);
+    ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx1, my1);
+    ctx.stroke();
+  }
+  // Last segment: mid(n-2, n-1) → p(n-1).
+  const n = pts.length;
+  ctx.lineWidth = Math.max(0.5, (strokeWidthAt(stroke, n - 2) + strokeWidthAt(stroke, n - 1)) / 2);
+  ctx.beginPath();
+  ctx.moveTo((pts[n - 2][0] + pts[n - 1][0]) / 2, (pts[n - 2][1] + pts[n - 1][1]) / 2);
+  ctx.lineTo(pts[n - 1][0], pts[n - 1][1]);
+  ctx.stroke();
+}
+
+/** True when a stroke carries usable pressure samples (pen pointer). */
+function isTapered(stroke: Stroke): boolean {
+  return !!stroke.pressures && stroke.pressures.length > 0;
+}
+
 /**
  * Paint one stroke onto a context. Per-stroke opacity is honoured by drawing
  * the stroke at full alpha on a temp canvas, then compositing once — so
@@ -132,25 +206,31 @@ export function paintStroke(
   layer.save();
   layer.lineCap = "round";
   layer.lineJoin = "round";
-  layer.lineWidth = stroke.size;
-  layer.strokeStyle = isEraser ? "#000" : stroke.color;
-  layer.fillStyle = layer.strokeStyle;
-  traceStrokePath(layer, stroke.points);
-  if (stroke.points.length === 1) {
-    // single-point dot
-    layer.beginPath();
-    layer.arc(
-      stroke.points[0][0],
-      stroke.points[0][1],
-      Math.max(0.5, stroke.size / 2),
-      0,
-      Math.PI * 2
-    );
-    layer.fill();
+  if (isTapered(stroke)) {
+    // Pen pointer: per-segment widths follow the recorded pressures.
+    paintTaperedStroke(layer, stroke);
+    layer.restore();
   } else {
-    layer.stroke();
+    layer.lineWidth = stroke.size;
+    layer.strokeStyle = isEraser ? "#000" : stroke.color;
+    layer.fillStyle = layer.strokeStyle;
+    traceStrokePath(layer, stroke.points);
+    if (stroke.points.length === 1) {
+      // single-point dot
+      layer.beginPath();
+      layer.arc(
+        stroke.points[0][0],
+        stroke.points[0][1],
+        Math.max(0.5, stroke.size / 2),
+        0,
+        Math.PI * 2
+      );
+      layer.fill();
+    } else {
+      layer.stroke();
+    }
+    layer.restore();
   }
-  layer.restore();
 
   if (useTemp) {
     ctx.save();
@@ -863,6 +943,11 @@ function paintLiveStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  if (isTapered(stroke)) {
+    paintTaperedStroke(ctx, stroke);
+    ctx.restore();
+    return;
+  }
   ctx.lineWidth = stroke.size;
   ctx.strokeStyle = stroke.tool === "eraser" ? "#000" : stroke.color;
   ctx.fillStyle = ctx.strokeStyle;

@@ -29,6 +29,7 @@ import {
   getRasterBitmap,
   onEngineContentLoaded,
   pointInLayer,
+  pressureFactor,
   registerSyncImage,
   renderPage,
   toLocal,
@@ -161,9 +162,10 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     [page]
   );
 
-  /** One soft-focus pass at canvas-units (ux, uy) on the live preview bitmap. */
+  /** One soft-focus pass at canvas-units (ux, uy) on the live preview bitmap.
+   *  Pen pressure (0..1) scales the pass strength — feather-light = gentle. */
   const applyBlurAt = useCallback(
-    (layer: Layer, ux: number, uy: number) => {
+    (layer: Layer, ux: number, uy: number, pressure?: number) => {
       const preview = blurPreviewRef.current;
       if (!preview || layer.type !== "raster") return;
       const { blur } = useEditorStore.getState();
@@ -174,7 +176,11 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       const bx = lx / layer.scale + CANVAS_W / 2;
       const by = ly / layer.scale + CANVAS_H / 2;
       const radius = blur.size / 2 / layer.scale;
-      applySoftFocus(preview, bx, by, radius, blur.strength);
+      const strength =
+        pressure !== undefined
+          ? Math.max(1, blur.strength * pressureFactor(pressure))
+          : blur.strength;
+      applySoftFocus(preview, bx, by, radius, strength);
       setEngineTick((t) => t + 1); // repaint with the liveBlur override
     },
     []
@@ -182,9 +188,17 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
 
   /** One smudge pass on the live preview bitmap: drags the sample under the
    *  cursor from its previous position to the current one. Returns the local
-   *  coords so the gesture can update its own last-position. */
+   *  coords so the gesture can update its own last-position. Pen pressure
+   *  scales the drag alpha — a light touch whispers, a firm press smears. */
   const applySmudgeAt = useCallback(
-    (layer: Layer, fromLx: number, fromLy: number, ux: number, uy: number) => {
+    (
+      layer: Layer,
+      fromLx: number,
+      fromLy: number,
+      ux: number,
+      uy: number,
+      pressure?: number
+    ) => {
       const preview = blurPreviewRef.current;
       if (!preview || layer.type !== "raster") return null;
       const { smudge } = useEditorStore.getState();
@@ -193,6 +207,10 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       const by = ly / layer.scale + CANVAS_H / 2;
       const fromBx = fromLx / layer.scale + CANVAS_W / 2;
       const fromBy = fromLy / layer.scale + CANVAS_H / 2;
+      const strength =
+        pressure !== undefined
+          ? Math.max(1, smudge.strength * pressureFactor(pressure))
+          : smudge.strength;
       applySmudge(
         preview,
         fromBx,
@@ -200,7 +218,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         bx,
         by,
         smudge.size / 2 / layer.scale,
-        smudge.strength
+        strength
       );
       setEngineTick((t) => t + 1); // repaint with the liveBitmap override
       return [lx, ly] as const;
@@ -220,6 +238,12 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       // Text edit overlay owns interactions while open.
       if (store.editingTextLayerId) return;
 
+      // Track the active pointer family (low churn — pointerdown only) so the
+      // editor can confirm stylus pressure is being read.
+      if (e.pointerType === "pen") useEditorStore.setState({ penActive: true });
+      else if (e.pointerType === "mouse" && store.penActive)
+        useEditorStore.setState({ penActive: false });
+
       switch (store.tool) {
         case "brush":
         case "eraser": {
@@ -230,12 +254,16 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           } else if (!layer.visible) {
             store.updateLayer(layer.id, { visible: true });
           }
+          // Pen pointers record per-point pressure → tapered strokes.
+          // Mouse/touch omit pressures entirely (constant width, byte-clean).
+          const pen = e.pointerType === "pen";
           const stroke = {
             tool: store.tool as "brush" | "eraser",
             color: store.brush.color,
             size: store.tool === "brush" ? store.brush.size : store.eraserSize,
             opacity: store.tool === "brush" ? store.brush.opacity : 1,
             points: [[ux, uy]] as [number, number][],
+            pressures: pen ? [e.pressure || 0.5] : undefined,
           };
           store.beginStroke(layer.id, stroke);
           gestureRef.current = { kind: "draw" };
@@ -381,21 +409,37 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       if (g.kind === "none") return;
 
       if (g.kind === "draw") {
-        store.extendStroke([ux, uy]);
+        store.extendStroke(
+          [ux, uy],
+          e.pointerType === "pen" ? e.pressure || 0.5 : undefined
+        );
       } else if (g.kind === "blur") {
         // Read layers fresh from the store — the gesture may have created the
         // raster layer after this callback's `page` closure was taken.
         const layer = store.canvases
           .find((c) => c.id === page.id)
           ?.layers.find((l) => l.id === g.layerId);
-        if (layer) applyBlurAt(layer, ux, uy);
+        if (layer)
+          applyBlurAt(
+            layer,
+            ux,
+            uy,
+            e.pointerType === "pen" ? e.pressure : undefined
+          );
       } else if (g.kind === "smudge") {
         // Same freshness rule as blur: resolve the layer from the live store.
         const layer = store.canvases
           .find((c) => c.id === page.id)
           ?.layers.find((l) => l.id === g.layerId);
         if (layer) {
-          const next = applySmudgeAt(layer, g.lastLx, g.lastLy, ux, uy);
+          const next = applySmudgeAt(
+            layer,
+            g.lastLx,
+            g.lastLy,
+            ux,
+            uy,
+            e.pointerType === "pen" ? e.pressure : undefined
+          );
           if (next) {
             g.lastLx = next[0];
             g.lastLy = next[1];
@@ -450,7 +494,10 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
 
       if (g.kind === "draw") {
         const [ux, uy] = toUnits(e.clientX, e.clientY);
-        store.extendStroke([ux, uy]);
+        store.extendStroke(
+          [ux, uy],
+          e.pointerType === "pen" ? e.pressure || 0.5 : undefined
+        );
         store.commitStroke();
       } else if (g.kind === "blur") {
         // Flatten the softened preview into the layer's bitmap — one undo entry.
@@ -467,13 +514,16 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
             // Final pass under the release — applied directly to the preview
             // (the ref is already cleared, so applyBlurAt can't see it).
             const { blur } = store;
+            const pen = e.pointerType === "pen" ? e.pressure : undefined;
             const [lx, ly] = toLocal(layer, ux, uy);
             applySoftFocus(
               preview,
               lx / layer.scale + CANVAS_W / 2,
               ly / layer.scale + CANVAS_H / 2,
               blur.size / 2 / layer.scale,
-              blur.strength
+              pen !== undefined
+                ? Math.max(1, blur.strength * pressureFactor(pen))
+                : blur.strength
             );
           }
           const flattened = preview.toDataURL("image/png");
@@ -499,6 +549,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
             // One last drag from the previous sample to the release point,
             // applied directly to the preview (the ref is already cleared).
             const { smudge } = store;
+            const pen = e.pointerType === "pen" ? e.pressure : undefined;
             const [lx, ly] = toLocal(layer, ux, uy);
             applySmudge(
               preview,
@@ -507,7 +558,9 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
               lx / layer.scale + CANVAS_W / 2,
               ly / layer.scale + CANVAS_H / 2,
               smudge.size / 2 / layer.scale,
-              smudge.strength
+              pen !== undefined
+                ? Math.max(1, smudge.strength * pressureFactor(pen))
+                : smudge.strength
             );
           }
           const flattened = preview.toDataURL("image/png");

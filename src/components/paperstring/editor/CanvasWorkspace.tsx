@@ -326,6 +326,11 @@ export function CanvasWorkspace() {
  *  swap in ~900px before they enter view. Shorter books render every page
  *  directly — zero behavior change for the common case. */
 const WINDOW_FROM = 12;
+/** Filmstrip windowing threshold: books with at least this many pages swap
+ *  offscreen chip thumbnails for same-size quiet placeholders. Chosen so the
+ *  common case (short books) stays fully live; 28+ chips start to matter for
+ *  initial composite time and the per-asset repaint fan-out. */
+const FILMSTRIP_WINDOW_FROM = 28;
 
 /** One grid page card with lazy mounting. The host wrapper always stays in
  *  the DOM (identical 300×533 box either way) so the observer never loses its
@@ -446,6 +451,131 @@ function PageChipThumb({ page }: { page: CanvasPageData }) {
   );
 }
 
+/** One filmstrip chip. In long books (windowed) the live thumbnail only
+ *  renders while the chip is within the strip scroller's viewport ±640px —
+ *  far-away chips show a same-size quiet ghost so the strip keeps its exact
+ *  geometry (scroll offsets, drop-slot math and edge autoscroll all depend
+ *  on children keeping their rects). */
+function FilmstripChip({
+  page,
+  i,
+  active,
+  dragging,
+  dropIdx,
+  fromIdx,
+  windowed,
+  scrollerRef,
+  onSelect,
+  onDropIdx,
+  onDragChip,
+  onDragEnd,
+}: {
+  page: CanvasPageData;
+  i: number;
+  active: boolean;
+  dragging: boolean;
+  dropIdx: number | null;
+  fromIdx: number;
+  windowed: boolean;
+  scrollerRef: RefObject<HTMLOListElement | null>;
+  onSelect: (id: string) => void;
+  onDropIdx: (idx: number) => void;
+  onDragChip: (id: string) => void;
+  onDragEnd: () => void;
+}) {
+  const hostRef = useRef<HTMLLIElement | null>(null);
+  const [near, setNear] = useState(!windowed);
+
+  useEffect(() => {
+    // The observer attaches even while unwindowed (same lesson as the grid's
+    // Round 14 fix): when a short book grows past the threshold, every chip
+    // already knows whether it is near — no stuck placeholders.
+    const host = hostRef.current;
+    const root = scrollerRef.current;
+    if (!host || !root) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) setNear(entry.isIntersecting);
+      },
+      { root, rootMargin: "640px" }
+    );
+    io.observe(host);
+    return () => io.disconnect();
+  }, [scrollerRef]);
+
+  return (
+    <li
+      ref={hostRef}
+      className="relative shrink-0"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        onDropIdx(e.clientX > rect.left + rect.width / 2 ? i + 1 : i);
+      }}
+    >
+      {/* insertion indicator — a fine accent seam between chips.
+          One seam = one bar: the right edge of the chip before the
+          slot (plus a left bar only before the very first chip). */}
+      {dropIdx === i && i === 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute -left-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+        />
+      )}
+      {dropIdx === i + 1 && !(dragging && i === fromIdx) && (
+        <span
+          aria-hidden="true"
+          className="absolute -right-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+        />
+      )}
+      <button
+        type="button"
+        aria-label={`Go to page ${i + 1}`}
+        aria-current={active}
+        onClick={() => onSelect(page.id)}
+        title={`Page ${i + 1} — drag to reorder`}
+        draggable
+        onDragStart={(e) => {
+          onDragChip(page.id);
+          e.dataTransfer.effectAllowed = "move";
+          // Firefox requires data for drag to start at all.
+          e.dataTransfer.setData("text/plain", page.id);
+        }}
+        onDragEnd={onDragEnd}
+        className={cn(
+          "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
+          dragging
+            ? "cursor-grabbing border-[#e8446a]/60 bg-[#e8446a]/10 opacity-40"
+            : "cursor-grab active:cursor-grabbing",
+          dragging
+            ? ""
+            : active
+              ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
+              : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
+        )}
+      >
+        {/* live mini page preview — the whole page at a glance (ghosted
+            while far away in windowed strips, same 18px footprint) */}
+        {near ? (
+          <PageChipThumb page={page} />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="h-8 w-[18px] shrink-0 rounded-[4px] bg-white/40 bg-[repeating-linear-gradient(45deg,transparent_0_3px,rgba(0,0,0,0.05)_3px_6px)] ring-1 ring-inset ring-black/15"
+          />
+        )}
+        {i + 1}
+        {/* reorder affordance — appears on hover, whisper-quiet */}
+        <GripHorizontal
+          aria-hidden="true"
+          className="h-3 w-3 text-editor-dim/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        />
+      </button>
+    </li>
+  );
+}
+
 function PageFilmstrip({
   canvases,
   activeCanvasId,
@@ -465,6 +595,11 @@ function PageFilmstrip({
   const edgeScroll = useRef<number | null>(null);
 
   const fromIdx = dragId ? canvases.findIndex((c) => c.id === dragId) : -1;
+  // Window the chips for long books: beyond FILMSTRIP_WINDOW_FROM pages only
+  // chips near the viewport render their live thumbnails; the rest render a
+  // same-size quiet placeholder (Round 15 rec c — render work stays
+  // proportional to what is visible, not to the book's length).
+  const windowed = canvases.length >= FILMSTRIP_WINDOW_FROM;
 
   const clearDrag = useCallback(() => {
     setDragId(null);
@@ -552,73 +687,23 @@ function PageFilmstrip({
         }}
         onDragEnd={clearDrag}
       >
-        {canvases.map((page, i) => {
-          const active = page.id === activeCanvasId;
-          const dragging = page.id === dragId;
-          return (
-            <li
-              key={page.id}
-              className="relative shrink-0"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                setDropIdx(e.clientX > rect.left + rect.width / 2 ? i + 1 : i);
-              }}
-            >
-              {/* insertion indicator — a fine accent seam between chips.
-                  One seam = one bar: the right edge of the chip before the
-                  slot (plus a left bar only before the very first chip). */}
-              {dropIdx === i && i === 0 && (
-                <span
-                  aria-hidden="true"
-                  className="absolute -left-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
-                />
-              )}
-              {dropIdx === i + 1 && !(dragging && i === fromIdx) && (
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
-                />
-              )}
-              <button
-                type="button"
-                aria-label={`Go to page ${i + 1}`}
-                aria-current={active}
-                onClick={() => onSelect(page.id)}
-                title={`Page ${i + 1} — drag to reorder`}
-                draggable
-                onDragStart={(e) => {
-                  setDragId(page.id);
-                  e.dataTransfer.effectAllowed = "move";
-                  // Firefox requires data for drag to start at all.
-                  e.dataTransfer.setData("text/plain", page.id);
-                }}
-                onDragEnd={clearDrag}
-                className={cn(
-                  "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
-                  dragging
-                    ? "cursor-grabbing border-[#e8446a]/60 bg-[#e8446a]/10 opacity-40"
-                    : "cursor-grab active:cursor-grabbing",
-                  dragging
-                    ? ""
-                    : active
-                      ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
-                      : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
-                )}
-              >
-                {/* live mini page preview — the whole page at a glance */}
-                <PageChipThumb page={page} />
-                {i + 1}
-                {/* reorder affordance — appears on hover, whisper-quiet */}
-                <GripHorizontal
-                  aria-hidden="true"
-                  className="h-3 w-3 text-editor-dim/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                />
-              </button>
-            </li>
-          );
-        })}
+        {canvases.map((page, i) => (
+          <FilmstripChip
+            key={page.id}
+            page={page}
+            i={i}
+            active={page.id === activeCanvasId}
+            dragging={page.id === dragId}
+            dropIdx={dropIdx}
+            fromIdx={fromIdx}
+            windowed={windowed}
+            scrollerRef={listRef}
+            onSelect={onSelect}
+            onDropIdx={setDropIdx}
+            onDragChip={setDragId}
+            onDragEnd={clearDrag}
+          />
+        ))}
       </ol>
       {dragId && (
         <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#e8446a]/80">

@@ -52,7 +52,7 @@ const STEPS: TourStep[] = [
   {
     target: "canvas",
     title: "Make your mark",
-    body: "Tap a page and simply start. Every stroke lands on its own layer, so nothing gets lost — and Ctrl+Z is always there for you.",
+    body: "Tap a page and simply start. Every stroke lands on its own layer, so nothing gets lost — and Ctrl+Z is always there for you. Drawing with Apple Pencil? Press lighter or harder and your strokes follow.",
   },
   {
     target: "layers",

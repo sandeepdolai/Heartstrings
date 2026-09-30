@@ -314,9 +314,11 @@ const SHORTCUTS: [string, string][] = [
   ["Ctrl + S", "Save"],
   ["Del", "Delete active layer"],
   ["[ / ]", "Brush, eraser, soft-focus or smudge size (⇧ = ×10)"],
+  ["Alt + [ / ]", "Bend selected text (arch ∩ / smile ∪)"],
   ["Alt + ← / →", "Previous / next page"],
   ["PgUp / PgDn", "Previous / next page"],
   ["Ctrl + ⇧ + ← / →", "Move page earlier / later"],
+  ["Apple Pencil", "Pressure tapers strokes, scales blur & smudge"],
 ];
 
 /** Touch-friendly equivalents shown on small screens instead of the
