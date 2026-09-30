@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
     await createSession(user.id);
     return NextResponse.json({
-      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, image: user.image, createdAt: user.createdAt },
     });
   } catch (err) {
     console.error("[register]", err);

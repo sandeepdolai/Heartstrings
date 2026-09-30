@@ -25,7 +25,7 @@ import { psNavigate } from "@/lib/paperstring/navigation";
 import { LogoMark, WordMark } from "@/components/paperstring/brand";
 import { ProjectCard } from "./ProjectCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -239,6 +239,13 @@ export function DashboardView({ user }: { user: PsUser }) {
                     className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <Avatar className="size-9">
+                      {user.image ? (
+                        <AvatarImage
+                          src={user.image}
+                          alt={`${user.name}'s profile picture`}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : null}
                       <AvatarFallback className="bg-night text-xs font-semibold text-smoke">
                         {initials}
                       </AvatarFallback>

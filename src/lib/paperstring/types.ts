@@ -178,6 +178,8 @@ export interface PsUser {
   id: string;
   email: string;
   name: string;
+  /** Profile picture URL (Google avatar) — null for email-only accounts. */
+  image?: string | null;
   createdAt: string;
 }
 

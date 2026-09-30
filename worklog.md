@@ -733,3 +733,29 @@ Work Log:
 Stage Summary:
 - Round-24 is LIVE on https://paperstring.heartstrings.workers.dev and pushed to GitHub; local dev on the same commit.
 - Next session notes: QA with fresh refs after every HMR refresh (stale @refs caused stray clicks — the mystery page-2 + the rail-button "Cutout" click that cleared a pending trace were both QA artifacts, not app bugs); the page grid auto-scrolls to the active page, so screen coordinates go stale when pages change.
+
+---
+Task ID: round-25
+Agent: Z.ai Code (main session)
+Task: Google Sign-In (real OAuth) — user picked "Option 1" from the auth-improvement menu discussed in chat.
+
+Work Log:
+- Audited existing auth (AuthView.tsx, 4 API routes, auth-server.ts scrypt+session, User/Session models) — confirmed email auth was healthy and the Google button was a placeholder toast.
+- prisma/schema.prisma: User.passwordHash → String? (null = OAuth-only account), + googleId String? @unique ("sub" claim, re-links users even if email changes), + image String? (Google avatar). bun run db:push OK.
+- NEW src/app/api/auth/google/route.ts (GIS ID-token flow): verifies the JWT via Google tokeninfo endpoint (signature/issuer/expiry) + our own checks — aud === GOOGLE_CLIENT_ID (token-substitution defence), issuer whitelist, exp freshness, email_verified required. Find-or-create with account linking: by googleId → straight in; by email → link Google (Google verified the email) and sign in; new → OAuth-only user (passwordHash null). Then createSession + user JSON (same shape as /me, incl. image).
+- NEW src/app/api/auth/config/route.ts: public { googleEnabled, googleClientId } — single source of truth, ONE env var only (GOOGLE_CLIENT_ID, server-side); client id is public by design.
+- login route: OAuth-only accounts (passwordHash null) now get a friendly 400 "This account signs in with Google — use “Continue with Google” above." instead of a misleading "Incorrect email or password".
+- register/me/login routes: responses now include image (avatar) — PsUser type extended with image?: string | null.
+- AuthView.tsx rewrite of the Google area: fetches /api/auth/config on mount (skeleton pulse while checking). ENABLED → loads official GIS script (idempotent, polls for window.google), initialize({client_id from config}) + renderButton (outline/pill/continue_with, width measured from container) → credential POSTs to /api/auth/google → shared completeSignIn (setQueryData ["me"] + psNavigate dashboard — same anti-bounce pattern as email auth). If Google's button can't render in 2.5s (cross-site iframe) or the script fails → fallback button opens the app in a full browser tab (with popup-blocked detection + toast guidance). DISABLED → button opens GoogleSetupDialog: 4-step guide (Cloud Console link → OAuth client ID → authorized origin chip showing window.location.origin with click-to-copy → .env GOOGLE_CLIENT_ID + restart), built from shadcn Dialog/Alert in project design tokens.
+- DashboardView: avatar now shows Google profile picture (AvatarImage, referrerPolicy no-referrer) with initials fallback.
+- .env: documented GOOGLE_CLIENT_ID placeholder comment (currently unset → honest setup-dialog UX; activates automatically once set).
+- Dev-server ops: schema change required a RESTART to load the regenerated Prisma client (old in-memory client silently omitted the new image column — user.image was undefined → JSON key dropped). Dev server now runs via double-fork `(setsid bash -c '… next dev -p 3000 2>&1 | tee dev.log' &)` — plain nohup+& died with the tool session twice.
+
+QA (curl + agent-browser):
+- curl: /api/auth/config → {googleEnabled:false}; forged credential → clean error; with dummy GOOGLE_CLIENT_ID booted: config enabled + forged token → 401 "could not be verified" (full network→Google→mapping chain proven; Google tokeninfo reachable); register/login return image field; OAuth-only user (passwordHash NULL injected via bun:sqlite) + password attempt → friendly Google guidance 400; duplicate registration → 409. All test users/sessions cleaned after.
+- agent-browser: auth page renders; Google button → setup dialog opens with live origin chip + copy feedback ("Copied"); dialog closes cleanly; full email signup regression (toggle → fill → submit → "Your studio is ready" toast → dashboard) + sign-out → landing, ZERO console/page errors; mobile 390×844 clean. bun run lint exit 0. dev.log healthy.
+
+Stage Summary:
+- Google Sign-In is fully implemented and production-ready: set GOOGLE_CLIENT_ID (server env, one var) → button goes live automatically; account linking handles both directions (Google→existing email account, email→Google); OAuth-only users get correct guidance on password attempts; Google avatar shows in dashboard.
+- Until credentials are configured, the button honestly explains the 2-minute setup with a copyable origin chip (no fake OAuth).
+- Next candidates from the auth menu discussed with the user: rate limiting/login throttling (cheapest security win), forgot-password flow, password strength meter, session management UI; plus the standing pending items (round-22 UI/UX redesign, round-21 share-link sticker bug if still live on the deployed worker).

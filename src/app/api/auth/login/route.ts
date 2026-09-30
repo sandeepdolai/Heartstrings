@@ -22,7 +22,15 @@ export async function POST(req: NextRequest) {
     const { email, password } = parsed.data;
 
     const user = await db.user.findUnique({ where: { email } });
-    if (!user || !verifyPassword(password, user.passwordHash)) {
+    if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+      // OAuth-only accounts have no password — guide them to Google instead
+      // of a misleading "incorrect password".
+      if (user && !user.passwordHash) {
+        return NextResponse.json(
+          { error: "This account signs in with Google — use “Continue with Google” above." },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: "Incorrect email or password" },
         { status: 401 }
@@ -30,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
     await createSession(user.id);
     return NextResponse.json({
-      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, image: user.image, createdAt: user.createdAt },
     });
   } catch (err) {
     console.error("[login]", err);

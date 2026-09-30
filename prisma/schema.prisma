@@ -16,7 +16,13 @@ model User {
   id           String    @id @default(cuid())
   email        String    @unique
   name         String
-  passwordHash String
+  // Null for OAuth-only accounts (e.g. Google) — they have no password.
+  passwordHash String?
+  // Google account identifier ("sub" claim) — set on first Google sign-in,
+  // lets us re-link returning Google users even if they change email.
+  googleId     String?   @unique
+  // Profile picture URL (Google avatar, when available).
+  image        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   sessions     Session[]
