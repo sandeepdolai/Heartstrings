@@ -6,8 +6,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Lasso, Scaling, X } from "lucide-react";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
+import { clipShapeBounds, isViableLasso } from "@/lib/paperstring/lasso";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { ColorPanel } from "./panels/ColorPanel";
@@ -81,7 +82,9 @@ export function ToolPanel() {
         {tool === "text" && <TextPanel />}
         {(tool === "image" || tool === "elements") && <ElementsPanel />}
         {tool === "select-area" && <SelectionAreaPanel />}
-        {tool === "select" && activeLayer?.type === "text" && <TextPanel />}
+        {tool === "select" && activeLayer?.type === "text" && (
+          <TextPanel context="select" />
+        )}
         {tool === "select" && activeLayer?.type === "image" && <ImageAdjustPanel />}
       </div>
     </aside>
@@ -465,8 +468,6 @@ function SmudgePanel() {
 }
 
 function SelectionAreaPanel() {
-  const selectionShape = useEditorStore((s) => s.selectionShape);
-  const setSelectionShape = useEditorStore((s) => s.setSelectionShape);
   const pendingClip = useEditorStore((s) => s.pendingClip);
   const applyClipShape = useEditorStore((s) => s.applyClipShape);
   const activeCanvasId = useEditorStore((s) => s.activeCanvasId);
@@ -475,48 +476,66 @@ function SelectionAreaPanel() {
     const id = c ? s.activeLayerIds[c.id] : undefined;
     return c?.layers.find((l) => l.id === id) ?? null;
   });
+  const shape =
+    pendingClip && pendingClip.canvasId === activeCanvasId ? pendingClip.shape : null;
+  // The lasso is the only creatable selection now (rect/ellipse stay in the
+  // data model for old saved projects but can never be pending here).
   const hasSelection =
-    !!pendingClip && pendingClip.canvasId === activeCanvasId && pendingClip.shape.w > 4;
+    !!shape && shape.type === "path" && isViableLasso(shape.points);
+  const bounds = shape ? clipShapeBounds(shape) : null;
 
   return (
     <PanelShell
-      title="Keep inside"
-      hint="Drag an area on the page. Whatever you keep stays inside it; the rest is masked away — reversible from the layer list."
+      title="Lasso"
+      hint="Trace a freehand outline on the page — release closes the loop back to its start. Keep what's inside; the rest is masked away. Reversible from the layer list."
     >
-      <div className="grid grid-cols-2 gap-2">
-        {(["rect", "ellipse"] as const).map((shape) => (
-          <button
-            key={shape}
-            type="button"
-            aria-pressed={selectionShape === shape}
-            onClick={() => setSelectionShape(shape)}
-            className={cn(
-              "flex flex-col items-center gap-2 rounded-lg border px-3 py-3 text-xs transition",
-              selectionShape === shape
-                ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
-                : "border-editor-border-strong text-editor-dim hover:bg-editor-raised"
-            )}
-          >
-            {shape === "rect" ? (
-              <span className="h-6 w-8 rounded-[4px] border-2 border-current" />
-            ) : (
-              <span className="h-6 w-9 rounded-[50%] border-2 border-current" />
-            )}
-            {shape === "rect" ? "Rectangle" : "Ellipse"}
-          </button>
-        ))}
-      </div>
-
-      {hasSelection && (
+      {!hasSelection ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-editor-border-strong bg-editor-raised/40 p-3.5">
+          <div className="flex items-center gap-2">
+            <Lasso className="h-4 w-4 text-heart" aria-hidden="true" />
+            <span className="text-xs font-medium text-editor-text">
+              Freehand keep-inside
+            </span>
+          </div>
+          <ol className="flex flex-col gap-2">
+            {[
+              "Drag on the page to trace an outline — it follows your finger exactly, any shape you like.",
+              "Release — the loop seals itself back to the start point.",
+              "Keep the area, then move or delete the layer as usual.",
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="mt-px grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-[#e8446a]/12 text-[9px] font-bold text-heart-deep"
+                >
+                  {i + 1}
+                </span>
+                <span className="text-[11px] leading-relaxed text-editor-dim">
+                  {step}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : (
         <div className="rounded-lg border border-editor-border-strong bg-editor-raised/60 p-3">
           <p className="mb-3 text-xs leading-relaxed text-editor-dim">
-            Keep <span className="text-editor-text">{activeLayer?.name ?? "the active layer"}</span>{" "}
-            inside this area?
+            Keep{" "}
+            <span className="text-editor-text">
+              {activeLayer?.name ?? "the active layer"}
+            </span>{" "}
+            inside this loop?
           </p>
+          {bounds && (
+            <p className="mb-3 text-[10px] tabular-nums text-editor-dim/70">
+              {Math.round(bounds.w)} × {Math.round(bounds.h)} px area ·{" "}
+              {shape.type === "path" ? `${shape.points.length} points traced` : ""}
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => applyClipShape(pendingClip!.shape)}
+              onClick={() => applyClipShape(shape!)}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-smoke px-3 py-2 text-xs font-medium text-night transition hover:bg-white"
             >
               <Check className="h-3.5 w-3.5" /> Keep inside

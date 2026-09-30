@@ -34,6 +34,7 @@ import {
   toLocal,
 } from "@/lib/paperstring/render";
 import { useEditorStore, type HistoryEntry } from "@/lib/paperstring/editor-store";
+import { isViableLasso, simplifyPolyline } from "@/lib/paperstring/lasso";
 import { LogoMark } from "@/components/paperstring/brand";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -66,7 +67,7 @@ type Gesture =
       startAngle: number;
       startRotation: number;
     }
-  | { kind: "select-area"; x0: number; y0: number };
+  | { kind: "select-area"; points: [number, number][] };
 
 function PageCanvasInner({ page, active, width, welcome }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -403,10 +404,16 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           break;
         }
         case "select-area": {
+          // Freehand lasso, Photoshop-style: the drag traces an arbitrary
+          // outline in real time; releasing auto-closes the loop back to the
+          // start point and the enclosed area becomes the keep-inside mask.
           e.currentTarget.setPointerCapture(e.pointerId);
-          gestureRef.current = { kind: "select-area", x0: ux, y0: uy };
+          gestureRef.current = { kind: "select-area", points: [[ux, uy]] };
           useEditorStore.setState({
-            pendingClip: { canvasId: page.id, shape: { type: store.selectionShape, x: ux, y: uy, w: 0, h: 0 } },
+            pendingClip: {
+              canvasId: page.id,
+              shape: { type: "path", points: [[ux, uy]] },
+            },
           });
           break;
         }
@@ -507,10 +514,17 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         scheduleFrame();
       } else if (g.kind === "scale") {
         const dist = Math.hypot(ux - g.layer.x, uy - g.layer.y);
-        const scale = Math.max(
+        let scale = Math.max(
           0.05,
           Math.min(12, g.layer.scale * (dist / g.startDist))
         );
+        if (g.layer.type === "text") {
+          // Keep the resulting font size in a sane range (10–800 canvas
+          // units) at gesture time, so baking on release never snaps the
+          // glyphs back after an extreme drag.
+          scale = Math.max(scale, 10 / g.layer.fontSize);
+          scale = Math.min(scale, 800 / g.layer.fontSize);
+        }
         liveRef.current = { layerId: g.layer.id, patch: { scale } };
         scheduleFrame();
       } else if (g.kind === "rotate") {
@@ -522,16 +536,20 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         };
         scheduleFrame();
       } else if (g.kind === "select-area") {
-        const shape = {
-          type: store.selectionShape,
-          x: Math.min(g.x0, ux),
-          y: Math.min(g.y0, uy),
-          w: Math.abs(ux - g.x0),
-          h: Math.abs(uy - g.y0),
-        };
-        useEditorStore.setState({
-          pendingClip: { canvasId: page.id, shape },
-        });
+        // Follow the finger exactly: every pointermove appends the fresh
+        // sample (a hairline threshold discards sub-pixel jitter so a
+        // 120Hz stream doesn't bloat the path).
+        const pts = g.points;
+        const last = pts[pts.length - 1];
+        if (Math.hypot(ux - last[0], uy - last[1]) >= 2.5) {
+          pts.push([ux, uy]);
+          useEditorStore.setState({
+            pendingClip: {
+              canvasId: page.id,
+              shape: { type: "path", points: pts.slice() },
+            },
+          });
+        }
       }
     },
     [active, page.id, toUnits, scheduleFrame]
@@ -635,13 +653,50 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
         }
+        // Live size badge off — the committed chrome re-renders from the store.
+        const badge = chromeRef.current?.querySelector<HTMLElement>(
+          "[data-size-badge]"
+        );
+        if (badge) badge.style.opacity = "0";
         if (live && Object.keys(live.patch).length > 0) {
-          store.updateLayer(live.layerId, live.patch, { history: false });
+          let patch = live.patch;
+          if (
+            g.kind === "scale" &&
+            g.layer.type === "text" &&
+            patch.scale !== undefined
+          ) {
+            // Corner-handle resizing scales the glyphs themselves
+            // (IbisPaint-style): the drag previews through layer.scale, then
+            // bakes into fontSize here so the font size stays the single
+            // source of truth — panel sliders, the on-page editor and the
+            // measures all read it directly. No snap: the gesture already
+            // clamped the product into a sane range.
+            patch = {
+              fontSize: g.layer.fontSize * patch.scale,
+              letterSpacing: g.layer.letterSpacing * patch.scale,
+              scale: 1,
+            };
+          }
+          store.updateLayer(live.layerId, patch, { history: false });
           store.pushHistory(gestureSnapshotRef.current);
         }
         gestureSnapshotRef.current = null;
       } else if (g.kind === "select-area") {
-        // keep pendingClip alive for apply/cancel in the panel
+        // Release closes the loop back to the start point (the mask path and
+        // the preview polygon both auto-close). Simplify the traced samples
+        // (RDP) so the stored mask stays lean; a degenerate trace — a tap or
+        // a hairline scratch — cancels itself instead of masking to nothing.
+        const simplified = simplifyPolyline(g.points, 2);
+        if (isViableLasso(simplified)) {
+          useEditorStore.setState({
+            pendingClip: {
+              canvasId: page.id,
+              shape: { type: "path", points: simplified },
+            },
+          });
+        } else {
+          useEditorStore.setState({ pendingClip: null });
+        }
       }
     },
     [page.id, toUnits]
@@ -704,6 +759,22 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         ? g.layer.rotation
         : 0;
     el.style.transform = `translate(-50%, -50%) rotate(${rotation ?? baseRotation}deg)`;
+
+    // Live font-size readout while a text layer is corner-scaled (IbisPaint
+    // shows the size as you drag) — hidden for every other gesture/state.
+    const badge = el.querySelector<HTMLElement>("[data-size-badge]");
+    if (badge) {
+      if (
+        g.kind === "scale" &&
+        g.layer.type === "text" &&
+        patch.scale !== undefined
+      ) {
+        badge.textContent = `${Math.round(g.layer.fontSize * patch.scale)} px`;
+        badge.style.opacity = "1";
+      } else {
+        badge.style.opacity = "0";
+      }
+    }
   }, [width]);
 
   useLayoutEffect(() => {
@@ -920,20 +991,50 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         />
       )}
 
-      {/* keep-inside selection preview */}
-      {pendingShape && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute border-2 border-dashed border-[#e8446a] bg-[#e8446a]/10"
-          style={{
-            left: pendingShape.x * factor,
-            top: pendingShape.y * factor,
-            width: pendingShape.w * factor,
-            height: pendingShape.h * factor,
-            borderRadius: pendingShape.type === "ellipse" ? "50%" : 8,
-          }}
-        />
-      )}
+      {/* lasso (keep-inside) selection preview — the dashed rose loop traces
+          the drag in real time; the polygon auto-closes back to the start
+          point, and the anchor dot marks where the loop will seal */}
+      {pendingShape &&
+        (pendingShape.type === "path" ? (
+          <svg
+            aria-hidden="true"
+            viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+            className="pointer-events-none absolute inset-0 h-full w-full"
+          >
+            <polygon
+              points={pendingShape.points.map(([x, y]) => `${x},${y}`).join(" ")}
+              fill="rgba(232,68,106,0.08)"
+              fillRule="evenodd"
+              stroke="#e8446a"
+              strokeWidth={5}
+              strokeDasharray="20 16"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {pendingShape.points.length > 0 && (
+              <circle
+                cx={pendingShape.points[0][0]}
+                cy={pendingShape.points[0][1]}
+                r={18}
+                fill="#fff"
+                stroke="#e8446a"
+                strokeWidth={5}
+              />
+            )}
+          </svg>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute border-2 border-dashed border-[#e8446a] bg-[#e8446a]/10"
+            style={{
+              left: pendingShape.x * factor,
+              top: pendingShape.y * factor,
+              width: pendingShape.w * factor,
+              height: pendingShape.h * factor,
+              borderRadius: pendingShape.type === "ellipse" ? "50%" : 8,
+            }}
+          />
+        ))}
 
       {/* live text editor */}
       {editingLayer && (
@@ -1077,17 +1178,39 @@ function SelectionChrome({
         </ChromeAction>
       </div>
 
-      {/* scale corners */}
+      {/* scale corners — on text layers they resize the font itself */}
       {corners.map(([x, y], i) => (
         <button
           key={i}
           type="button"
-          aria-label={`Resize from corner ${i + 1}`}
+          aria-label={
+            layer.type === "text"
+              ? `Resize text from corner ${i + 1} — the font scales with the box`
+              : `Resize from corner ${i + 1}`
+          }
           onPointerDown={(e) => onHandleDown(e, "scale", i)}
           className="pointer-events-auto absolute h-[18px] w-[18px] touch-none -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-[1.5px] border-[#e8446a] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-transform duration-150 hover:scale-[1.3] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
           style={{ left: x, top: y }}
         />
       ))}
+
+      {/* live font-size readout — driven imperatively by paintChromeLive
+          while a text layer is corner-scaled; counter-rotates like the pill
+          and sits on the side opposite the action pill */}
+      <div
+        data-size-badge
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute left-1/2 -z-10 whitespace-nowrap rounded-full bg-night/90 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-white opacity-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.4)] transition-opacity duration-100",
+          pillBelow ? "-top-[2.4rem]" : "-bottom-[2.4rem]"
+        )
+        }
+        style={{
+          transform: `translateX(-50%) rotate(${-layer.rotation}deg)`,
+        }}
+      >
+        0 px
+      </div>
     </div>
   );
 }

@@ -28,7 +28,7 @@ import {
   ArrowUp,
   ArrowDown,
   Merge,
-  SquareDashedMousePointer,
+  Lasso,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -274,7 +274,7 @@ function LayerRow({
               />
             )}
             {layer.clipShape && (
-              <SquareDashedMousePointer
+              <Lasso
                 className="h-3 w-3 shrink-0 text-[#f7c948]"
                 aria-label="Keep-inside mask"
               />
@@ -360,7 +360,7 @@ function LayerRow({
           )}
           {layer.clipShape && (
             <DropdownMenuItem onClick={() => useEditorStore.getState().clearClipShape(layer.id)}>
-              <SquareDashedMousePointer className="h-3.5 w-3.5" /> Remove keep-inside
+              <Lasso className="h-3.5 w-3.5" /> Remove keep-inside
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="bg-editor-border" />
@@ -580,7 +580,7 @@ function ActiveLayerControls() {
             onClick={() => useEditorStore.getState().clearClipShape(layer.id)}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#f7c948]/60 bg-[#f7c948]/10 px-2 py-1.5 text-[11px] text-editor-text transition hover:bg-[#f7c948]/20"
           >
-            <SquareDashedMousePointer className="h-3.5 w-3.5" /> Unmask
+            <Lasso className="h-3.5 w-3.5" /> Unmask
           </button>
         ) : (
           <button
@@ -588,7 +588,7 @@ function ActiveLayerControls() {
             onClick={() => useEditorStore.getState().setTool("select-area")}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-editor-border-strong px-2 py-1.5 text-[11px] text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
           >
-            <SquareDashedMousePointer className="h-3.5 w-3.5" /> Keep inside
+            <Lasso className="h-3.5 w-3.5" /> Keep inside
           </button>
         )}
       </div>

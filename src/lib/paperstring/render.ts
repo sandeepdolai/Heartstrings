@@ -13,6 +13,7 @@ import {
   PUBLISH_SCALE,
   IMAGE_ADJUST_NEUTRAL,
   type CanvasPageData,
+  type ClipShape,
   type ImageAdjust,
   type Layer,
   type RasterLayer,
@@ -512,7 +513,11 @@ export function layerContentBox(layer: Layer): { w: number; h: number } {
       const m = measureTextLayer(layer as TextLayer);
       // The bend lifts the ends — the content box grows so selection
       // chrome, hit tests and the transform box all cover the arc.
-      return { w: m.w, h: m.h + textCurveSagitta(layer as TextLayer) };
+      // Scaled by layer.scale so the chrome tracks live corner-handle drags.
+      return {
+        w: m.w * layer.scale,
+        h: (m.h + textCurveSagitta(layer as TextLayer)) * layer.scale,
+      };
     }
   }
 }
@@ -831,9 +836,14 @@ function drawLayerContent(
       }
       break;
     }
-    case "text":
+    case "text": {
+      // Corner-handle resizing scales the glyphs themselves — the drag is
+      // live-scaled here, then baked into fontSize on release (PageCanvas),
+      // so the committed size stays the single source of truth.
+      ctx.scale(layer.scale, layer.scale);
       drawTextLayer(ctx, layer as TextLayer);
       break;
+    }
   }
   ctx.restore();
 }
@@ -904,7 +914,9 @@ export function renderPage(
         mctx.globalCompositeOperation = "destination-in";
         mctx.fillStyle = "#fff";
         applyClipShapePath(mctx, layer.clipShape);
-        mctx.fill();
+        // even-odd: identical to nonzero for the simple rect/ellipse masks,
+        // and the correct fill rule for self-crossing lasso loops.
+        mctx.fill("evenodd");
         mctx.restore();
       }
       if (clippedToBase) {
@@ -968,12 +980,18 @@ function paintLiveStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.restore();
 }
 
-function applyClipShapePath(
-  ctx: CanvasRenderingContext2D,
-  shape: { type: "rect" | "ellipse"; x: number; y: number; w: number; h: number }
-) {
+function applyClipShapePath(ctx: CanvasRenderingContext2D, shape: ClipShape) {
   ctx.beginPath();
-  if (shape.type === "rect") {
+  if (shape.type === "path") {
+    // Freehand lasso: straight segments through the traced samples, closed
+    // back to the start point (the release auto-closes the loop). Filled
+    // even-odd so self-crossing loops exclude the overlap, like Photoshop.
+    const pts = shape.points;
+    if (pts.length === 0) return;
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+  } else if (shape.type === "rect") {
     ctx.rect(shape.x, shape.y, shape.w, shape.h);
   } else {
     ctx.ellipse(

@@ -34,14 +34,18 @@ export interface Stroke {
   pressures?: number[];
 }
 
-/** Reversible keep-inside selection mask (FR-8) */
-export interface ClipShape {
-  type: "rect" | "ellipse";
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+/** Reversible keep-inside selection mask (FR-8).
+ *
+ *  Two eras share this union:
+ *  • "path" — the freehand lasso (current): drag traces an arbitrary
+ *    outline; releasing auto-closes the loop back to the start point and the
+ *    enclosed area (even-odd fill, like Photoshop's lasso) becomes the mask.
+ *  • "rect" | "ellipse" — the retired shape presets. They are no longer
+ *    creatable, but old saved projects must keep rendering pixel-identically.
+ */
+export type ClipShape =
+  | { type: "rect" | "ellipse"; x: number; y: number; w: number; h: number }
+  | { type: "path"; points: [number, number][] };
 
 /** Layer blend modes (canvas globalCompositeOperation values, CSS-compat).
  *  undefined / "normal" = source-over. Applied per layer at composite time

@@ -84,7 +84,6 @@ export interface EditorState {
   smudge: { size: number; strength: number };
   colorHistory: string[];
   textDefaults: TextDefaults;
-  selectionShape: "rect" | "ellipse";
 
   /* transient (not persisted, not historicized) */
   liveStroke: { layerId: string; stroke: Stroke } | null;
@@ -116,7 +115,6 @@ export interface EditorState {
   setSmudgeTool: (patch: Partial<{ size: number; strength: number }>) => void;
   pushColorHistory: (color: string) => void;
   setTextDefaults: (patch: Partial<TextDefaults>) => void;
-  setSelectionShape: (shape: "rect" | "ellipse") => void;
 
   setTitle: (title: string) => void;
   markSaved: () => void;
@@ -235,7 +233,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     lineHeight: 1.25,
     curve: 0,
   },
-  selectionShape: "rect",
   liveStroke: null,
   penActive: false,
   pendingClip: null,
@@ -248,8 +245,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       projectId,
       title,
-      canvases: data.canvases,
       user,
+      // Migration: text layers saved by the pre-fix resizer can carry a stray
+      // `scale` (corner handles grew the box, never the glyphs). Bake it into
+      // fontSize once, here, so fontSize stays the single source of truth and
+      // every text feature (panel sliders, editor overlay, measures) sees
+      // clean data from this point on.
+      canvases: data.canvases.map((c) => ({
+        ...c,
+        layers: c.layers.map((l) => {
+          if (l.type === "text" && l.scale !== 1) {
+            return {
+              ...l,
+              fontSize: l.fontSize * l.scale,
+              letterSpacing: l.letterSpacing * l.scale,
+              scale: 1,
+            } as typeof l;
+          }
+          return l;
+        }),
+      })),
       activeCanvasId: data.canvases[0]?.id ?? null,
       activeLayerIds: Object.fromEntries(
         data.canvases.map((c) => [c.id, c.layers[c.layers.length - 1]?.id])
@@ -309,8 +324,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setTextDefaults: (patch) =>
     set((s) => ({ textDefaults: { ...s.textDefaults, ...patch } })),
-
-  setSelectionShape: (shape) => set({ selectionShape: shape }),
 
   setTitle: (title) => {
     get()._commit((d) => {

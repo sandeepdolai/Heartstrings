@@ -19,6 +19,7 @@ import {
   AlignRight,
   Bold,
   Italic,
+  Scaling,
   Underline,
   Upload,
 } from "lucide-react";
@@ -133,7 +134,13 @@ type TextProps = Pick<
   | "curve"
 >;
 
-export function TextPanel() {
+/** Context the panel is opened in:
+ *  • "text" — the Text tool's own panel (size slider included: it also
+ *    styles the next-insert defaults when nothing is selected);
+ *  • "select" — the Select & transform tool holding a text layer. The size
+ *    slider is intentionally absent here: corner handles on the bounding
+ *    box resize the font directly, so no tool-switching is ever needed. */
+export function TextPanel({ context = "text" }: { context?: "text" | "select" }) {
   const layer = useActiveLayer();
   const target: TextLayer | null = layer?.type === "text" ? (layer as TextLayer) : null;
   const defaults = useEditorStore((s) => s.textDefaults);
@@ -218,21 +225,32 @@ export function TextPanel() {
         onChange={(cssFamily) => apply({ fontFamily: cssFamily })}
       />
 
-      <SliderRow
-        label="Size"
-        value={values.fontSize}
-        display={`${Math.round(values.fontSize)} px`}
-        min={24}
-        max={420}
-        step={2}
-        onChange={(v) => {
-          if (target) {
-            beginLive();
-            apply({ fontSize: v }, { live: true });
-          } else apply({ fontSize: v });
-        }}
-        onCommit={endLive}
-      />
+      {context === "select" ? (
+        <div className="flex items-start gap-2.5 rounded-lg border border-[#e8446a]/35 bg-[#e8446a]/[0.05] px-3 py-2.5">
+          <Scaling className="mt-0.5 h-4 w-4 shrink-0 text-heart" aria-hidden="true" />
+          <p className="text-[11px] leading-relaxed text-editor-dim">
+            Resize right on the page — drag a{" "}
+            <span className="font-semibold text-editor-text">corner handle</span> of
+            the pink box and the text scales with it, live.
+          </p>
+        </div>
+      ) : (
+        <SliderRow
+          label="Size"
+          value={values.fontSize}
+          display={`${Math.round(values.fontSize)} px`}
+          min={24}
+          max={420}
+          step={2}
+          onChange={(v) => {
+            if (target) {
+              beginLive();
+              apply({ fontSize: v }, { live: true });
+            } else apply({ fontSize: v });
+          }}
+          onCommit={endLive}
+        />
+      )}
 
       {/* style toggles */}
       <div className="flex gap-1.5" role="group" aria-label="Text style">
