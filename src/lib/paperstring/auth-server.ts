@@ -1,5 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 
 /**
@@ -30,15 +30,42 @@ export function newSessionToken(): string {
   return randomBytes(32).toString("hex");
 }
 
+/**
+ * Is the incoming request served over HTTPS (directly or via the gateway
+ * proxy)? The sandbox preview embeds the app in a cross-site iframe, where
+ * browsers reject any Set-Cookie without `SameSite=None` — so we must detect
+ * the proxied HTTPS leg (Caddy sets x-forwarded-proto) and relax the cookie
+ * attributes accordingly. Plain local dev stays on the strict `Lax` default.
+ */
+async function isHttpsRequest(): Promise<boolean> {
+  try {
+    const h = await headers();
+    const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    if (proto) return proto === "https";
+    // Fallback: infer the scheme from the calling page (e.g. the https
+    // preview panel hosting this app in an iframe).
+    const referer = h.get("referer");
+    if (referer) return referer.startsWith("https://");
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function createSession(userId: string): Promise<string> {
   const token = newSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await db.session.create({ data: { token, userId, expiresAt } });
+  const https = await isHttpsRequest();
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // HTTPS (gateway/preview, incl. cross-site iframe): None+Secure+Partitioned
+    // so the session survives iframe embedding (CHIPS) and top-level tabs.
+    // Local dev over plain http: Lax, no Secure — matches browser defaults.
+    sameSite: https ? "none" : "lax",
+    secure: https,
+    ...(https ? { partitioned: true } : {}),
     expires: expiresAt,
     path: "/",
   });

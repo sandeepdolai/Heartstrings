@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
 
 import { psNavigate } from "@/lib/paperstring/navigation";
+import type { PsUser } from "@/lib/paperstring/types";
 import { WordMark } from "@/components/paperstring/brand";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,6 @@ export function AuthView({
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [showcaseIdx, setShowcaseIdx] = useState(0);
 
   const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
@@ -137,7 +137,7 @@ export function AuthView({
         }
       );
 
-      let json: { user?: unknown; error?: string } | null = null;
+      let json: { user?: PsUser; error?: string } | null = null;
       try {
         json = await res.json();
       } catch {
@@ -155,7 +155,13 @@ export function AuthView({
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      // Install the authenticated user straight from the auth response —
+      // same shape as /api/auth/me — and leave for the dashboard immediately.
+      // No refetch round-trip means no window for the auth guard to bounce
+      // us back to this page (the old "success toast but stuck here" bug).
+      queryClient.setQueryData<{ user: PsUser | null }>(["me"], {
+        user: json.user,
+      });
       toast.success(
         isSignup ? "Your studio is ready" : "Welcome back to your studio"
       );
@@ -168,226 +174,185 @@ export function AuthView({
     }
   });
 
-  // Showcase art with a graceful chain: png → jpg → small-caps microcopy.
-  const showcaseSources = ["/showcase/page-4.png", "/showcase/page-4.jpg"];
-  const showcaseSrc = showcaseSources[showcaseIdx];
-
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen bg-smoke ps-grain">
-        {/* ── Left brand panel (desktop) ─────────────────────────────── */}
-        <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-night p-12 text-smoke lg:flex">
-          <WordMark className="text-smoke" />
-
-          <div className="py-12">
-            <blockquote className="font-display text-[2.6rem] leading-[1.15] font-medium tracking-tight text-balance">
-              &ldquo;Anyone can make something{" "}
-              <em className="italic">beautiful</em> for someone they{" "}
-              <em className="italic">love</em>.&rdquo;
-            </blockquote>
-            <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.22em] text-silver/80">
-              — the PaperString promise
-            </p>
+      {/* ── Single centered form (brand panel removed — form stays a
+          centered, narrow column, the pattern serious products use for
+          auth screens) ─────────────────────────────────────────────── */}
+      <main className="flex min-h-screen items-center justify-center bg-smoke ps-grain p-6 sm:p-10">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="w-full max-w-sm"
+        >
+          <div className="mb-10 flex justify-center">
+            <WordMark className="text-night" />
           </div>
 
-          {showcaseSrc ? (
-            <div className="group relative w-fit">
-              {/* soft paper glow behind the tilted page */}
-              <div
-                aria-hidden="true"
-                className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(closest-side,rgba(181,181,181,0.14),transparent)] opacity-70 blur-md transition-opacity duration-500 group-hover:opacity-100"
-              />
-              <img
-                src={showcaseSrc}
-                alt="A handmade PaperString page"
-                decoding="async"
-                onError={() => setShowcaseIdx((i) => i + 1)}
-                className="relative max-h-[40vh] w-auto max-w-full -rotate-2 rounded-xl object-cover shadow-2xl ring-1 ring-white/10 transition-transform duration-500 ease-out group-hover:-rotate-1 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100"
-              />
-            </div>
-          ) : (
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-silver/60">
-              4K pages · no account needed to view
-            </p>
+          <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+            {isSignup ? "Create your studio" : "Welcome back"}
+          </h1>
+          <p className="mt-2 text-sm text-dim">
+            {isSignup
+              ? "Free forever. Make someone's day."
+              : "Sign in to keep creating."}
+          </p>
+
+          {returnHint && (
+            <Alert className="mt-5 border-silver/50 bg-card/60 py-2.5">
+              <Info className="size-4 text-dim" />
+              <AlertDescription className="text-xs text-dim">
+                Sign in to get back to your project.
+              </AlertDescription>
+            </Alert>
           )}
-        </aside>
 
-        {/* ── Right form panel ───────────────────────────────────────── */}
-        <main className="flex min-h-screen flex-1 items-center justify-center p-6 sm:p-10">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-sm"
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-8 h-11 w-full rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+            onClick={() =>
+              toast.info(
+                "Google sign-in is being configured for this environment — use email for now."
+              )
+            }
           >
-            <div className="mb-10 flex justify-center lg:hidden">
-              <WordMark className="text-night" />
+            <GoogleMark />
+            Continue with Google
+          </Button>
+
+          <div className="my-7 flex items-center gap-3" aria-hidden="true">
+            <Separator className="flex-1" />
+            <span className="text-xs text-dim">
+              or continue with email
+            </span>
+            <Separator className="flex-1" />
+          </div>
+
+          {serverError && (
+            <Alert variant="destructive" className="mb-5">
+              <AlertDescription className="text-sm">
+                {serverError}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={onSubmit} noValidate className="space-y-5">
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Ada Lovelace"
+                  autoComplete="name"
+                  autoFocus
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                  {...register("name")}
+                />
+                {errors.name && (
+                  <p id="name-error" className="text-xs text-destructive">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
+                {...register("email")}
+              />
+              {errors.email && (
+                <p id="email-error" className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
-            <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-              {isSignup ? "Create your studio" : "Welcome back"}
-            </h1>
-            <p className="mt-2 text-sm text-dim">
-              {isSignup
-                ? "Free forever. Make someone's day."
-                : "Sign in to keep creating."}
-            </p>
-
-            {returnHint && (
-              <Alert className="mt-5 border-silver/50 bg-card/60 py-2.5">
-                <Info className="size-4 text-dim" />
-                <AlertDescription className="text-xs text-dim">
-                  Sign in to get back to your project.
-                </AlertDescription>
-              </Alert>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 8 characters"
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  className="pr-12"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={
+                    errors.password ? "password-error" : undefined
+                  }
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p id="password-error" className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
             <Button
-              type="button"
-              variant="outline"
-              className="mt-8 h-11 w-full rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
-              onClick={() =>
-                toast.info(
-                  "Google sign-in is being configured for this environment — use email for now."
-                )
-              }
+              type="submit"
+              disabled={isSubmitting}
+              className="h-11 w-full rounded-full"
             >
-              <GoogleMark />
-              Continue with Google
-            </Button>
-
-            <div className="my-7 flex items-center gap-3" aria-hidden="true">
-              <Separator className="flex-1" />
-              <span className="text-xs text-dim">
-                or continue with email
-              </span>
-              <Separator className="flex-1" />
-            </div>
-
-            {serverError && (
-              <Alert variant="destructive" className="mb-5">
-                <AlertDescription className="text-sm">
-                  {serverError}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={onSubmit} noValidate className="space-y-5">
-              {isSignup && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Ada Lovelace"
-                    autoComplete="name"
-                    autoFocus
-                    aria-invalid={!!errors.name}
-                    aria-describedby={errors.name ? "name-error" : undefined}
-                    {...register("name")}
-                  />
-                  {errors.name && (
-                    <p id="name-error" className="text-xs text-destructive">
-                      {errors.name.message}
-                    </p>
-                  )}
-                </div>
+              {isSubmitting && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               )}
+              {isSubmitting
+                ? isSignup
+                  ? "Creating your studio…"
+                  : "Signing in…"
+                : isSignup
+                  ? "Create account"
+                  : "Sign in"}
+            </Button>
+          </form>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  aria-invalid={!!errors.email}
-                  aria-describedby={errors.email ? "email-error" : undefined}
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p id="email-error" className="text-xs text-destructive">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
+          <p className="mt-6 text-center text-sm text-dim">
+            {isSignup ? "Already have an account? " : "New here? "}
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {isSignup ? "Sign in" : "Create an account"}
+            </button>
+          </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="At least 8 characters"
-                    autoComplete={isSignup ? "new-password" : "current-password"}
-                    className="pr-12"
-                    aria-invalid={!!errors.password}
-                    aria-describedby={
-                      errors.password ? "password-error" : undefined
-                    }
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p id="password-error" className="text-xs text-destructive">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-11 w-full rounded-full"
-              >
-                {isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                {isSubmitting
-                  ? isSignup
-                    ? "Creating your studio…"
-                    : "Signing in…"
-                  : isSignup
-                    ? "Create account"
-                    : "Sign in"}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-sm text-dim">
-              {isSignup ? "Already have an account? " : "New here? "}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {isSignup ? "Sign in" : "Create an account"}
-              </button>
-            </p>
-
-            <div className="mt-10 text-center">
-              <button
-                type="button"
-                onClick={() => psNavigate("landing")}
-                className="text-xs text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                ← Back to home
-              </button>
-            </div>
-          </motion.div>
-        </main>
-      </div>
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => psNavigate("landing")}
+              className="text-xs text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              ← Back to home
+            </button>
+          </div>
+        </motion.div>
+      </main>
     </MotionConfig>
   );
 }
