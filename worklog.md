@@ -678,3 +678,18 @@ Stage Summary:
 - Text corner-handle resize now scales glyphs live with a px readout and bakes into fontSize on release (IbisPaint-style); legacy stray text scales are migrated on load; the select-tool size slider is gone (hint card points at the handles instead).
 - Files: types.ts, lasso.ts (new), render.ts, editor-store.ts, PageCanvas.tsx, ToolPanel.tsx, panels/TextPanel.tsx, ToolRail.tsx, LayersPanel.tsx.
 - Next: deploy to the live worker (round-22 split-build recipe), then push GitHub.
+
+---
+Task ID: round-23-deploy
+Agent: Z.ai Code (main session)
+Task: Deploy the round-23 lasso + text-resize changes to the live Cloudflare worker.
+
+Work Log:
+- Deploy obstacles solved this round (root-caused, documented for next time): (1) disk was 98% full — /tmp/cf-deploy held a stale 4.8GB project copy from an old deploy experiment; deleted it (+4.8GB). (2) This sandbox REAPS all background children when a Bash call ends (nohup/setsid/disown all die) and the hard per-call cap is ~240s even with a larger timeout param — so nohup+poll is NOT viable here. (3) The OpenNext build only fits in one call with a WARM page cache: `du -s node_modules >/dev/null` first, then `timeout 225 ./node_modules/.bin/opennextjs-cloudflare build --skipNextBuild` completed in <225s (exit 0, handler.mjs written). Use `./node_modules/.bin/...` instead of bunx.
+- Full recipe that worked: stop dev server → NEXT_PRIVATE_STANDALONE=true NEXT_PRIVATE_OUTPUT_TRACE_ROOT=/home/z/my-project OPENNEXT_BUILD=1 `bunx next build --experimental-build-mode compile` → `bun run postinstall` (prisma generate + gen-cf-client) → warm cache → timed opennext build (skipNextBuild) → `CLOUDFLARE_API_TOKEN=… timeout 225 ./node_modules/.bin/wrangler deploy` → restart dev server via `(nohup bun run dev >/dev/null 2>&1 &)` (double-fork subshell DOES survive).
+- The 39 "Failed to copy node_modules/<mdast|micromark|vfile|react-markdown>" errors during the OpenNext build are non-fatal (fs.cp of workerd-condition externals; same set existed in the round-22 deploy that works live) — ignore them.
+- Deployed: paperstring 42755.13 KiB / gzip 14790.91 KiB, version d0a6c342-e1e9-4088-89b1-c7087af6a742. Live 200; "freehand keep-inside" verified present in deployed chunk /_next/static/chunks/19sdx-g2kawr8.js. Local dev restarted and serving 200.
+
+Stage Summary:
+- Round-23 (lasso + text bounding-box resize) is LIVE on https://paperstring.heartstrings.workers.dev; local dev on commit c93f904 matches.
+- Disk hygiene note: keep /tmp clear of project copies; 4GB free now.
