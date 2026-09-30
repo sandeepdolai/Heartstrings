@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -48,10 +47,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f3f3" },
-    { media: "(prefers-color-scheme: dark)", color: "#131313" },
-  ],
+  // Light mode only — a single permanent color scheme (no dark theme).
+  themeColor: "#f3f3f3",
 };
 
 export default function RootLayout({
@@ -64,15 +61,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster position="bottom-center" closeButton richColors />
-        </ThemeProvider>
+        {/* Light mode only — no ThemeProvider, no theme toggle, ever. */}
+        {children}
+        <Toaster position="bottom-center" closeButton richColors />
       </body>
     </html>
   );

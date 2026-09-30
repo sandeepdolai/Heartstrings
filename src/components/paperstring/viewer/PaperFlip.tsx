@@ -71,8 +71,8 @@ const BOOK_CSS = `
 
 /** A page face: clipping + the subtle white paper edge (inner highlight). */
 const FACE_CLASS =
-  "absolute inset-0 overflow-hidden rounded-xl bg-[#141414] " +
-  "shadow-[inset_1px_0_0_0_rgba(255,255,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.06)]";
+  "absolute inset-0 overflow-hidden rounded-xl bg-[#ebebeb] " +
+  "shadow-[inset_1px_0_0_0_rgba(0,0,0,0.05),inset_0_0_0_1px_rgba(0,0,0,0.05)]";
 
 const PAGE_IMG_CLASS =
   "pointer-events-none absolute inset-0 h-full w-full select-none object-contain";
@@ -566,7 +566,7 @@ export const PaperFlip = forwardRef<PaperFlipHandle, PaperFlipProps>(
         onLostPointerCapture={handleLostCapture}
         className={cn(
           "ps-perspective psv-book relative touch-none select-none",
-          "rounded-xl bg-[#161616] shadow-[0_36px_90px_-24px_rgba(0,0,0,0.85),0_12px_32px_-12px_rgba(0,0,0,0.6)] ring-1 ring-white/15",
+          "rounded-xl bg-white shadow-[0_36px_90px_-28px_rgba(0,0,0,0.3),0_12px_32px_-14px_rgba(0,0,0,0.16)] ring-1 ring-black/[0.06]",
           "outline-none transition-shadow",
           "focus-visible:ring-2 focus-visible:ring-silver/70 focus-visible:ring-offset-2 focus-visible:ring-offset-night",
           single && "ps-float"

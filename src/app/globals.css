@@ -50,14 +50,14 @@
   --color-smoke: #f3f3f3;
   --color-paper: #ffffff;
 
-  /* ── Editor chrome (always dark, gallery-grade) ─────────────── */
-  --color-editor: #131313;
-  --color-editor-panel: #1c1c1c;
-  --color-editor-raised: #242424;
-  --color-editor-border: #2b2b2b;
-  --color-editor-border-strong: #3a3a3a;
-  --color-editor-text: #e8e8e8;
-  --color-editor-dim: #9a9a9a;
+  /* ── Editor chrome (light studio, iOS-grade) ───────────────── */
+  --color-editor: #f3f3f3;
+  --color-editor-panel: #ffffff;
+  --color-editor-raised: #f1f1f1;
+  --color-editor-border: #e6e6e6;
+  --color-editor-border-strong: #d9d9d9;
+  --color-editor-text: #131313;
+  --color-editor-dim: #6e6e6e;
 
   /* ── Motion tokens (FR-13.P2) ───────────────────────────────── */
   --ease-flip: cubic-bezier(0.22, 0.9, 0.32, 1);
@@ -101,39 +101,10 @@
   --sidebar-ring: #131313;
 }
 
-.dark {
-  --background: #131313;
-  --foreground: #f3f3f3;
-  --card: #1b1b1b;
-  --card-foreground: #f3f3f3;
-  --popover: #1b1b1b;
-  --popover-foreground: #f3f3f3;
-  --primary: #f3f3f3;
-  --primary-foreground: #131313;
-  --secondary: #242424;
-  --secondary-foreground: #f3f3f3;
-  --muted: #232323;
-  --muted-foreground: #b5b5b5;
-  --accent: #2a2a2a;
-  --accent-foreground: #f3f3f3;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #2b2b2b;
-  --input: #2b2b2b;
-  --ring: #b5b5b5;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #1b1b1b;
-  --sidebar-foreground: #f3f3f3;
-  --sidebar-primary: #f3f3f3;
-  --sidebar-primary-foreground: #131313;
-  --sidebar-accent: #242424;
-  --sidebar-accent-foreground: #f3f3f3;
-  --sidebar-border: #2b2b2b;
-  --sidebar-ring: #b5b5b5;
-}
+/* Light mode only (single permanent scheme): the `.dark` block has been
+   removed entirely. The class-based custom variant below is kept as a
+   compile-time safety net — `dark:` utilities compile to `.dark *`
+   selectors that can never match, since nothing ever sets that class. */
 
 @layer base {
   * {
@@ -169,11 +140,7 @@
   border-radius: 8px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(180, 180, 180, 0.7);
-}
-.dark *::-webkit-scrollbar-thumb,
-.ps-dark *::-webkit-scrollbar-thumb {
-  background: rgba(90, 90, 90, 0.55);
+  background: rgba(140, 140, 140, 0.7);
 }
 
 /* ── PaperString utilities ───────────────────────────────────── */

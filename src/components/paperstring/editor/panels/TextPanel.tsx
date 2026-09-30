@@ -353,9 +353,9 @@ export function TextPanel() {
           aria-label="Curve amount"
           className={cn(
             "text-editor-dim",
-            "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
-            "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
-            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
+            "[&_[data-slot=slider-track]]:bg-[#ececec] [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]",
+            "[&_[data-slot=slider-range]]:bg-night",
+            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#d8d8d8] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.18)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
           )}
         />
       </div>

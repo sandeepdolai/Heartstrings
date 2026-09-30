@@ -53,7 +53,7 @@ export function ToolPanel() {
       data-tour="panel"
       className={cn(
         "z-20 flex w-full shrink-0 flex-col border-editor-border bg-editor-panel",
-        "max-md:fixed inset-x-0 bottom-[4.25rem] z-30 max-h-[56vh] overflow-y-auto rounded-t-2xl border-t pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl",
+        "max-md:fixed inset-x-0 bottom-[4.25rem] z-30 max-h-[56vh] overflow-y-auto rounded-t-2xl border-t pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.2)]",
         "md:h-full md:w-64 md:border-r"
       )}
     >
@@ -176,11 +176,11 @@ function SliderRow({
         aria-label={label}
         className={cn(
           "text-editor-dim",
-          // Editor panels are always dark: explicit high-contrast slider
-          // colors so the fill level reads at a glance (same as shared.tsx).
-          "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
-          "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
-          "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
+          // iOS-grade light slider: light track, dark fill, white thumb with a
+          // subtle border + soft shadow (same as shared.tsx).
+          "[&_[data-slot=slider-track]]:bg-[#ececec] [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]",
+          "[&_[data-slot=slider-range]]:bg-night",
+          "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#d8d8d8] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.18)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
         )}
       />
     </div>

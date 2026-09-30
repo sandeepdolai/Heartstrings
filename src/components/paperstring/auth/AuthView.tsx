@@ -174,7 +174,7 @@ export function AuthView({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen bg-smoke ps-grain dark:bg-night">
+      <div className="flex min-h-screen bg-smoke ps-grain">
         {/* ── Left brand panel (desktop) ─────────────────────────────── */}
         <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-night p-12 text-smoke lg:flex">
           <WordMark className="text-smoke" />
@@ -221,13 +221,13 @@ export function AuthView({
             className="w-full max-w-sm"
           >
             <div className="mb-10 flex justify-center lg:hidden">
-              <WordMark className="text-night dark:text-smoke" />
+              <WordMark className="text-night" />
             </div>
 
             <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
               {isSignup ? "Create your studio" : "Welcome back"}
             </h1>
-            <p className="mt-2 text-sm text-dim dark:text-silver/80">
+            <p className="mt-2 text-sm text-dim">
               {isSignup
                 ? "Free forever. Make someone's day."
                 : "Sign in to keep creating."}
@@ -236,7 +236,7 @@ export function AuthView({
             {returnHint && (
               <Alert className="mt-5 border-silver/50 bg-card/60 py-2.5">
                 <Info className="size-4 text-dim" />
-                <AlertDescription className="text-xs text-dim dark:text-silver/80">
+                <AlertDescription className="text-xs text-dim">
                   Sign in to get back to your project.
                 </AlertDescription>
               </Alert>
@@ -258,7 +258,7 @@ export function AuthView({
 
             <div className="my-7 flex items-center gap-3" aria-hidden="true">
               <Separator className="flex-1" />
-              <span className="text-xs text-dim dark:text-silver/80">
+              <span className="text-xs text-dim">
                 or continue with email
               </span>
               <Separator className="flex-1" />
@@ -331,7 +331,7 @@ export function AuthView({
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:hover:text-smoke"
+                    className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" />
@@ -365,12 +365,12 @@ export function AuthView({
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-dim dark:text-silver/80">
+            <p className="mt-6 text-center text-sm text-dim">
               {isSignup ? "Already have an account? " : "New here? "}
               <button
                 type="button"
                 onClick={toggleMode}
-                className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-smoke"
+                className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {isSignup ? "Sign in" : "Create an account"}
               </button>
@@ -380,7 +380,7 @@ export function AuthView({
               <button
                 type="button"
                 onClick={() => psNavigate("landing")}
-                className="text-xs text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:hover:text-smoke"
+                className="text-xs text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 ← Back to home
               </button>

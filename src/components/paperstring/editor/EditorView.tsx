@@ -453,7 +453,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
               aria-hidden="true"
               className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2"
             >
-              <div className="flex items-center gap-3 rounded-full border border-editor-border-strong bg-editor-panel/95 px-4 py-2.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+              <div className="flex items-center gap-3 rounded-full border border-editor-border-strong bg-editor-panel/95 px-4 py-2.5 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <span
                   className="rounded-full"
                   style={{
@@ -540,7 +540,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
               aria-hidden="true"
               className="pointer-events-none absolute bottom-6 left-6 z-30 hidden md:block"
             >
-              <div className="flex items-center gap-2 rounded-full border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+              <div className="flex items-center gap-2 rounded-full border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#e8446a]/20 to-[#e8446a]/5 text-[#e8446a]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 19l7-7 3 3-7 7-3-3z" />

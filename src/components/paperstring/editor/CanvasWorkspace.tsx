@@ -96,39 +96,33 @@ export function CanvasWorkspace() {
   if (isMobile) {
     return (
       <div data-tour="canvas" className="flex min-h-0 flex-1 flex-col pb-[4.75rem]">
-        <div className="flex min-h-0 flex-1 items-center justify-center px-3 py-2">
-          {mobilePage && (
-            <div className="w-full" style={{ maxWidth: "min(100%, 62vh * 9 / 16)" }}>
-              <PageCanvas
-                key={mobilePage.id}
-                page={mobilePage}
-                active
-                welcome={isPristinePage(mobilePage)}
-                width={Math.min(
-                  typeof window !== "undefined" ? window.innerWidth - 24 : 360,
-                  ((typeof window !== "undefined" ? window.innerHeight : 800) - 210) *
-                    (9 / 16)
-                )}
-              />
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-editor-dim">
-                  Page {activeIdx + 1} / {canvases.length}
-                </p>
-                <MobilePageMenu
-                  pageId={mobilePage.id}
-                  onConfirmDelete={setConfirmDelete}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-center gap-8 pb-4">
+        {/* The canvas area is measured, not guessed: whatever height the
+            shell leaves after the TopBar, page indicator, nav row and the
+            fixed bottom tool rail (including dynamic mobile-browser chrome
+            like the collapsing URL bar), the 9:16 page contain-fits into it
+            — the full canvas is ALWAYS visible, never cropped or overflowing. */}
+        <MobileFitCanvas
+          page={mobilePage}
+          welcome={mobilePage ? isPristinePage(mobilePage) : false}
+        />
+        {mobilePage && (
+          <div className="flex shrink-0 items-center justify-center gap-2 px-3 pb-1">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-editor-dim">
+              Page {activeIdx + 1} / {canvases.length}
+            </p>
+            <MobilePageMenu
+              pageId={mobilePage.id}
+              onConfirmDelete={setConfirmDelete}
+            />
+          </div>
+        )}
+        <div className="flex items-center justify-center gap-6 px-4 pb-4">
           <button
             type="button"
             aria-label="Previous page"
             disabled={activeIdx === 0}
             onClick={() => setActiveCanvas(canvases[activeIdx - 1].id)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-editor-border-strong text-editor-text transition hover:bg-editor-raised disabled:opacity-30"
+            className="grid h-12 w-14 place-items-center rounded-2xl border border-editor-border-strong bg-white text-editor-text shadow-[0_2px_10px_-4px_rgba(0,0,0,0.12)] transition-all duration-150 hover:border-night/25 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.16)] active:scale-95 active:bg-smoke disabled:opacity-30 disabled:shadow-none"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -136,7 +130,7 @@ export function CanvasWorkspace() {
             type="button"
             aria-label="Add a page"
             onClick={addCanvas}
-            className="grid h-11 w-11 place-items-center rounded-full bg-editor-raised text-editor-text transition hover:bg-editor-border-strong"
+            className="grid h-12 w-14 place-items-center rounded-2xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)] transition-all duration-150 hover:bg-onyx active:scale-95 active:bg-[#000]"
           >
             <Plus className="h-5 w-5" />
           </button>
@@ -145,7 +139,7 @@ export function CanvasWorkspace() {
             aria-label="Next page"
             disabled={activeIdx === canvases.length - 1}
             onClick={() => setActiveCanvas(canvases[activeIdx + 1].id)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-editor-border-strong text-editor-text transition hover:bg-editor-raised disabled:opacity-30"
+            className="grid h-12 w-14 place-items-center rounded-2xl border border-editor-border-strong bg-white text-editor-text shadow-[0_2px_10px_-4px_rgba(0,0,0,0.12)] transition-all duration-150 hover:border-night/25 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.16)] active:scale-95 active:bg-smoke disabled:opacity-30 disabled:shadow-none"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -175,7 +169,7 @@ export function CanvasWorkspace() {
       {/* subtle dot-grid — the quiet graph-paper feel of a real studio desk */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1.5px)] [background-size:26px_26px]"
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.055)_1px,transparent_1.5px)] [background-size:26px_26px]"
       />
       <div className="relative flex flex-wrap items-start justify-center gap-10 px-8 py-10">
         {canvases.map((page, i) => (
@@ -240,7 +234,7 @@ export function CanvasWorkspace() {
                 </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => setConfirmDelete(page.id)}
-                  className="text-[#f08ca0] focus:text-[#f5a8bb]"
+                  className="text-[#c73a56] focus:text-[#b2334c]"
                 >
                   <Trash2 className="h-4 w-4" /> Delete page
                 </ContextMenuItem>
@@ -295,14 +289,14 @@ export function CanvasWorkspace() {
             type="button"
             onClick={addCanvas}
             aria-label="Add a new page"
-            className="group/add grid aspect-[9/16] w-[300px] place-items-center rounded-lg border border-[#4a4a4a] bg-white/[0.015] text-[#b5b5b5] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] transition-all duration-200 hover:border-[#e8446a]/60 hover:bg-[#e8446a]/[0.04] hover:text-editor-text hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_0_24px_-8px_rgba(232,68,106,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/70"
+            className="group/add grid aspect-[9/16] w-[300px] place-items-center rounded-2xl border border-editor-border-strong bg-white/60 text-dim shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#e8446a]/60 hover:bg-[#e8446a]/[0.03] hover:text-night hover:shadow-[0_10px_30px_-10px_rgba(232,68,106,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/70 motion-reduce:hover:translate-y-0"
           >
             <span className="flex flex-col items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-full border border-[#5a5a5a] transition-all duration-300 group-hover/add:rotate-90 group-hover/add:border-[#e8446a]/70 group-hover/add:text-editor-text">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-editor-border-strong bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] transition-all duration-300 group-hover/add:rotate-90 group-hover/add:border-[#e8446a]/70 group-hover/add:text-[#e8446a]">
                 <Plus className="h-6 w-6 transition-transform duration-300" />
               </span>
               <span className="text-xs uppercase tracking-[0.2em]">Add page</span>
-              <span className="text-[10px] tracking-wide text-editor-dim/60 transition-colors group-hover/add:text-editor-dim">
+              <span className="text-[10px] tracking-wide text-editor-dim/70 transition-colors group-hover/add:text-editor-dim">
                 Keep the story going
               </span>
             </span>
@@ -315,6 +309,48 @@ export function CanvasWorkspace() {
         onClose={() => setConfirmDelete(null)}
       />
       </div>
+    </div>
+  );
+}
+
+/* ── mobile canvas — measured contain-fit ─────────────────────────── */
+
+/** The phone canvas area. A ResizeObserver measures the space the shell
+ *  actually leaves (TopBar, indicator, nav row, fixed bottom rail, and the
+ *  mobile browser's collapsing URL bar) and the 9:16 page contain-fits into
+ *  it — replacing the old fixed `innerHeight - 210` guess that fought the
+ *  wrapper's own `62vh` cap and cropped the canvas on many phones. */
+function MobileFitCanvas({
+  page,
+  welcome,
+}: {
+  page: CanvasPageData | undefined;
+  welcome: boolean;
+}) {
+  const fitRef = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = fitRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      const fit = Math.floor(Math.min(w, (h * CANVAS_W) / CANVAS_H));
+      setWidth((prev) => (Math.abs(prev - fit) > 0.5 ? fit : prev));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={fitRef} className="flex min-h-0 flex-1 items-center justify-center px-3 pt-2">
+      {page && width > 0 && (
+        <PageCanvas key={page.id} page={page} active welcome={welcome} width={width} />
+      )}
     </div>
   );
 }
@@ -394,13 +430,13 @@ function VirtualPageCanvas({
            rendered card, but ghosted: dashed inner page, quiet center dot */
         <div
           aria-hidden="true"
-          className="grid aspect-[9/16] w-[300px] place-items-center rounded-lg bg-white/[0.02] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.65),0_6px_16px_-8px_rgba(0,0,0,0.4)] ring-1 ring-black/15 transition-colors duration-300 hover:bg-white/[0.045]"
+          className="grid aspect-[9/16] w-[300px] place-items-center rounded-lg bg-night/[0.015] shadow-[0_18px_44px_-18px_rgba(0,0,0,0.18),0_4px_12px_-6px_rgba(0,0,0,0.07)] ring-1 ring-black/[0.08] transition-colors duration-300 hover:bg-night/[0.03]"
         >
           <span className="flex flex-col items-center gap-3">
-            <span className="grid h-16 w-10 place-items-center rounded-[7px] border border-dashed border-[#5a5a5a]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#6a6a6a]/70" />
+            <span className="grid h-16 w-10 place-items-center rounded-[7px] border border-dashed border-[#c4c4c4]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#b5b5b5]" />
             </span>
-            <span className="text-[9px] font-medium uppercase tracking-[0.3em] text-editor-dim/50">
+            <span className="text-[9px] font-medium uppercase tracking-[0.3em] text-editor-dim/60">
               resting
             </span>
           </span>
@@ -562,7 +598,7 @@ function FilmstripChip({
         ) : (
           <span
             aria-hidden="true"
-            className="h-8 w-[18px] shrink-0 rounded-[4px] bg-white/40 bg-[repeating-linear-gradient(45deg,transparent_0_3px,rgba(0,0,0,0.05)_3px_6px)] ring-1 ring-inset ring-black/15"
+            className="h-8 w-[18px] shrink-0 rounded-[4px] bg-[#ececec] bg-[repeating-linear-gradient(45deg,transparent_0_3px,rgba(0,0,0,0.04)_3px_6px)] ring-1 ring-inset ring-black/10"
           />
         )}
         {i + 1}
@@ -786,7 +822,7 @@ function MobilePageMenu({
           <Copy className="h-4 w-4" /> Duplicate page
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-[#f08ca0] focus:text-[#f5a8bb]"
+          className="text-[#c73a56] focus:text-[#b2334c]"
           onClick={() => onConfirmDelete(pageId)}
         >
           <Trash2 className="h-4 w-4" /> Delete page

@@ -135,7 +135,7 @@ export function LayersPanel({ onClose }: { onClose?: () => void }) {
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-editor-border px-3 py-2.5">
         <Layers className="h-4 w-4 text-editor-dim" aria-hidden="true" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c9c9c9]">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a]">
           Layers
         </span>
         <span className="ml-auto text-[10px] uppercase tracking-widest text-editor-dim/70">
@@ -282,7 +282,7 @@ function LayerRow({
             {layer.blendMode && layer.blendMode !== "normal" && (
               <span
                 title={`Blend: ${BLEND_LABELS[layer.blendMode]}`}
-                className="shrink-0 rounded-sm bg-[#e8446a]/15 px-1 py-px text-[8.5px] font-semibold uppercase tracking-wider text-[#f5a8bb]"
+                className="shrink-0 rounded-sm bg-[#e8446a]/10 px-1 py-px text-[8.5px] font-semibold uppercase tracking-wider text-[#c73a56]"
               >
                 {BLEND_LABELS[layer.blendMode]}
               </span>
@@ -365,7 +365,7 @@ function LayerRow({
           )}
           <DropdownMenuSeparator className="bg-editor-border" />
           <DropdownMenuItem
-            className="text-[#f08ca0] focus:text-[#f5a8bb]"
+            className="text-[#c73a56] focus:text-[#b2334c]"
             onClick={() => {
               useEditorStore.getState().deleteLayer(layer.id);
               toast.success("Layer deleted — undo still works");
@@ -482,9 +482,9 @@ function ActiveLayerControls() {
           aria-label="Layer opacity"
           className={cn(
             "text-editor-dim",
-            "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
-            "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
-            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)]"
+            "[&_[data-slot=slider-track]]:bg-[#ececec] [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]",
+            "[&_[data-slot=slider-range]]:bg-night",
+            "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#d8d8d8] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.18)]"
           )}
         />
       </div>
@@ -508,7 +508,7 @@ function ActiveLayerControls() {
             className={cn(
               "h-7 flex-1 rounded-lg border-editor-border-strong bg-transparent px-2.5 text-[11px] text-editor-text shadow-none transition hover:bg-editor-raised hover:text-editor-text focus-visible:ring-[#e8446a]/50",
               layer.blendMode && layer.blendMode !== "normal"
-                ? "border-[#e8446a]/50 text-[#f5a8bb]"
+                ? "border-[#e8446a]/50 text-[#c73a56]"
                 : "text-editor-dim"
             )}
           >

@@ -289,8 +289,8 @@ export function ShareDialog({
                 className={cn(
                   "h-11 shrink-0 gap-1.5 rounded-xl px-4",
                   copied
-                    ? "bg-[#7cc47f] text-night hover:bg-[#8fd492]"
-                    : "bg-smoke text-night hover:bg-white"
+                    ? "bg-[#5da661] text-white hover:bg-[#6cb571]"
+                    : "bg-night text-white hover:bg-onyx"
                 )}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -315,13 +315,13 @@ export function ShareDialog({
           <div className="flex flex-col gap-3 py-1">
             <p
               role="alert"
-              className="rounded-xl border border-[#f08ca0]/40 bg-[#f08ca0]/10 px-3 py-2.5 text-xs leading-relaxed text-[#f5b8c8]"
+              className="rounded-xl border border-[#e8446a]/30 bg-[#e8446a]/[0.06] px-3 py-2.5 text-xs leading-relaxed text-[#b2334c]"
             >
               {error}
             </p>
             <Button
               onClick={() => void run()}
-              className="justify-center gap-2 rounded-xl bg-smoke text-night hover:bg-white"
+              className="justify-center gap-2 rounded-xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.3)] hover:bg-onyx active:scale-[0.98]"
             >
               <RefreshCw className="h-4 w-4" /> Try again
             </Button>

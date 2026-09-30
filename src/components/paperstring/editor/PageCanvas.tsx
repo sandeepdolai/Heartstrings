@@ -23,7 +23,6 @@ import {
 } from "@/lib/paperstring/types";
 import {
   layerAABB,
-  layerContentBox,
   applySoftFocus,
   applySmudge,
   getRasterBitmap,
@@ -37,6 +36,7 @@ import {
 import { useEditorStore, type HistoryEntry } from "@/lib/paperstring/editor-store";
 import { LogoMark } from "@/components/paperstring/brand";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   page: CanvasPageData;
@@ -75,6 +75,22 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
   const gestureSnapshotRef = useRef<HistoryEntry | null>(null);
   /** Live preview bitmap while a soft-focus or smudge gesture runs. */
   const blurPreviewRef = useRef<HTMLCanvasElement | null>(null);
+  /** Live layer transform (move/scale/rotate) — applied by the rAF painter
+   *  directly to the canvas, bypassing React entirely while the finger is
+   *  down. Pointermoves (which fire at touch-sampling rate, up to 120Hz on
+   *  modern phones) only write this ref; the store is touched ONCE on
+   *  release. This is what makes dragging feel native — ibisPaint-grade
+   *  1:1 finger tracking with zero render churn in between. */
+  const liveRef = useRef<{ layerId: string; patch: Partial<Layer> } | null>(null);
+  /** Pending rAF frame (direct canvas paint + chrome follow). */
+  const rafRef = useRef<number | null>(null);
+  /** Latest composite painter, callable imperatively from the rAF loop. */
+  const drawRef = useRef<() => void>(() => {});
+  /** Selection chrome root element + its gesture-start box (captured lazily
+   *  from the DOM on the first live frame, so freshly-selected layers work). */
+  const chromeRef = useRef<HTMLDivElement | null>(null);
+  const chromeStartRef = useRef<{ cx: number; cy: number; w: number; h: number } | null>(null);
+  const paintChromeRef = useRef<() => void>(() => {});
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [engineTick, setEngineTick] = useState(0);
   const factor = width / CANVAS_W;
@@ -114,7 +130,18 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     ctx.clearRect(0, 0, w, h);
     ctx.scale(w / CANVAS_W, h / CANVAS_H);
     const g = gestureRef.current;
-    renderPage(ctx, page, {
+    // A live drag paints the moved/scaled/rotated layer without touching
+    // the store — one shallow patch per frame, committed once on release.
+    const live = liveRef.current;
+    const target = live
+      ? {
+          ...page,
+          layers: page.layers.map((l) =>
+            l.id === live.layerId ? ({ ...l, ...live.patch } as Layer) : l
+          ),
+        }
+      : page;
+    renderPage(ctx, target, {
       liveStroke: liveStroke?.layerId ? liveStroke : null,
       liveBlur:
         (g.kind === "blur" || g.kind === "smudge") && blurPreviewRef.current
@@ -124,7 +151,29 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     });
   }, [page, width, liveStroke, editingTextLayerId]);
 
-  useLayoutEffect(draw);
+  useLayoutEffect(() => {
+    drawRef.current = draw;
+    draw();
+  });
+
+  /** Schedule one direct paint on the next display frame — canvas composite
+   *  plus selection-chrome follow. Coalesces 120Hz pointer streams into
+   *  60fps paints (the display can only ever show the latest frame anyway). */
+  const scheduleFrame = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      drawRef.current();
+      paintChromeRef.current();
+    });
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    },
+    []
+  );
 
   // Re-render when async assets (fonts/images/stickers) finish loading.
   useEffect(() => {
@@ -181,9 +230,9 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           ? Math.max(1, blur.strength * pressureFactor(pressure))
           : blur.strength;
       applySoftFocus(preview, bx, by, radius, strength);
-      setEngineTick((t) => t + 1); // repaint with the liveBlur override
+      scheduleFrame(); // repaint with the liveBlur override (rAF, no React)
     },
-    []
+    [scheduleFrame]
   );
 
   /** One smudge pass on the live preview bitmap: drags the sample under the
@@ -220,10 +269,10 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         smudge.size / 2 / layer.scale,
         strength
       );
-      setEngineTick((t) => t + 1); // repaint with the liveBitmap override
+      scheduleFrame(); // repaint with the liveBitmap override (rAF, no React)
       return [lx, ly] as const;
     },
-    []
+    [scheduleFrame]
   );
 
   /* ── pointer interactions ─────────────────────────────────────────── */
@@ -446,29 +495,32 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           }
         }
       } else if (g.kind === "move") {
-        store.updateLayer(
-          g.layer.id,
-          {
+        // Native-grade drag: write the live transform, paint on the next
+        // display frame — the store is only touched once, on release.
+        liveRef.current = {
+          layerId: g.layer.id,
+          patch: {
             x: g.layer.x + (ux - g.startX),
             y: g.layer.y + (uy - g.startY),
           },
-          { history: false }
-        );
+        };
+        scheduleFrame();
       } else if (g.kind === "scale") {
         const dist = Math.hypot(ux - g.layer.x, uy - g.layer.y);
         const scale = Math.max(
           0.05,
           Math.min(12, g.layer.scale * (dist / g.startDist))
         );
-        store.updateLayer(g.layer.id, { scale }, { history: false });
+        liveRef.current = { layerId: g.layer.id, patch: { scale } };
+        scheduleFrame();
       } else if (g.kind === "rotate") {
         const angle =
           (Math.atan2(uy - g.layer.y, ux - g.layer.x) * 180) / Math.PI + 90;
-        store.updateLayer(
-          g.layer.id,
-          { rotation: g.startRotation + (angle - g.startAngle) },
-          { history: false }
-        );
+        liveRef.current = {
+          layerId: g.layer.id,
+          patch: { rotation: g.startRotation + (angle - g.startAngle) },
+        };
+        scheduleFrame();
       } else if (g.kind === "select-area") {
         const shape = {
           type: store.selectionShape,
@@ -482,7 +534,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         });
       }
     },
-    [active, page.id, toUnits]
+    [active, page.id, toUnits, scheduleFrame]
   );
 
   const onPointerUp = useCallback(
@@ -574,14 +626,89 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         g.kind === "scale" ||
         g.kind === "rotate"
       ) {
-        // One undo entry covering the whole gesture (captured at start).
-        store.pushHistory(gestureSnapshotRef.current);
+        // Commit the gesture's final transform in ONE store update — a single
+        // React render + a single undo entry covering the whole drag.
+        const live = liveRef.current;
+        liveRef.current = null;
+        chromeStartRef.current = null;
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+        if (live && Object.keys(live.patch).length > 0) {
+          store.updateLayer(live.layerId, live.patch, { history: false });
+          store.pushHistory(gestureSnapshotRef.current);
+        }
+        gestureSnapshotRef.current = null;
       } else if (g.kind === "select-area") {
         // keep pendingClip alive for apply/cancel in the panel
       }
     },
     [page.id, toUnits]
   );
+
+  /* ── live chrome follow ──────────────────────────────────────────── */
+
+  /** Imperatively move the selection chrome while a transform gesture runs —
+   *  pure DOM style writes, synced to the same rAF frame as the canvas paint
+   *  so the box tracks the artwork with zero perceptible lag. The chrome's
+   *  children are %-positioned, so resizing the box carries the corner
+   *  handles and the action pill along automatically. On release, React
+   *  re-renders the chrome from the committed store values — identical to
+   *  the last live frame, so there is no snap or flash. */
+  const paintChromeLive = useCallback(() => {
+    const el = chromeRef.current;
+    const live = liveRef.current;
+    const g = gestureRef.current;
+    if (!el || !live) return;
+    if (!chromeStartRef.current) {
+      // First live frame: capture the chrome's resting geometry from the DOM
+      // (works even when the layer was selected by this very gesture — React
+      // will have painted the chrome before this frame runs).
+      chromeStartRef.current = {
+        cx: el.offsetLeft,
+        cy: el.offsetTop,
+        w: el.offsetWidth,
+        h: el.offsetHeight,
+      };
+    }
+    const start = chromeStartRef.current;
+    const patch = live.patch;
+    let cx = start.cx;
+    let cy = start.cy;
+    let w = start.w;
+    let h = start.h;
+    let rotation: number | undefined;
+    if (g.kind === "move") {
+      if (patch.x !== undefined) cx += (patch.x - g.layer.x) * (width / CANVAS_W);
+      if (patch.y !== undefined) cy += (patch.y - g.layer.y) * (width / CANVAS_W);
+    } else if (g.kind === "scale") {
+      if (patch.scale !== undefined) {
+        const k = patch.scale / g.layer.scale;
+        w *= k;
+        h *= k;
+      }
+    } else if (g.kind === "rotate") {
+      rotation = patch.rotation;
+    }
+    el.style.left = `${cx}px`;
+    el.style.top = `${cy}px`;
+    if (w !== start.w || h !== start.h) {
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+    }
+    // The chrome's resting transform carries the layer's gesture-start
+    // rotation; only the rotate gesture overrides it.
+    const baseRotation =
+      g.kind === "move" || g.kind === "scale" || g.kind === "rotate"
+        ? g.layer.rotation
+        : 0;
+    el.style.transform = `translate(-50%, -50%) rotate(${rotation ?? baseRotation}deg)`;
+  }, [width]);
+
+  useLayoutEffect(() => {
+    paintChromeRef.current = paintChromeLive;
+  });
 
   /* ── selection chrome (active layer) ──────────────────────────────── */
 
@@ -634,10 +761,18 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
     <div
       className="relative select-none"
       style={{ width, height: width * (CANVAS_H / CANVAS_W) }}
+      /* Move/up/cancel live on the PAGE ROOT — the common ancestor of both
+         the interaction overlay and the selection chrome. Gesture handles
+         (scale corners, rotate) setPointerCapture on themselves, so their
+         moves target the handle and bubble through the chrome — never
+         through the overlay sibling. Root-level handlers see every stream. */
+      onPointerMove={active ? onPointerMove : undefined}
+      onPointerUp={active ? onPointerUp : undefined}
+      onPointerCancel={active ? onPointerUp : undefined}
     >
       <canvas
         ref={canvasRef}
-        className="block h-full w-full rounded-lg bg-white shadow-[0_24px_60px_-18px_rgba(0,0,0,0.65),0_6px_16px_-8px_rgba(0,0,0,0.4)] ring-1 ring-black/15"
+        className="block h-full w-full rounded-lg bg-white shadow-[0_18px_44px_-18px_rgba(0,0,0,0.18),0_4px_12px_-6px_rgba(0,0,0,0.07)] ring-1 ring-black/[0.08]"
         aria-label={`Canvas page ${page.id}`}
       />
 
@@ -668,7 +803,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           <p className="font-display text-lg leading-snug text-onyx/55 sm:text-xl">
             This page is waiting for your first mark
           </p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-silver">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#9a9a9a]">
             pick a brush · begin anywhere
           </p>
         </div>
@@ -680,9 +815,6 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         role="application"
         aria-label={`Edit canvas page — tool: ${tool}`}
         onPointerDown={active ? onPointerDown : undefined}
-        onPointerMove={active ? onPointerMove : undefined}
-        onPointerUp={active ? onPointerUp : undefined}
-        onPointerCancel={active ? onPointerUp : undefined}
         onPointerLeave={() => setCursor(null)}
         onDoubleClick={(e) => {
           if (tool !== "select") return;
@@ -749,13 +881,13 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         )}
       </div>
 
-      {/* active page ring — a soft paper-white edge with a heartstring glow */}
+      {/* active page ring — a crisp hairline with a heartstring glow */}
       <div
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute -inset-[3px] rounded-[10px] transition-all duration-300",
           active
-            ? "ring-1 ring-white/90 shadow-[0_0_0_4px_rgba(232,68,106,0.25),0_0_28px_-4px_rgba(232,68,106,0.3)]"
+            ? "ring-1 ring-night/[0.14] shadow-[0_0_0_4px_rgba(232,68,106,0.16),0_0_28px_-6px_rgba(232,68,106,0.22)]"
             : "ring-0 shadow-none"
         )}
       />
@@ -766,6 +898,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           layer={activeLayer}
           aabb={aabb}
           factor={factor}
+          chromeRef={chromeRef}
           onHandleDown={startHandleGesture}
           onEdit={
             activeLayer.type === "text"
@@ -773,6 +906,17 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
                   useEditorStore.getState().setEditingText(activeLayer.id)
               : undefined
           }
+          onDelete={() => {
+            const id = activeLayer.id;
+            useEditorStore.getState().deleteLayer(id);
+            toast.success("Removed from the page", {
+              description: "You can undo it right away.",
+              action: {
+                label: "Undo",
+                onClick: () => useEditorStore.getState().undo(),
+              },
+            });
+          }}
         />
       )}
 
@@ -801,38 +945,88 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
 
 /* ── text editor overlay ─────────────────────────────────────────── */
 
+/** One icon button inside the floating action pill — iOS-style rounded
+ *  rectangle (12px), quiet pressed state, soft shadow on the container. */
+function ChromeAction({
+  label,
+  onPointerDown,
+  onClick,
+  children,
+  danger,
+}: {
+  label: string;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onPointerDown?.(e);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
+      className={cn(
+        "grid h-8 w-8 place-items-center rounded-xl transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8446a] active:scale-90",
+        danger
+          ? "text-[#c73a56] hover:bg-[#fdeef2] active:bg-[#fbdde6]"
+          : "text-night/70 hover:bg-smoke active:bg-[#e9e9e9]",
+        onPointerDown && "touch-none"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function SelectionChrome({
   layer,
   aabb,
   factor,
+  chromeRef,
   onHandleDown,
   onEdit,
+  onDelete,
 }: {
   layer: Layer;
   aabb: { x0: number; y0: number; x1: number; y1: number };
   factor: number;
+  /** Live-transform root — moved imperatively (rAF) while a gesture runs. */
+  chromeRef: React.RefObject<HTMLDivElement | null>;
   onHandleDown: (
     e: React.PointerEvent,
     kind: "scale" | "rotate",
     corner?: number
   ) => void;
   onEdit?: () => void;
+  onDelete: () => void;
 }) {
-  const box = layerContentBox(layer);
   // Draw chrome around the *rotated content box* center-aligned like the art.
   const cx = (aabb.x0 + aabb.x1) / 2;
   const cy = (aabb.y0 + aabb.y1) / 2;
   const w = (aabb.x1 - aabb.x0) * factor;
   const h = (aabb.y1 - aabb.y0) * factor;
-  void box;
-  const corners: [number, number][] = [
-    [aabb.x0, aabb.y0],
-    [aabb.x1, aabb.y0],
-    [aabb.x1, aabb.y1],
-    [aabb.x0, aabb.y1],
+  // When the layer sits near the page's top edge, the floating action pill
+  // (52px above the box) would poke under the TopBar or offscreen — flip it
+  // below the box instead so it is always reachable.
+  const pillBelow = aabb.y0 * factor < 72;
+  // %-positioned so the live rAF resizes carry them along automatically.
+  const corners: [string, string][] = [
+    ["0%", "0%"],
+    ["100%", "0%"],
+    ["100%", "100%"],
+    ["0%", "100%"],
   ];
   return (
     <div
+      ref={chromeRef}
       className="pointer-events-none absolute"
       style={{
         left: cx * factor,
@@ -842,19 +1036,47 @@ function SelectionChrome({
         transform: `translate(-50%, -50%) rotate(${layer.rotation}deg)`,
       }}
     >
-      <div className="absolute inset-0 rounded-[6px] border border-[#e8446a]" />
-      {/* rotate handle */}
-      <button
-        type="button"
-        aria-label="Rotate layer"
-        onPointerDown={(e) => onHandleDown(e, "rotate")}
-        className="pointer-events-auto absolute -top-9 left-1/2 grid h-6 w-6 -translate-x-1/2 cursor-grab place-items-center rounded-full border border-[#e8446a] bg-white text-[#b23354] shadow-sm hover:bg-[#fdf2f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8446a]"
+      <div className="absolute inset-0 rounded-[6px] border-[1.5px] border-[#e8446a]" />
+
+      {/* floating action pill — rotate · edit text · delete (iOS style);
+          flips below the box when the layer hugs the page's top edge, and
+          counter-rotates so it always reads upright (Figma-style) */}
+      <div
+        style={{ transform: `translateX(-50%) rotate(${-layer.rotation}deg)` }}
+        className={cn(
+          "pointer-events-auto absolute left-1/2 flex items-center gap-0.5 rounded-2xl border border-black/[0.06] bg-white/95 p-1 shadow-[0_10px_28px_-10px_rgba(0,0,0,0.28),0_2px_6px_-2px_rgba(0,0,0,0.08)] backdrop-blur-md",
+          pillBelow ? "-bottom-[3.25rem]" : "-top-[3.25rem]"
+        )}
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M21 12a9 9 0 1 1-3-6.7" />
-          <path d="M21 3v5h-5" />
-        </svg>
-      </button>
+        <ChromeAction
+          label="Rotate layer"
+          onPointerDown={(e) => onHandleDown(e, "rotate")}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="cursor-grab">
+            <path d="M21 12a9 9 0 1 1-3-6.7" />
+            <path d="M21 3v5h-5" />
+          </svg>
+        </ChromeAction>
+        {onEdit && (
+          <ChromeAction label="Edit text" onClick={() => onEdit()}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </ChromeAction>
+        )}
+        <span aria-hidden="true" className="mx-0.5 h-4 w-px rounded-full bg-black/[0.08]" />
+        <ChromeAction label="Delete layer" onClick={() => onDelete()} danger>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 6h18" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
+        </ChromeAction>
+      </div>
+
       {/* scale corners */}
       {corners.map(([x, y], i) => (
         <button
@@ -862,26 +1084,10 @@ function SelectionChrome({
           type="button"
           aria-label={`Resize from corner ${i + 1}`}
           onPointerDown={(e) => onHandleDown(e, "scale", i)}
-          className="pointer-events-auto absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border border-[#e8446a] bg-white shadow-sm hover:scale-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
-          style={{ left: (x - aabb.x0) * factor, top: (y - aabb.y0) * factor }}
+          className="pointer-events-auto absolute h-[18px] w-[18px] touch-none -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-[1.5px] border-[#e8446a] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-transform duration-150 hover:scale-[1.3] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+          style={{ left: x, top: y }}
         />
       ))}
-      {onEdit && (
-        <button
-          type="button"
-          aria-label="Edit text"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="pointer-events-auto absolute -top-9 right-0 grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-[#e8446a] bg-white text-[#b23354] shadow-sm hover:bg-[#fdf2f5]"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
-        </button>
-      )}
     </div>
   );
 }

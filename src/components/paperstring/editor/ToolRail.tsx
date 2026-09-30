@@ -58,8 +58,8 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
         aria-label="Tools"
         data-tour="tools"
         className={cn(
-          "z-20 flex shrink-0 items-center gap-1 border-editor-border bg-editor",
-          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around gap-0.5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5",
+          "z-20 flex shrink-0 items-center gap-1 border-editor-border bg-editor-panel",
+          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around gap-0.5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-1px_0_0_rgba(0,0,0,0.03)]",
           "md:h-full md:w-14 md:flex-col md:border-r md:px-1.5 md:py-3"
         )}
       >
@@ -80,11 +80,11 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   aria-pressed={activeTool}
                   onClick={() => setTool(t.id)}
                   className={cn(
-                    "relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 max-md:h-10 max-md:w-10",
+                    "relative grid h-11 w-11 place-items-center rounded-2xl transition-all duration-150 max-md:h-10 max-md:w-10",
                     hideOnMobile && "max-md:hidden",
                     activeTool
-                      ? "bg-smoke text-night shadow-lg"
-                      : "text-editor-dim hover:bg-editor-raised hover:text-editor-text"
+                      ? "bg-night text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.35)]"
+                      : "text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-95"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -111,7 +111,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                 aria-label="Layers"
                 data-tour="layers-mobile"
                 onClick={onOpenLayers}
-                className="grid h-11 w-10 place-items-center rounded-xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:hidden"
+                className="grid h-11 w-10 place-items-center rounded-2xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 md:hidden"
               >
                 <Layers className="h-5 w-5" />
               </button>
@@ -131,7 +131,7 @@ export function EyedropperButton() {
     <button
       type="button"
       onClick={() => setTool("eyedropper")}
-      className="flex items-center gap-2 rounded-lg border border-editor-border-strong px-3 py-2 text-xs text-editor-text transition hover:bg-editor-raised"
+      className="flex items-center gap-2 rounded-xl border border-editor-border-strong bg-white px-3 py-2 text-xs text-editor-text shadow-[0_1px_4px_-1px_rgba(0,0,0,0.06)] transition hover:bg-smoke active:scale-[0.98]"
     >
       <Pipette className="h-4 w-4" /> Pick from page
     </button>

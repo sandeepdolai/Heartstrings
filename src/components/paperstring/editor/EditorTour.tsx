@@ -231,7 +231,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <div className="fixed inset-0 z-[70]" role="presentation">
       {/* the dimming layer */}
-      <div className="absolute inset-0 bg-night/70" />
+      <div className="absolute inset-0 bg-night/40" />
 
       {/* spotlight — a transparent window whose huge box-shadow dims the rest */}
       {spot && (
@@ -243,7 +243,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
             top: spot.y,
             width: spot.w,
             height: spot.h,
-            boxShadow: "0 0 0 100vmax rgba(19,19,19,0.86)",
+            boxShadow: "0 0 0 100vmax rgba(19,19,19,0.62)",
           }}
         />
       )}
@@ -257,7 +257,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
         tabIndex={-1}
         style={place ? { top: place.top, left: place.left, width: CARD_W } : undefined}
         className={cn(
-          "fixed z-[71] rounded-xl border border-editor-border-strong bg-editor-panel/95 p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)] backdrop-blur-sm",
+          "fixed z-[71] rounded-xl border border-editor-border-strong bg-editor-panel/95 p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] backdrop-blur-sm",
           "outline-none transition-all duration-300 ease-out motion-reduce:transition-none",
           !place && "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         )}
@@ -277,7 +277,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
                 key={i}
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-300",
-                  i === index ? "w-4 bg-silver" : "w-1.5 bg-onyx"
+                  i === index ? "w-4 bg-night" : "w-1.5 bg-[#d8d8d8]"
                 )}
               />
             ))}
@@ -287,7 +287,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
               type="button"
               onClick={back}
               disabled={index === 0}
-              className="grid h-8 w-8 place-items-center rounded-full border border-editor-border-strong text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid h-8 w-8 place-items-center rounded-xl border border-editor-border-strong text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
               aria-label="Previous tip"
             >
               <ArrowLeft className="h-4 w-4" />

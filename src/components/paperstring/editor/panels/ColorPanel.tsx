@@ -296,7 +296,7 @@ function GradientSlider({
           className="relative h-2.5 w-full grow overflow-hidden rounded-full ring-1 ring-white/15"
           style={{ background: track }}
         />
-        <SliderPrimitive.Thumb className="block h-4.5 w-4.5 cursor-grab rounded-full border-2 border-white bg-transparent shadow-[0_1px_4px_rgba(0,0,0,0.5)] transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90 active:cursor-grabbing" />
+        <SliderPrimitive.Thumb className="block h-4.5 w-4.5 cursor-grab rounded-full border-2 border-white bg-transparent shadow-[0_1px_5px_rgba(0,0,0,0.3)] transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night/70 active:cursor-grabbing" />
       </SliderPrimitive.Root>
     </div>
   );

@@ -177,7 +177,7 @@ export function TopBar({
         <div
           className={cn(
             "ml-auto hidden items-center gap-1.5 text-xs sm:flex",
-            saveState === "error" && "text-[#f08ca0]",
+            saveState === "error" && "text-[#c73a56]",
             saveState === "saving" && "text-editor-dim",
             (saveState === "saved" || saveState === "dirty") && "text-editor-dim"
           )}
@@ -263,7 +263,7 @@ export function TopBar({
             disabled={saveState === "saving"}
             aria-label="Save"
             className={cn(
-              "gap-1.5 rounded-full text-editor-dim hover:bg-editor-raised hover:text-editor-text",
+              "gap-1.5 rounded-xl text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]",
               dirty && saveState !== "saving" && "text-editor-text"
             )}
           >
@@ -279,8 +279,8 @@ export function TopBar({
             onClick={onShare}
             aria-label="Share your book"
             className={cn(
-              "group gap-1.5 rounded-full bg-smoke text-night transition-all hover:bg-white hover:shadow-[0_6px_20px_-6px_rgba(243,243,243,0.45)] active:scale-[0.97]",
-              shareToken && "bg-smoke/90"
+              "group gap-1.5 rounded-xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)] transition-all hover:bg-onyx hover:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.4)] active:scale-[0.97]",
+              shareToken && "bg-onyx"
             )}
           >
             <Share2
@@ -324,9 +324,8 @@ const SHORTCUTS: [string, string][] = [
 /** Touch-friendly equivalents shown on small screens instead of the
  *  keyboard cheatsheet (keyboards are rare on phones — gestures are the UI). */
 const TOUCH_HINTS: [string, string][] = [
-  ["Pinch", "Scale a selected layer"],
   ["Drag corners", "Resize / rotate"],
-  ["Two-finger tap", "Undo (while selected)"],
+  ["Trash button", "Remove the selected photo or text"],
   ["⋯ page menu", "Duplicate / delete page"],
   ["Layers button", "Reorder & blend layers"],
 ];

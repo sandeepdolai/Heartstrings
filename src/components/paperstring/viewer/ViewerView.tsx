@@ -76,11 +76,11 @@ export function ViewerView({ shareToken }: { shareToken: string }) {
 
 function ViewerLoading() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-7 bg-night px-6">
-      <WordMark className="text-silver" markClassName="h-6 w-7" />
+    <main className="flex min-h-screen flex-col items-center justify-center gap-7 bg-smoke px-6">
+      <WordMark className="text-night" markClassName="h-6 w-7" />
       {/* page-sized placeholder — aspect reserved, so no layout shift later */}
       <div
-        className="h-[60vh] w-auto animate-pulse rounded-xl bg-onyx/40 aspect-[9/16]"
+        className="h-[60vh] w-auto animate-pulse rounded-xl bg-night/[0.06] aspect-[9/16]"
         style={{ animationDuration: "2.8s" }}
       />
       <p className="text-xs uppercase tracking-widest text-dim">
@@ -94,9 +94,9 @@ function ViewerLoading() {
 
 function ViewerUnavailable() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-night px-6 text-center">
-      <LogoMark className="h-10 w-11 text-silver" strokeWidth={3.2} />
-      <h1 className="mt-7 font-display text-2xl text-smoke">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-smoke px-6 text-center">
+      <LogoMark className="h-10 w-11 text-night/60" strokeWidth={3.2} />
+      <h1 className="mt-7 font-display text-2xl text-night">
         This book isn&rsquo;t available
       </h1>
       <p className="mt-3 max-w-sm text-sm leading-relaxed text-dim">
@@ -104,7 +104,7 @@ function ViewerUnavailable() {
         sender for a fresh link.
       </p>
       <WordMark
-        className="absolute bottom-6 gap-1.5 text-smoke/35"
+        className="absolute bottom-6 gap-1.5 text-night/40"
         markClassName="h-3.5 w-4"
       />
     </main>
@@ -202,11 +202,11 @@ function ViewerBook({
   }, []);
 
   return (
-    <main className="ps-grain relative flex h-screen flex-col overflow-hidden bg-night text-smoke supports-[height:100dvh]:h-dvh">
+    <main className="ps-grain relative flex h-screen flex-col overflow-hidden bg-smoke text-night supports-[height:100dvh]:h-dvh">
       {/* soft radial vignette over the gallery */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_42%,transparent_38%,rgba(0,0,0,0.3)_75%,rgba(0,0,0,0.6)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_42%,transparent_40%,rgba(0,0,0,0.02)_72%,rgba(0,0,0,0.05)_100%)]"
       />
 
       {/* top — title, small caps */}
@@ -218,8 +218,8 @@ function ViewerBook({
           className={cn(
             "max-w-[70vw] truncate text-center text-xs uppercase tracking-[0.25em] transition-colors duration-700",
             titleDimmed
-              ? "text-silver/40 group-hover:text-silver/80 group-focus-within:text-silver/80"
-              : "text-silver/80"
+              ? "text-dim/50 group-hover:text-onyx group-focus-within:text-onyx"
+              : "text-onyx/85"
           )}
         >
           {title}
@@ -253,7 +253,7 @@ function ViewerBook({
                 transition={{ duration: 0.45, ease: EASE_FLIP, delay: 0.6 }}
                 className="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2"
               >
-                <div className="flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-1.5 ring-1 ring-white/15 backdrop-blur-sm">
+                <div className="flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] backdrop-blur-sm">
                   <motion.span
                     animate={{ x: [-2, 2, -2] }}
                     transition={{
@@ -263,10 +263,10 @@ function ViewerBook({
                     }}
                     className="flex items-center"
                   >
-                    <ChevronLeft className="h-3 w-3 text-silver/90" aria-hidden="true" />
-                    <ChevronRight className="h-3 w-3 text-silver/90" aria-hidden="true" />
+                    <ChevronLeft className="h-3 w-3 text-night/70" aria-hidden="true" />
+                    <ChevronRight className="h-3 w-3 text-night/70" aria-hidden="true" />
                   </motion.span>
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-silver">
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-onyx/80">
                     Swipe or tap the arrows
                   </span>
                 </div>
@@ -283,7 +283,7 @@ function ViewerBook({
               aria-label="Previous page"
               disabled={index === 0}
               onClick={() => flipRef.current?.prev()}
-              className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full text-silver/90 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-200 hover:bg-white/10 hover:text-smoke hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 disabled:ring-transparent md:grid"
+              className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-night/75 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.05] backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-night hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
             >
               <ChevronLeft className="h-6 w-6" aria-hidden="true" />
             </button>
@@ -292,7 +292,7 @@ function ViewerBook({
               aria-label="Next page"
               disabled={index === pages.length - 1}
               onClick={() => flipRef.current?.next()}
-              className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full text-silver/90 ring-1 ring-white/10 backdrop-blur-sm transition-all duration-200 hover:bg-white/10 hover:text-smoke hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver/70 disabled:pointer-events-none disabled:opacity-30 disabled:ring-transparent md:grid"
+              className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-night/75 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.05] backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-night hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
             >
               <ChevronRight className="h-6 w-6" aria-hidden="true" />
             </button>
@@ -321,10 +321,10 @@ function ViewerBook({
                 carrying long ones where the dots leave off */}
             <div
               aria-hidden="true"
-              className="h-[2px] w-40 overflow-hidden rounded-full bg-onyx/80"
+              className="h-[2px] w-40 overflow-hidden rounded-full bg-night/10"
             >
               <div
-                className="h-full rounded-full bg-silver/80 transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                className="h-full rounded-full bg-night/60 transition-[width] duration-500 ease-out motion-reduce:transition-none"
                 style={{ width: `${((index + 1) / pages.length) * 100}%` }}
               />
             </div>
@@ -336,8 +336,8 @@ function ViewerBook({
                     className={cn(
                       "h-1.5 rounded-full transition-all duration-300",
                       i === index
-                        ? "w-5 bg-silver"
-                        : "w-1.5 bg-onyx hover:bg-dim/60"
+                        ? "w-5 bg-night"
+                        : "w-1.5 bg-night/20 hover:bg-night/40"
                     )}
                   />
                 ))}

@@ -175,7 +175,7 @@ export function ProjectCard({
           size="icon"
           aria-label={`More options for ${title}`}
           className={cn(
-            "size-8 rounded-full bg-paper/80 text-night shadow-sm backdrop-blur transition hover:bg-paper focus-visible:opacity-100 dark:bg-onyx/80 dark:text-smoke dark:hover:bg-onyx",
+            "size-8 rounded-full bg-paper/80 text-night shadow-sm backdrop-blur transition hover:bg-paper focus-visible:opacity-100",
             variant === "grid"
               ? "opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
               : "opacity-100"
@@ -273,9 +273,9 @@ export function ProjectCard({
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30 dark:from-onyx/50 dark:to-night">
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30">
               <LogoMark
-                className="h-6 w-auto text-dim/50 dark:text-silver/60"
+                className="h-6 w-auto text-dim/50"
                 strokeWidth={4}
               />
             </div>
@@ -287,11 +287,11 @@ export function ProjectCard({
           <h3 className="truncate font-display text-base font-semibold tracking-tight">
             {title}
           </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-dim dark:text-silver/80">
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-dim">
             <span className="tabular-nums">
               {pageCount} {pageCount === 1 ? "page" : "pages"}
             </span>
-            <span aria-hidden="true" className="text-silver dark:text-silver/40">
+            <span aria-hidden="true" className="text-silver">
               ·
             </span>
             <span>Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</span>
@@ -300,11 +300,11 @@ export function ProjectCard({
 
         {/* shared / private chip */}
         {shareToken ? (
-          <span className="hidden shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke dark:bg-onyx dark:ring-1 dark:ring-silver/30 sm:inline-flex">
+          <span className="hidden shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke sm:inline-flex">
             Shared
           </span>
         ) : (
-          <span className="hidden shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim dark:text-silver/80 sm:inline-flex">
+          <span className="hidden shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim sm:inline-flex">
             Private
           </span>
         )}
@@ -312,7 +312,7 @@ export function ProjectCard({
         {/* open affordance — whispers "click to open" on hover */}
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-silver/50 text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 dark:text-silver/80 md:-translate-x-1"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-silver/50 text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 md:-translate-x-1"
         >
           <ArrowUpRight className="h-3.5 w-3.5" />
         </span>
@@ -385,9 +385,9 @@ export function ProjectCard({
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30 dark:from-onyx/50 dark:to-night">
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30">
             <LogoMark
-              className="h-12 w-auto text-dim/50 dark:text-silver/60"
+              className="h-12 w-auto text-dim/50"
               strokeWidth={3.8}
             />
             <span className="sr-only">No cover yet</span>
@@ -424,16 +424,16 @@ export function ProjectCard({
           {title}
         </h3>
         <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="truncate text-xs text-dim dark:text-silver/80">
+          <p className="truncate text-xs text-dim">
             {pageCount} {pageCount === 1 ? "page" : "pages"} · Updated{" "}
             {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
           </p>
           {shareToken ? (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke dark:bg-onyx dark:ring-1 dark:ring-silver/30">
+            <span className="inline-flex shrink-0 items-center rounded-full bg-night px-2 py-0.5 text-[11px] font-medium text-smoke">
               Shared
             </span>
           ) : (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim dark:text-silver/80">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim">
               Private
             </span>
           )}

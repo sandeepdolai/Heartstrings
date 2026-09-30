@@ -31,7 +31,7 @@ export function PanelShell({
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="border-b border-editor-border/60 pb-2.5">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c9c9c9]">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a]">
           {title}
         </h2>
         {hint && (
@@ -78,11 +78,11 @@ export function SliderRow({
         aria-label={label}
         className={cn(
           "text-editor-dim",
-          // Editor panels are always dark: give the track/range/thumb
-          // explicit high-contrast colors so the fill level reads at a glance.
-          "[&_[data-slot=slider-track]]:bg-editor-raised [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]",
-          "[&_[data-slot=slider-range]]:bg-[#d4d4d4]",
-          "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#5a5a5a] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.5)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
+          // iOS-grade light slider: light track, dark fill, white thumb with a
+          // subtle border + soft shadow — the fill level reads at a glance.
+          "[&_[data-slot=slider-track]]:bg-[#ececec] [&_[data-slot=slider-track]]:shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]",
+          "[&_[data-slot=slider-range]]:bg-night",
+          "[&_[data-slot=slider-thumb]]:size-4.5 [&_[data-slot=slider-thumb]]:border-[#d8d8d8] [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:shadow-[0_2px_6px_rgba(0,0,0,0.18)] [&_[data-slot=slider-thumb]]:transition-transform hover:[&_[data-slot=slider-thumb]]:scale-110"
         )}
       />
     </div>
@@ -121,7 +121,7 @@ export function useLayerLiveEdit(layerId: string | null) {
 /** Tiny labelled control group header. */
 export function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a9a9a]">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a8a8a]">
       {children}
     </p>
   );
