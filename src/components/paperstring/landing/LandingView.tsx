@@ -30,7 +30,7 @@ import { WhySection } from "./WhySection";
  */
 export function LandingView({ user }: { user: PsUser | null }) {
   return (
-    <div id="top" className="flex min-h-screen flex-col bg-paper text-night">
+    <div id="top" className="hs-site flex min-h-screen flex-col bg-paper text-night">
       <LandingNav user={user} />
       <main className="flex-1">
         <Hero user={user} />
