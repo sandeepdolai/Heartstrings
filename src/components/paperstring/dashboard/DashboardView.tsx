@@ -182,7 +182,7 @@ export function DashboardView({ user }: { user: PsUser }) {
     <Button
       onClick={() => createBook.mutate()}
       disabled={createBook.isPending}
-      className="group h-10 rounded-lg px-3.5 sm:h-11 sm:px-5"
+      className="group h-10 rounded-md px-4 sm:h-11 sm:px-5"
     >
       {createBook.isPending ? (
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -287,7 +287,7 @@ export function DashboardView({ user }: { user: PsUser }) {
         </header>
 
         {/* ── Greeting ────────────────────────────────────────────────── */}
-        <div className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+        <div className="mx-auto w-full max-w-7xl px-4 pt-12 sm:px-8 lg:pt-16">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -437,7 +437,7 @@ export function DashboardView({ user }: { user: PsUser }) {
         <main className="flex-1">
           <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
             {projectsQuery.isLoading ? (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
