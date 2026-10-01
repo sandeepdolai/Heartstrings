@@ -781,3 +781,20 @@ Stage Summary:
 - BLOCKED-ON-OWNER: GOOGLE_CLIENT_ID must be configured (free 2-min setup, in-app dialog walks through it) before anyone — including Sandeep — can sign in again once their current session expires. Do NOT sign out until configured, or set the env var first.
 - Live worker intentionally held on the previous commit until the client ID exists.
 - Next: once client ID is set → verify GIS button locally → deploy to worker → then candidates: rate limiting on /api/auth/google, session management UI, or the standing round-22 redesign / round-21 share-page check.
+
+---
+Task ID: round-27
+Agent: Z.ai Code (main session)
+Task: Workspace rollback incident — user reported "I think you are showing in Workspace previous Old project". Diagnose + restore.
+
+Work Log:
+- DIAGNOSIS: the sandbox had been restored to a Round-16-era snapshot (git HEAD 4da9814, worklog 461 lines, OLD AuthView with email form, old dev server from Oct 1 03:33 serving old code, fresh EMPTY db/custom.db created at boot 03:37 — all rounds 17–26 local state gone). Reflog showed a natural old history — snapshot restore, not a git accident. Production (Cloudflare worker + D1 data) unaffected.
+- RESTORE: git fetch origin (remote had everything — GitHub was the source of truth: 0677d9f → c902e86 → e72ae69 → 6b11d5d) → git reset --hard origin/main → workspace back at Round 26 (Google-only auth). bun run db:push → User table gained googleId/image columns on the fresh empty DB. bun install → 324 packages incl. @prisma/adapter-d1 + @opennextjs/cloudflare (Round-16-era node_modules predated the deploy dependencies — caused a transient 500 on /api/auth/me until reinstalled). Dev server killed + restarted (double-fork pattern).
+- VERIFY: /api/auth/config {googleEnabled:false} ✓, /api/auth/me 401 (no session, fresh DB) ✓, register 404 (email auth removed, Round 26 live) ✓, root 200 ✓, agent-browser: landing + Sign in → Google-only auth page ("Welcome back" + "Continue with Google" + "Show the 2-minute setup", no email fields) ✓, zero page errors, lint exit 0.
+- DATA LOSS (local only): the fresh snapshot DB has 0 users / 0 projects — Sandeep's LOCAL dev account (sandeep@dolai.com) and any locally-created test projects are gone with the snapshot. Production D1 data untouched. Nothing recoverable (db/ is gitignored); impact = dev/QA data only.
+- Committed + pushed this incident record.
+
+Stage Summary:
+- Workspace fully restored to Round 26 from GitHub; dev server healthy on the latest code; preview panel shows the current app again.
+- LESSON (for cron agent + future sessions): if the preview suddenly shows old code, check `git log` vs `origin/main` FIRST — snapshot rollbacks happen. GitHub is the source of truth; `git fetch && git reset --hard origin/main` + `bun install` + `bun run db:push` + dev-server restart = full recovery.
+- Standing items unchanged: GOOGLE_CLIENT_ID still needed before anyone can sign in (local or live); live worker still on round-24 commit by design; cron 15-min webDevReview job may need re-creation if the gateway lost it (verify with cron list).
