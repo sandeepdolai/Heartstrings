@@ -2,6 +2,10 @@
 
 /**
  * ToolRail — the vertical tool strip (desktop) / horizontal bar (mobile).
+ * Tools are grouped like a professional application — Navigate · Paint ·
+ * Content — with hairline separators between the groups. The active tool
+ * reads as an accent state: blue icon, blue-tinted surface and a 2px
+ * indicator bar (left on desktop, top on mobile) — never a heavy block.
  * Keyboard shortcuts: V select · B brush · E eraser · F soft focus · D smudge ·
  * T text · C color · S select-area · K elements.
  */
@@ -58,8 +62,11 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
         aria-label="Tools"
         data-tour="tools"
         className={cn(
-          "z-20 flex shrink-0 items-center gap-1 border-editor-border bg-editor-panel",
-          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around gap-0.5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-1px_0_0_rgba(0,0,0,0.03)]",
+          "z-20 flex shrink-0 items-center border-editor-border bg-editor-panel",
+          // mobile: a fixed bottom bar inside thumb reach, grouped by
+          // hairlines into Navigate / Paint / Content clusters
+          "max-md:fixed inset-x-0 bottom-0 z-40 flex-row justify-around gap-0.5 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5",
+          // desktop: a slim grouped rail
           "md:h-full md:w-14 md:flex-col md:border-r md:px-1.5 md:py-3"
         )}
       >
@@ -71,16 +78,14 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
           // and so does the photo tool — the Elements panel carries the very
           // same photo uploader, so nothing is lost.
           const hideOnMobile = t.id === "color" || t.id === "image";
-          // Mobile grouping: hairline dividers separate "navigate" (select)
-          // from "paint" (brush…smudge) from "content" (text…elements) so the
-          // row reads as 3 clusters instead of 8 same-weight icons.
+          // Group starts: select (Navigate) · brush (Paint) · text (Content)
           const startsGroup = t.id === "brush" || t.id === "text";
           return (
             <Tooltip key={t.id}>
               {startsGroup && (
                 <span
                   aria-hidden="true"
-                  className="h-5 w-px shrink-0 self-center rounded-full bg-editor-border-strong md:hidden"
+                  className="h-5 w-px shrink-0 self-center bg-editor-border-strong md:my-1.5 md:h-px md:w-5"
                 />
               )}
               <TooltipTrigger asChild>
@@ -91,9 +96,10 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   onClick={() => setTool(t.id)}
                   className={cn(
                     "relative grid h-11 w-11 place-items-center rounded-lg transition-colors duration-150 max-md:h-10 max-md:w-10",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     hideOnMobile && "max-md:hidden",
                     activeTool
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-[#155EEF]/10 text-[#155EEF]"
                       : "text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-95"
                   )}
                 >
@@ -101,7 +107,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   {activeTool && (
                     <span
                       aria-hidden="true"
-                      className="absolute left-1/2 top-1 h-1 w-1 -translate-x-1/2 rounded-full bg-heart md:left-0 md:top-1/2 md:h-1.5 md:w-1.5 md:-translate-y-1/2 md:translate-x-0"
+                      className="absolute bottom-0.5 left-1/2 h-[2.5px] w-[2.5px] rounded-full bg-[#155EEF] md:bottom-auto md:left-0.5 md:top-1/2 md:h-4 md:w-[2.5px] md:-translate-y-1/2 md:translate-x-0 md:rounded-full"
                     />
                   )}
                 </button>
@@ -141,7 +147,7 @@ export function EyedropperButton() {
     <button
       type="button"
       onClick={() => setTool("eyedropper")}
-      className="flex items-center gap-2 rounded-xl border border-editor-border-strong bg-white px-3 py-2 text-xs text-editor-text shadow-[0_1px_4px_-1px_rgba(0,0,0,0.06)] transition hover:bg-smoke active:scale-[0.98]"
+      className="flex items-center gap-2 rounded-lg border border-editor-border-strong bg-white px-3 py-2 text-xs text-editor-text transition hover:bg-editor-raised active:scale-[0.98]"
     >
       <Pipette className="h-4 w-4" /> Pick from page
     </button>

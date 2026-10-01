@@ -136,10 +136,10 @@ export function LayersPanel({ onClose }: { onClose?: () => void }) {
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-editor-border px-3 py-2.5">
         <Layers className="h-4 w-4 text-editor-dim" aria-hidden="true" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a]">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
           Layers
         </span>
-        <span className="ml-auto text-[10px] uppercase tracking-widest text-editor-dim/70">
+        <span className="ml-auto text-[10px] uppercase tracking-widest text-editor-dim">
           Page {pageIdx + 1} / {canvases.length}
         </span>
         <button
@@ -290,7 +290,7 @@ function LayerRow({
             )}
           </div>
         )}
-        <span className="text-[10px] uppercase tracking-wide text-editor-dim/70">
+        <span className="text-[10px] uppercase tracking-wide text-editor-dim">
           {layer.type === "raster"
             ? `${layer.strokes.length} stroke${layer.strokes.length === 1 ? "" : "s"}`
             : layer.type === "text"
@@ -446,7 +446,7 @@ function ActiveLayerControls() {
   if (!layer) {
     return (
       <div className="border-t border-editor-border px-4 py-3">
-        <p className="text-[11px] leading-relaxed text-editor-dim/80">
+        <p className="text-[11px] leading-relaxed text-editor-dim">
           Tap a layer to select it — then restyle, reorder or merge it here.
         </p>
       </div>
@@ -462,7 +462,7 @@ function ActiveLayerControls() {
     <div className="flex shrink-0 flex-col gap-2.5 border-t border-editor-border px-4 py-3">
       <div className="flex items-center justify-between">
         <GroupLabel>{layer.name}</GroupLabel>
-        <span className="text-[10px] uppercase tracking-widest text-editor-dim/70">
+        <span className="text-[10px] uppercase tracking-widest text-editor-dim">
           {layer.type}
         </span>
       </div>
@@ -520,7 +520,7 @@ function ActiveLayerControls() {
           <SelectContent className="border-editor-border bg-editor-panel text-editor-text shadow-xl shadow-black/40">
             {BLEND_GROUPS.map((group) => (
               <SelectGroup key={group.label}>
-                <SelectLabel className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim/70">
+                <SelectLabel className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
                   {group.label}
                 </SelectLabel>
                 {group.modes.map((m) => (

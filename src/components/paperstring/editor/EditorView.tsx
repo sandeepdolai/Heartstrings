@@ -26,6 +26,7 @@ import { ToolRail } from "./ToolRail";
 import { ToolPanel } from "./ToolPanel";
 import { CanvasWorkspace } from "./CanvasWorkspace";
 import { LayersPanel } from "./LayersPanel";
+import { StatusBar } from "./StatusBar";
 import { ShareDialog } from "./ShareDialog";
 import { EditorTour, TOUR_STORAGE_KEY } from "./EditorTour";
 import { EditorFontsProvider, registerSavedFonts } from "./fonts-context";
@@ -820,7 +821,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
               aria-hidden="true"
               className="pointer-events-none absolute bottom-6 left-6 z-30 hidden md:block"
             >
-              <div className="flex items-center gap-2 rounded-full border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+              <div className="flex items-center gap-2 rounded-lg border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <span className="grid h-6 w-6 place-items-center rounded-md bg-[#155EEF]/10 text-[#155EEF]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 19l7-7 3 3-7 7-3-3z" />
@@ -836,6 +837,11 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
             </div>
           )}
         </div>
+
+        {/* the status rail — a professional application's bottom bar
+            (page position · active tool · save state). Desktop only; on
+            mobile the bottom tool rail owns that zone. */}
+        <StatusBar saveState={saveState} />
       </div>
 
       {/* mobile layers sheet (FR-3.6) */}

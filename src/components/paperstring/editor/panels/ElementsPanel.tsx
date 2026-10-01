@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/lib/paperstring/editor-store";
 import { STICKERS, STICKER_CATEGORIES, TEMPLATES, stickerSrc } from "@/lib/paperstring/stickers";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupLabel, PanelShell } from "./shared";
 
@@ -29,6 +28,7 @@ export function ElementsPanel() {
   const tool = useEditorStore((s) => s.tool);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const onPickPhoto = () => fileRef.current?.click();
 
@@ -112,18 +112,68 @@ export function ElementsPanel() {
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}
       />
-      <Button
-        onClick={onPickPhoto}
-        disabled={busy}
-        className="h-10 w-full justify-center gap-2 rounded-xl bg-smoke text-xs font-semibold text-night hover:bg-white"
+      {/* the upload dropzone — idle · drag-over · busy, with the file
+          contract stated plainly underneath */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload a photo — drop an image here or press Enter to browse"
+        aria-disabled={busy}
+        onClick={() => !busy && onPickPhoto()}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !busy) {
+            e.preventDefault();
+            onPickPhoto();
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!busy) setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (!busy) onFile(e.dataTransfer.files?.[0]);
+        }}
+        className={cn(
+          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-7 text-center transition-colors duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          busy
+            ? "cursor-wait border-editor-border bg-editor-raised/50"
+            : dragOver
+              ? "border-[#155EEF] bg-[#155EEF]/[0.05]"
+              : "border-editor-border-strong bg-editor-raised/30 hover:border-[#155EEF]/50 hover:bg-[#155EEF]/[0.03]"
+        )}
       >
         {busy ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <>
+            <Loader2 className="h-5 w-5 animate-spin text-[#155EEF]" aria-hidden="true" />
+            <p className="text-xs font-medium text-editor-text">Adding your photo…</p>
+            <p className="text-[11px] text-editor-dim">It will land on the page as a new layer.</p>
+          </>
         ) : (
-          <ImagePlus className="h-4 w-4" />
+          <>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "grid h-9 w-9 place-items-center rounded-lg border transition-colors duration-150",
+                dragOver
+                  ? "border-[#155EEF]/40 bg-[#155EEF]/10 text-[#155EEF]"
+                  : "border-editor-border-strong bg-editor-panel text-editor-dim"
+              )}
+            >
+              <ImagePlus className="h-4.5 w-4.5" />
+            </span>
+            <p className="text-xs font-medium text-editor-text">
+              {dragOver ? "Drop to add it" : "Drop a photo, or browse"}
+            </p>
+            <p className="text-[11px] leading-relaxed text-editor-dim">
+              JPG · PNG · WebP · GIF — up to 12 MB
+            </p>
+          </>
         )}
-        {busy ? "Adding…" : "Upload a photo"}
-      </Button>
+      </div>
 
       <Tabs defaultValue={tool === "image" ? "art" : "stickers"}>
         <TabsList className="grid h-9 w-full grid-cols-3 rounded-lg bg-editor-raised p-0.5">

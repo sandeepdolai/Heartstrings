@@ -268,7 +268,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
         <h3 className="mt-1.5 font-display text-lg leading-snug text-editor-text">
           {step.title}
         </h3>
-        <p className="mt-1.5 text-xs leading-relaxed text-editor-dim">{step.body}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-onyx">{step.body}</p>
 
         <div className="mt-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -277,7 +277,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
                 key={i}
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-300",
-                  i === index ? "w-4 bg-night" : "w-1.5 bg-[#d8d8d8]"
+                  i === index ? "w-4 bg-[#155EEF]" : "w-1.5 bg-[#d8d8d8]"
                 )}
               />
             ))}
@@ -287,7 +287,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
               type="button"
               onClick={back}
               disabled={index === 0}
-              className="grid h-8 w-8 place-items-center rounded-xl border border-editor-border-strong text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid h-8 w-8 place-items-center rounded-lg border border-editor-border-strong text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
               aria-label="Previous tip"
             >
               <ArrowLeft className="h-4 w-4" />

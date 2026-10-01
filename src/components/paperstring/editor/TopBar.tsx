@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * Editor top bar: back to studio, editable title, undo/redo, save state and
- * the Save + Share actions (clear progress/success/failure states, FR-1.10).
+ * Editor top bar — the application header. Structured as a professional
+ * tool's menubar: a left cluster (exit · document title · save state)
+ * and a right cluster (history · help · output actions), separated by
+ * the flexible space between them. All states (saved / dirty / saving /
+ * error) stay visible on every viewport (FR-1.10).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -72,7 +75,6 @@ export function TopBar({
   const redo = useEditorStore((s) => s.redo);
   const canUndo = useEditorStore((s) => s.past.length > 0);
   const canRedo = useEditorStore((s) => s.future.length > 0);
-  const dirty = useEditorStore((s) => s.dirty);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -97,26 +99,32 @@ export function TopBar({
   };
 
   const saveLabel: Record<SaveState, string> = {
-    saved: "All changes saved",
-    dirty: "Unsaved changes",
+    saved: "Saved",
+    dirty: "Unsaved",
     saving: "Saving…",
-    error: "Save failed — tap to retry",
+    error: "Save failed — retry",
   };
 
   return (
-    <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-editor-border bg-editor px-3 sm:px-4">
+    <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-editor-border bg-editor px-2 sm:gap-3 sm:px-3">
       <TooltipProvider delayDuration={400}>
+        {/* ── left cluster: exit · document · save state ──────────── */}
         <button
           type="button"
           aria-label="Back to your studio"
           onClick={() => window.history.back()}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4.5 w-4.5" />
         </button>
 
-        {/* title — the book's name, set in the display serif; hovering
-            reveals the rename affordance (pencil + a fine accent underline) */}
+        <span
+          aria-hidden="true"
+          className="hidden h-6 w-px shrink-0 bg-editor-border-strong sm:block"
+        />
+
+        {/* document title — set in the display serif; hovering reveals
+            the rename affordance (pencil + a fine accent underline) */}
         {editing ? (
           <input
             ref={inputRef}
@@ -140,7 +148,7 @@ export function TopBar({
             onClick={startEditing}
             aria-label="Rename project"
             title="Rename this book"
-            className="group/title min-w-0 max-w-[32vw] rounded-md px-2.5 py-1.5 text-sm text-editor-text transition hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]/70 sm:max-w-xs"
+            className="group/title min-w-0 max-w-[34vw] rounded-md px-2.5 py-1.5 text-sm text-editor-text transition hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]/70 sm:max-w-xs"
           >
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="truncate font-display italic tracking-tight">
@@ -158,64 +166,24 @@ export function TopBar({
           </button>
         )}
 
-        {/* undo / redo — visible on every viewport so touch creators keep
-            FR-10.1 parity (no keyboard required) */}
-        <div className="mx-auto flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Undo"
-                disabled={!canUndo}
-                onClick={undo}
-                className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent md:h-9 md:w-9"
-              >
-                <Undo2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Redo"
-                disabled={!canRedo}
-                onClick={redo}
-                className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent md:h-9 md:w-9"
-              >
-                <Redo2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
-          </Tooltip>
-        </div>
-
         {/* save state — visible on every viewport: a failed save is a
-            data-loss risk, and phones must see it too (previously the whole
-            status was hidden below sm) */}
+            data-loss risk, and phones must see it too */}
         {saveState === "error" ? (
           <button
             type="button"
             onClick={onSave}
             aria-label="Save failed — tap to retry"
             title="Save failed — tap to retry"
-            className={cn(
-              "ml-auto flex items-center gap-1.5 text-xs font-medium text-[#c73a56] transition hover:text-[#a72c47]"
-            )}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-[#c73a56]/30 bg-[#c73a56]/[0.06] px-2 py-1 text-[11px] font-medium text-[#c73a56] transition hover:bg-[#c73a56]/10"
             role="status"
             aria-live="polite"
           >
             <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden lg:inline">{saveLabel[saveState]}</span>
+            <span className="hidden sm:inline">{saveLabel[saveState]}</span>
           </button>
         ) : (
           <div
-            className={cn(
-              "ml-auto flex items-center gap-1.5 text-xs",
-              saveState === "saving" && "text-editor-dim",
-              (saveState === "saved" || saveState === "dirty") && "text-editor-dim"
-            )}
+            className="flex shrink-0 items-center gap-1.5 text-[11px] text-editor-dim"
             role="status"
             aria-live="polite"
           >
@@ -223,164 +191,215 @@ export function TopBar({
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : saveState === "saved" ? (
               /* keyed on state so each save pops the check afresh */
-              <Check key="saved-check" className="ps-pop-in h-3.5 w-3.5" />
+              <Check key="saved-check" className="ps-pop-in h-3.5 w-3.5 text-[#155EEF]" />
+            ) : saveState === "dirty" ? (
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-[#d9d9d9]"
+              />
             ) : null}
-            <span className="hidden lg:inline">{saveLabel[saveState]}</span>
+            <span className="hidden sm:inline">{saveLabel[saveState]}</span>
           </div>
         )}
 
-        {/* keyboard shortcuts cheatsheet */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts"
-              className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text md:h-9 md:w-9"
-            >
-              <Keyboard className="h-4 w-4" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            side="bottom"
-            className="w-64 border-editor-border-strong bg-editor-panel text-editor-text"
+        {/* ── right cluster: history · help · output ──────────────── */}
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5">
+          {/* undo / redo — a bordered history segment; visible on every
+              viewport so touch creators keep FR-10.1 parity */}
+          <div
+            role="group"
+            aria-label="History"
+            className="hidden items-center rounded-lg border border-editor-border-strong bg-editor-panel sm:flex"
           >
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
-              Shortcuts
-            </p>
-            <ul className="grid gap-1.5 text-xs">
-              {SHORTCUTS.map(([keys, label]) => (
-                <li key={keys} className="flex items-center justify-between gap-3">
-                  <span className="text-editor-dim">{label}</span>
-                  <kbd className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 font-mono text-[10px] text-editor-text">
-                    {keys}
-                  </kbd>
-                </li>
-              ))}
-            </ul>
-            {/* touch hints — the phone-native gestures behind the same button */}
-            <p className="mb-2 mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim md:hidden">
-              Touch
-            </p>
-            <ul className="grid gap-1.5 text-xs md:hidden">
-              {TOUCH_HINTS.map(([gesture, label]) => (
-                <li key={gesture} className="flex items-center justify-between gap-3">
-                  <span className="text-editor-dim">{label}</span>
-                  <span className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 text-[10px] text-editor-text">
-                    {gesture}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {onStartTour && (
-              <>
-                <div className="my-3 border-t border-editor-border/70" />
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={onStartTour}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-editor-text transition hover:bg-editor-raised"
+                  aria-label="Undo"
+                  disabled={!canUndo}
+                  onClick={undo}
+                  className="grid h-8 w-9 place-items-center rounded-l-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                 >
-                  <Compass className="h-4 w-4 text-editor-dim" aria-hidden="true" />
-                  Show the guided tour
+                  <Undo2 className="h-4 w-4" />
                 </button>
-              </>
-            )}
-          </PopoverContent>
-        </Popover>
+              </TooltipTrigger>
+              <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+            </Tooltip>
+            <span aria-hidden="true" className="h-4 w-px bg-editor-border-strong" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Redo"
+                  disabled={!canRedo}
+                  onClick={redo}
+                  className="grid h-8 w-9 place-items-center rounded-r-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text disabled:opacity-30 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                >
+                  <Redo2 className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
+            </Tooltip>
+          </div>
 
-        <div className="flex shrink-0 items-center gap-2" data-tour="share">
-          {/* Export — every created page as real image files. The Save button
-              does PNG+JPG for the whole book; this menu adds finer control. */}
-          {onExport && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={exporting}
-                  aria-label="Export as images"
-                  className="gap-1.5 rounded-xl text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]"
-                >
-                  {exporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ImageDown className="h-4 w-4" />
-                  )}
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                side="bottom"
-                className="w-60 border-editor-border-strong bg-editor-panel text-editor-text"
+          {/* keyboard shortcuts cheatsheet */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts"
+                className="grid h-8 w-8 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
-                  Save as image files · 2160×3840
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  className="gap-2"
-                  onClick={() => onExport({ scope: "all", formats: ["png", "jpg"] })}
+                <Keyboard className="h-4 w-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="bottom"
+              className="w-64 border-editor-border-strong bg-editor-panel text-editor-text"
+            >
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
+                Shortcuts
+              </p>
+              <ul className="grid gap-1.5 text-xs">
+                {SHORTCUTS.map(([keys, label]) => (
+                  <li key={keys} className="flex items-center justify-between gap-3">
+                    <span className="text-editor-dim">{label}</span>
+                    <kbd className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 font-mono text-[10px] text-editor-text">
+                      {keys}
+                    </kbd>
+                  </li>
+                ))}
+              </ul>
+              {/* touch hints — the phone-native gestures behind the same button */}
+              <p className="mb-2 mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim md:hidden">
+                Touch
+              </p>
+              <ul className="grid gap-1.5 text-xs md:hidden">
+                {TOUCH_HINTS.map(([gesture, label]) => (
+                  <li key={gesture} className="flex items-center justify-between gap-3">
+                    <span className="text-editor-dim">{label}</span>
+                    <span className="rounded-md border border-editor-border-strong bg-editor px-1.5 py-0.5 text-[10px] text-editor-text">
+                      {gesture}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {onStartTour && (
+                <>
+                  <div className="my-3 border-t border-editor-border/70" />
+                  <button
+                    type="button"
+                    onClick={onStartTour}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-editor-text transition hover:bg-editor-raised"
+                  >
+                    <Compass className="h-4 w-4 text-editor-dim" aria-hidden="true" />
+                    Show the guided tour
+                  </button>
+                </>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <span
+            aria-hidden="true"
+            className="hidden h-6 w-px bg-editor-border-strong sm:block"
+          />
+
+          <div className="flex items-center gap-1.5" data-tour="share">
+            {/* Export — every created page as real image files. The Save button
+                does PNG+JPG for the whole book; this menu adds finer control. */}
+            {onExport && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={exporting}
+                    aria-label="Export as images"
+                    className="gap-1.5 rounded-lg text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]"
+                  >
+                    {exporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImageDown className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline">Export</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  side="bottom"
+                  className="w-60 border-editor-border-strong bg-editor-panel text-editor-text"
                 >
-                  <Images className="h-3.5 w-3.5 text-editor-dim" />
-                  All pages · PNG + JPG
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2"
-                  onClick={() => onExport({ scope: "all", formats: ["png"] })}
-                >
-                  <FileImage className="h-3.5 w-3.5 text-editor-dim" />
-                  All pages · PNG only
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2"
-                  onClick={() => onExport({ scope: "all", formats: ["jpg"] })}
-                >
-                  <FileImage className="h-3.5 w-3.5 text-editor-dim" />
-                  All pages · JPG only
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-editor-border" />
-                <DropdownMenuItem
-                  className="gap-2"
-                  onClick={() => onExport({ scope: "page", formats: ["png", "jpg"] })}
-                >
-                  <ImageDown className="h-3.5 w-3.5 text-editor-dim" />
-                  This page · PNG + JPG
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSave}
-            disabled={saveState === "saving"}
-            aria-label="Save and download PNG + JPG"
-            title="Save to your studio and download every page as PNG + JPG"
-            className={cn(
-              "gap-1.5 rounded-xl text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]",
-              dirty && saveState !== "saving" && "text-editor-text"
+                  <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
+                    Save as image files · 2160×3840
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onClick={() => onExport({ scope: "all", formats: ["png", "jpg"] })}
+                  >
+                    <Images className="h-3.5 w-3.5 text-editor-dim" />
+                    All pages · PNG + JPG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onClick={() => onExport({ scope: "all", formats: ["png"] })}
+                  >
+                    <FileImage className="h-3.5 w-3.5 text-editor-dim" />
+                    All pages · PNG only
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onClick={() => onExport({ scope: "all", formats: ["jpg"] })}
+                  >
+                    <FileImage className="h-3.5 w-3.5 text-editor-dim" />
+                    All pages · JPG only
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-editor-border" />
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onClick={() => onExport({ scope: "page", formats: ["png", "jpg"] })}
+                  >
+                    <ImageDown className="h-3.5 w-3.5 text-editor-dim" />
+                    This page · PNG + JPG
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-          >
-            {saveState === "saving" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CloudUpload className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">Save</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={onShare}
-            aria-label="Share your book"
-            className={cn(
-              "group gap-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-[#1047C7] active:scale-[0.97]",
-              shareToken && "bg-[#1047C7]"
-            )}
-          >
-            <Share2 className="h-4 w-4" />
-            <span className="hidden sm:inline">{shareToken ? "Shared" : "Share"}</span>
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSave}
+              disabled={saveState === "saving"}
+              aria-label="Save and download PNG + JPG"
+              title="Save to your studio and download every page as PNG + JPG"
+              className={cn(
+                "gap-1.5 rounded-lg text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-[0.97]",
+                saveState === "saving" && saveState !== "saving" && "text-editor-text"
+              )}
+            >
+              {saveState === "saving" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CloudUpload className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Save</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={onShare}
+              aria-label="Share your book"
+              className={cn(
+                "group gap-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-[#1047C7] active:scale-[0.97]",
+                shareToken && "bg-[#1047C7]"
+              )}
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">{shareToken ? "Shared" : "Share"}</span>
+            </Button>
+          </div>
         </div>
       </TooltipProvider>
     </header>

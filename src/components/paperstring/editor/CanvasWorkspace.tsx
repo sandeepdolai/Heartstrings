@@ -116,13 +116,13 @@ export function CanvasWorkspace() {
             />
           </div>
         )}
-        <div className="flex items-center justify-center gap-6 px-4 pb-4">
+        <div className="flex items-center justify-center gap-4 px-4 pb-4">
           <button
             type="button"
             aria-label="Previous page"
             disabled={activeIdx === 0}
             onClick={() => setActiveCanvas(canvases[activeIdx - 1].id)}
-            className="grid h-12 w-14 place-items-center rounded-2xl border border-editor-border-strong bg-white text-editor-text shadow-[0_2px_10px_-4px_rgba(0,0,0,0.12)] transition-all duration-150 hover:border-night/25 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.16)] active:scale-95 active:bg-smoke disabled:opacity-30 disabled:shadow-none"
+            className="grid h-11 w-14 place-items-center rounded-lg border border-editor-border-strong bg-editor-panel text-editor-text transition-colors duration-150 hover:border-night/25 active:bg-editor-raised disabled:opacity-30"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -130,7 +130,7 @@ export function CanvasWorkspace() {
             type="button"
             aria-label="Add a page"
             onClick={addCanvas}
-            className="grid h-12 w-14 place-items-center rounded-2xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)] transition-all duration-150 hover:bg-onyx active:scale-95 active:bg-[#000]"
+            className="grid h-11 w-14 place-items-center rounded-lg bg-night text-white transition-colors duration-150 hover:bg-onyx active:bg-[#000]"
           >
             <Plus className="h-5 w-5" />
           </button>
@@ -139,7 +139,7 @@ export function CanvasWorkspace() {
             aria-label="Next page"
             disabled={activeIdx === canvases.length - 1}
             onClick={() => setActiveCanvas(canvases[activeIdx + 1].id)}
-            className="grid h-12 w-14 place-items-center rounded-2xl border border-editor-border-strong bg-white text-editor-text shadow-[0_2px_10px_-4px_rgba(0,0,0,0.12)] transition-all duration-150 hover:border-night/25 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.16)] active:scale-95 active:bg-smoke disabled:opacity-30 disabled:shadow-none"
+            className="grid h-11 w-14 place-items-center rounded-lg border border-editor-border-strong bg-editor-panel text-editor-text transition-colors duration-150 hover:border-night/25 active:bg-editor-raised disabled:opacity-30"
           >
             <ChevronRight className="h-5 w-5" />
           </button>

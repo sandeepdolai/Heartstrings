@@ -31,7 +31,7 @@ export function PanelShell({
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="border-b border-editor-border/60 pb-2.5">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a8a8a]">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
           {title}
         </h2>
         {hint && (
@@ -121,7 +121,7 @@ export function useLayerLiveEdit(layerId: string | null) {
 /** Tiny labelled control group header. */
 export function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8a8a8a]">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-editor-dim">
       {children}
     </p>
   );

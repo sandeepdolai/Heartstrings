@@ -874,7 +874,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           <p className="font-display text-lg leading-snug text-onyx/55 sm:text-xl">
             This page is waiting for your first mark
           </p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#9a9a9a]">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#8a8a8a]">
             pick a brush · begin anywhere
           </p>
         </div>
