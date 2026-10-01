@@ -95,7 +95,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   aria-pressed={activeTool}
                   onClick={() => setTool(t.id)}
                   className={cn(
-                    "relative grid h-11 w-11 place-items-center rounded-lg transition-colors duration-150 max-md:h-10 max-md:w-10",
+                    "relative grid h-11 w-11 place-items-center rounded-md transition-colors duration-150 max-md:h-10 max-md:w-10",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     hideOnMobile && "max-md:hidden",
                     activeTool
@@ -147,7 +147,7 @@ export function EyedropperButton() {
     <button
       type="button"
       onClick={() => setTool("eyedropper")}
-      className="flex items-center gap-2 rounded-lg border border-editor-border-strong bg-white px-3 py-2 text-xs text-editor-text transition hover:bg-editor-raised active:scale-[0.98]"
+      className="flex items-center gap-2 rounded-md border border-editor-border-strong bg-white px-3 py-2 text-xs text-editor-text transition hover:bg-editor-raised active:scale-[0.98]"
     >
       <Pipette className="h-4 w-4" /> Pick from page
     </button>
