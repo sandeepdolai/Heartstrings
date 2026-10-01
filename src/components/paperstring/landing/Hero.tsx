@@ -1,120 +1,224 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { ArrowRight, Lock, MonitorSmartphone, Sparkles } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  Check,
+  ImagePlus,
+  MousePointer2,
+  Paintbrush,
+  Share2,
+  Sticker,
+  Type,
+} from "lucide-react";
 import { psNavigate } from "@/lib/paperstring/navigation";
 import type { PsUser } from "@/lib/paperstring/types";
-import { FlipBookDemo } from "./FlipBookDemo";
-import { btnPrimary, ghostAction } from "./shared";
+import { PageArt } from "./shared";
 import { cn } from "@/lib/utils";
 
-const ASSURANCES = [
-  { icon: Sparkles, text: "4K-quality pages" },
-  { icon: MonitorSmartphone, text: "Works on every device" },
-  { icon: Lock, text: "Viewers need no account" },
+/**
+ * Hero — an editorial opening: the offer on the left, the product itself
+ * on the right. The StudioFrame is a faithful miniature of the real
+ * editor (top bar, tool rail, canvas, layers), built from the same atoms
+ * — an honest depiction, not a decorated mock.
+ */
+
+const ASSURANCES = ["Free to create", "No app to read", "Your work saves itself"] as const;
+
+const RAIL_TOOLS = [
+  { icon: MousePointer2, label: "Select" },
+  { icon: Paintbrush, label: "Brush", active: true },
+  { icon: Type, label: "Text" },
+  { icon: ImagePlus, label: "Photo" },
+  { icon: Sticker, label: "Sticker" },
 ] as const;
 
-const stagger: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-};
-
-const rise: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-};
+const FRAME_LAYERS = [
+  { name: "Photo — cut out", meta: "Layer 3" },
+  { name: "“Happy birthday, Ma”", meta: "Script · Layer 2" },
+  { name: "Wreath sticker", meta: "Layer 1" },
+] as const;
 
 export function Hero({ user }: { user: PsUser | null }) {
   const reduce = useReducedMotion();
+  const openStudio = () => psNavigate(user ? "dashboard" : "auth");
 
-  const startCreating = () => psNavigate(user ? "dashboard" : "auth");
+  const rise = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.5, delay, ease: "easeOut" as const },
+        };
 
   return (
-    <section className="relative overflow-x-clip bg-paper">
-      <div className="mx-auto flex min-h-[88svh] w-full max-w-6xl flex-col items-center justify-center gap-14 px-4 py-20 sm:px-6 lg:grid lg:min-h-[calc(100svh-4rem)] lg:grid-cols-2 lg:items-center lg:gap-12 lg:py-24">
+    <section className="bg-paper">
+      <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 pb-16 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-24">
         {/* ── Left: the offer, stated plainly ─────────────────── */}
-        <motion.div
-          className="max-w-xl text-center lg:text-left"
-          variants={reduce ? undefined : stagger}
-          initial={reduce ? false : "hidden"}
-          animate="show"
-        >
-          <motion.p
-            variants={reduce ? undefined : rise}
-            className="text-xs font-medium uppercase tracking-[0.14em] text-dim"
-          >
-            A creative studio for heartfelt cards &amp; books
+        <div className="lg:col-span-6">
+          <motion.p {...rise(0)} className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-onyx">
+            <span aria-hidden="true" className="h-px w-8 bg-night/60" />
+            The studio for cards &amp; memory books
           </motion.p>
 
           <motion.h1
-            variants={reduce ? undefined : rise}
-            className="ps-serif mt-4 text-[2.5rem] font-normal leading-[1.08] tracking-tight text-night sm:text-6xl lg:text-[4.25rem]"
+            {...rise(0.08)}
+            className="ps-serif mt-5 text-[2.6rem] font-normal leading-[1.06] tracking-tight text-night sm:text-6xl"
           >
-            Make something beautiful for someone you love.
+            Make something they&rsquo;ll keep.
           </motion.h1>
 
           <motion.p
-            variants={reduce ? undefined : rise}
-            className="mx-auto mt-6 max-w-[46ch] text-base leading-relaxed text-onyx sm:text-lg lg:mx-0"
+            {...rise(0.16)}
+            className="mt-6 max-w-[52ch] text-base leading-relaxed text-onyx sm:text-lg"
           >
-            Paint, write, and add photos or stickers across as many pages as
-            you need — then share a single link. It opens as a flip-book your
-            recipient can read anywhere. No design skills, no app, and no
-            account needed to receive.
+            PaperString brings your photos and your words together on layered
+            pages. Cut a subject out of its background, write in your own hand,
+            then send the finished book as a single link — it opens like a
+            little paper flip-book, anywhere, no app required.
           </motion.p>
 
-          <motion.div
-            variants={reduce ? undefined : rise}
-            className="mt-9 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
-          >
+          <motion.div {...rise(0.24)} className="mt-9 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={startCreating}
-              className={cn(btnPrimary, "group h-12 px-7")}
+              onClick={openStudio}
+              className={cn(
+                "inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-7 text-sm font-medium text-primary-foreground transition-colors duration-150",
+                "hover:bg-[#1047C7] active:bg-[#1047C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              )}
             >
-              Start creating — it&rsquo;s free
-              <ArrowRight
-                className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
+              {user ? "Open your studio" : "Open the studio — free"}
             </button>
-            <a href="#how" className={cn(ghostAction, "h-12 px-6 text-sm font-medium")}>
+            <a
+              href="#process"
+              className="inline-flex h-12 items-center justify-center rounded-lg border border-silver bg-paper px-6 text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
               See how it works
             </a>
           </motion.div>
 
           <motion.ul
-            variants={reduce ? undefined : rise}
-            className="mt-9 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 border-t border-silver pt-6 lg:justify-start"
+            {...rise(0.32)}
+            className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-silver pt-5"
           >
-            {ASSURANCES.map(({ icon: Icon, text }) => (
-              <li
-                key={text}
-                className="flex items-center gap-2 text-[13px] text-onyx"
-              >
-                <Icon className="h-4 w-4 text-dim" aria-hidden="true" />
+            {ASSURANCES.map((text) => (
+              <li key={text} className="flex items-center gap-2 text-[13px] text-onyx">
+                <Check className="h-3.5 w-3.5 text-[#155EEF]" aria-hidden="true" />
                 {text}
               </li>
             ))}
           </motion.ul>
-        </motion.div>
+        </div>
 
-        {/* ── Right: the product itself, flipping ─────────────── */}
-        {reduce ? (
-          <div className="flex items-center justify-center">
-            <FlipBookDemo />
-          </div>
-        ) : (
-          <motion.div
-            className="flex items-center justify-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
-          >
-            <FlipBookDemo />
-          </motion.div>
-        )}
+        {/* ── Right: the product, faithfully miniaturised ─────── */}
+        <motion.div
+          className="lg:col-span-6"
+          {...(reduce
+            ? {}
+            : {
+                initial: { opacity: 0, y: 24 },
+                animate: { opacity: 1, y: 0 },
+                transition: { duration: 0.6, delay: 0.25, ease: "easeOut" },
+              })}
+        >
+          <StudioFrame />
+        </motion.div>
       </div>
     </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   StudioFrame — the real editor, miniaturised. Same chrome:
+   a top bar (title · saved state · share), a tool rail, the
+   page canvas, a layers list. Artwork is real showcase output.
+   ──────────────────────────────────────────────────────────── */
+
+function StudioFrame() {
+  return (
+    <figure className="mx-auto w-full max-w-[560px]">
+      <div className="overflow-hidden rounded-lg border border-silver bg-paper shadow-lift-md">
+        {/* top bar */}
+        <div className="flex h-11 items-center gap-3 border-b border-silver bg-paper px-3">
+          <span className="truncate ps-serif text-[13px] italic text-night">
+            For Mom — her 70th
+          </span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-dim">
+            <Check className="h-3 w-3 text-[#155EEF]" aria-hidden="true" />
+            Saved
+          </span>
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground">
+            <Share2 className="h-3 w-3" aria-hidden="true" />
+            Share
+          </span>
+        </div>
+
+        <div className="flex bg-smoke">
+          {/* tool rail */}
+          <div className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-silver bg-paper py-3">
+            {RAIL_TOOLS.map(({ icon: Icon, label, active }) => (
+              <span
+                key={label}
+                aria-hidden="true"
+                title={label}
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-md",
+                  active
+                    ? "bg-[#155EEF]/10 text-[#155EEF]"
+                    : "text-dim"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+            ))}
+          </div>
+
+          {/* canvas */}
+          <div className="flex min-w-0 flex-1 justify-center px-6 py-6 sm:px-10">
+            <div className="w-40 sm:w-44">
+              <div className="overflow-hidden rounded-[4px] border border-silver shadow-lift-sm">
+                <PageArt
+                  src="/showcase/page-2.png"
+                  alt="A PaperString page in progress: taped photos and hand-written notes"
+                  eager
+                  className="aspect-[9/16] w-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* layers list (sm+) */}
+          <div className="hidden w-40 shrink-0 flex-col border-l border-silver bg-paper sm:flex">
+            <p className="border-b border-silver px-3 py-2.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-dim">
+              Layers
+            </p>
+            <ul>
+              {FRAME_LAYERS.map((layer, i) => (
+                <li
+                  key={layer.name}
+                  className={cn(
+                    "px-3 py-2.5",
+                    i === 0 && "bg-[#155EEF]/[0.05]",
+                    i !== FRAME_LAYERS.length - 1 && "border-b border-silver"
+                  )}
+                >
+                  <p className={cn("truncate text-[11px] leading-tight", i === 0 ? "font-medium text-night" : "text-onyx")}>
+                    {layer.name}
+                  </p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-[0.1em] text-dim">
+                    {layer.meta}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <figcaption className="mt-4 text-[13px] leading-relaxed text-dim">
+        The PaperString studio — brush, text, photos and stickers on layered
+        pages. Everything saves itself as you work.
+      </figcaption>
+    </figure>
   );
 }

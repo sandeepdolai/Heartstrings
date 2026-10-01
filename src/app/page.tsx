@@ -11,13 +11,13 @@ type SearchParams = Record<string, string | string[] | undefined>;
  * still acts as the fallback for anything this page does not define.
  */
 const BASE_METADATA: Metadata = {
-  title: "PaperString — Make something beautiful for someone you love",
+  title: "PaperString — Make something they'll keep",
   description:
-    "PaperString is a graphic creation studio for everyday people. Create heartfelt multi-page projects — love notes, friendship books, thank-you pages — and share them as a flip-book that opens straight to the heart.",
+    "PaperString is a studio for heartfelt cards and memory books. Bring your photos and your words together on layered pages — cutouts, handwriting, type and stickers — then send the finished book as a single link that opens like a paper flip-book.",
   keywords: [
     "PaperString",
-    "graphic creation",
-    "love notes",
+    "memory book",
+    "heartfelt cards",
     "flipbook",
     "friendship book",
     "shareable art",
@@ -26,7 +26,7 @@ const BASE_METADATA: Metadata = {
   openGraph: {
     title: "PaperString",
     description:
-      "Make something beautiful for someone you love — and share it like a flip-book that opens straight to the heart.",
+      "Make something they'll keep — cards and memory books made page by page, sent as a single link.",
     siteName: "PaperString",
     type: "website",
   },

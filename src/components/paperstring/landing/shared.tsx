@@ -38,60 +38,95 @@ export function Reveal({
 }
 
 /* ────────────────────────────────────────────────────────────
-   SectionHeading — label + serif title + supporting copy.
-   Centered by default; the label is small, quiet, uppercase.
+   SectionShell — the numbered-document section pattern used
+   across the whole page. Every section opens with a hairline,
+   its index (serif numeral) and an uppercase label; the title
+   and supporting copy sit beneath. Left-aligned, editorial.
+
+     ─────────────────────────────────────────────
+     02  THE PROBLEM
+     The photos live on your phone.
+     The words stay unsent.
+     [supporting copy]
    ──────────────────────────────────────────────────────────── */
 
-export function SectionHeading({
-  eyebrow,
+export function SectionShell({
+  id,
+  num,
+  label,
   title,
   sub,
-  align = "center",
-  dark = false,
+  tone = "paper",
+  aside,
+  children,
   className,
 }: {
-  eyebrow: string;
+  id?: string;
+  num: string;
+  label: string;
   title: ReactNode;
   sub?: ReactNode;
-  align?: "center" | "left";
-  dark?: boolean;
+  /** paper = white ground · smoke = off-white band */
+  tone?: "paper" | "smoke";
+  /** optional right-aligned content beside the heading (lg+) */
+  aside?: ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (
-    <div
+    <section
+      id={id}
       className={cn(
-        "max-w-2xl",
-        align === "center" ? "mx-auto text-center" : "text-left",
+        "scroll-mt-20 border-t border-silver",
+        tone === "smoke" ? "bg-smoke" : "bg-paper",
         className
       )}
     >
-      <p
-        className={cn(
-          "text-xs font-medium uppercase tracking-[0.14em]",
-          dark ? "text-silver" : "text-dim"
-        )}
-      >
-        {eyebrow}
-      </p>
-      <h2
-        className={cn(
-          "ps-serif mt-3 text-3xl font-normal leading-tight tracking-tight sm:text-4xl",
-          dark ? "text-smoke" : "text-night"
-        )}
-      >
-        {title}
-      </h2>
-      {sub ? (
-        <p
-          className={cn(
-            "mt-4 text-base leading-relaxed",
-            dark ? "text-silver" : "text-onyx"
-          )}
-        >
-          {sub}
-        </p>
-      ) : null}
-    </div>
+      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
+        <Reveal>
+          <div className="flex items-baseline gap-3">
+            <span
+              aria-hidden="true"
+              className="ps-serif text-lg leading-none text-dim"
+            >
+              {num}
+            </span>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-night">
+              {label}
+            </h2>
+          </div>
+          <div className="mt-5 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="ps-serif text-3xl font-normal leading-[1.15] tracking-tight text-night sm:text-4xl">
+                {title}
+              </p>
+              {sub ? (
+                <p className="mt-4 max-w-xl text-base leading-relaxed text-onyx">
+                  {sub}
+                </p>
+              ) : null}
+            </div>
+            {aside ? <div className="shrink-0">{aside}</div> : null}
+          </div>
+        </Reveal>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   Kicker — the hero's opening line: a short rule, then an
+   uppercase label. States the category before the headline
+   makes its promise.
+   ──────────────────────────────────────────────────────────── */
+
+export function Kicker({ children }: { children: ReactNode }) {
+  return (
+    <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-onyx">
+      <span aria-hidden="true" className="h-px w-8 bg-night/60" />
+      {children}
+    </p>
   );
 }
 
