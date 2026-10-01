@@ -6,7 +6,6 @@ import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  ArrowUpRight,
   BookOpen,
   Copy,
   CopyPlus,
@@ -57,7 +56,7 @@ export function ProjectCard({
 }: {
   project: ProjectSummary;
   index?: number;
-  /** "grid" — classic cover card; "list" — compact one-line row. */
+  /** "grid" — cover card in the shelf grid; "list" — hairline table row. */
   variant?: "grid" | "list";
 }) {
   const { id, title, coverImage, pageCount, shareToken, updatedAt } = project;
@@ -174,12 +173,7 @@ export function ProjectCard({
           variant="ghost"
           size="icon"
           aria-label={`More options for ${title}`}
-          className={cn(
-            "size-8 rounded-full bg-paper/80 text-night shadow-sm backdrop-blur transition hover:bg-paper focus-visible:opacity-100",
-            variant === "grid"
-              ? "opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
-              : "opacity-100"
-          )}
+          className="size-8 rounded-md text-dim transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:opacity-100"
         >
           <MoreVertical className="size-4" />
         </Button>
@@ -240,11 +234,61 @@ export function ProjectCard({
     onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
   };
 
+  /** Meta line shared by both layouts — "Edited 3 days ago · 4 pages". */
+  const metaLine = (
+    <>
+      <span className="truncate">
+        Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+      </span>
+      <span aria-hidden="true" className="text-silver">
+        ·
+      </span>
+      <span className="shrink-0 tabular-nums">
+        {pageCount} {pageCount === 1 ? "page" : "pages"}
+      </span>
+    </>
+  );
+
+  const sharedChip = shareToken ? (
+    <span className="inline-flex shrink-0 items-center rounded-md bg-heart/10 px-2 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25">
+      Shared
+    </span>
+  ) : (
+    <span className="inline-flex shrink-0 items-center rounded-md border border-silver px-2 py-0.5 text-[11px] font-medium text-dim">
+      Private
+    </span>
+  );
+
+  const sharedDialogs = (
+    <>
+      {/* Rename dialog */}
+      <RenameDialog
+        id={id}
+        title={title}
+        newTitle={newTitle}
+        setNewTitle={setNewTitle}
+        renameOpen={renameOpen}
+        setRenameOpen={setRenameOpen}
+        renaming={renaming}
+        onSubmit={handleRename}
+      />
+
+      {/* Delete confirmation */}
+      <DeleteDialog
+        title={title}
+        deleteOpen={deleteOpen}
+        setDeleteOpen={setDeleteOpen}
+        deleting={deleting}
+        onDelete={handleDelete}
+      />
+    </>
+  );
+
   if (variant === "list") {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.24) }}
         role="button"
         tabIndex={0}
@@ -260,92 +304,46 @@ export function ProjectCard({
             openInEditor();
           }
         }}
-        className="group flex cursor-pointer items-center gap-4 rounded-lg border border-silver bg-card p-3 transition-colors duration-150 hover:border-night/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="group flex cursor-pointer items-center gap-4 border-b border-silver px-2 py-3 transition-colors duration-150 hover:bg-smoke/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {/* thumb */}
-        <div className="relative h-[4.25rem] w-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-silver/40">
+        <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-[4px] border border-silver bg-smoke">
           {coverImage ? (
             <img
               src={coverImage}
               alt=""
               loading="lazy"
               decoding="async"
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30">
+            <div className="absolute inset-0 flex items-center justify-center">
               <LogoMark
-                className="h-6 w-auto text-dim/50"
+                className="h-4 w-auto text-dim/50"
                 strokeWidth={4}
               />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-2 rounded-md border border-dashed border-silver/60"
-              />
+              <span className="sr-only">No cover yet</span>
             </div>
           )}
         </div>
 
         {/* title + meta */}
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-display text-base font-semibold tracking-tight">
-            {title}
-          </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-dim">
-            <span className="tabular-nums">
-              {pageCount} {pageCount === 1 ? "page" : "pages"}
-            </span>
-            <span aria-hidden="true" className="text-silver">
-              ·
-            </span>
-            <span>Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</span>
+          <h3 className="truncate text-sm font-medium text-night">{title}</h3>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-dim">
+            {metaLine}
           </p>
         </div>
 
         {/* shared / private chip */}
-        {shareToken ? (
-          <span className="hidden shrink-0 items-center rounded-md bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25 sm:inline-flex">
-            Shared
-          </span>
-        ) : (
-          <span className="hidden shrink-0 items-center rounded-md border border-silver px-2 py-0.5 text-[11px] font-medium text-dim sm:inline-flex">
-            Private
-          </span>
-        )}
-
-        {/* open affordance — whispers "click to open" on hover */}
-        <span
-          aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-silver text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 md:-translate-x-1"
-        >
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </span>
+        <span className="hidden shrink-0 sm:inline-flex">{sharedChip}</span>
 
         {/* menu — always visible in the row */}
         <div className="shrink-0" {...stopProp}>
           {actionsMenu}
         </div>
 
-        {/* Rename dialog */}
-        <RenameDialog
-          id={id}
-          title={title}
-          newTitle={newTitle}
-          setNewTitle={setNewTitle}
-          renameOpen={renameOpen}
-          setRenameOpen={setRenameOpen}
-          renaming={renaming}
-          onSubmit={handleRename}
-        />
-
-        {/* Delete confirmation */}
-        <DeleteDialog
-          title={title}
-          deleteOpen={deleteOpen}
-          setDeleteOpen={setDeleteOpen}
-          deleting={deleting}
-          onDelete={handleDelete}
-        />
+        {sharedDialogs}
       </motion.div>
     );
   }
@@ -376,100 +374,52 @@ export function ProjectCard({
           openInEditor();
         }
       }}
-      className="group cursor-pointer overflow-hidden rounded-lg border border-silver bg-card transition-colors duration-150 hover:border-night/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-lg border border-silver bg-paper transition-colors duration-150 hover:border-night/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      {/* Cover */}
-      <div className="relative aspect-[3/4] overflow-hidden">
+      {/* Cover — a portrait page, kept at the book's own 9:16 ratio */}
+      <div className="relative aspect-[9/16] overflow-hidden border-b border-silver bg-smoke">
         {coverImage ? (
           <img
             src={coverImage}
             alt={`Cover of ${title}`}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-smoke to-silver/30">
+          <div className="absolute inset-0 flex items-center justify-center">
             <LogoMark
-              className="h-12 w-auto text-dim/50"
+              className="h-10 w-auto text-dim/50"
               strokeWidth={3.8}
             />
             {/* a dashed frame reads as a blank page awaiting art — not a
                 finished heart cover */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-3 rounded-lg border-2 border-dashed border-silver/60"
+              className="pointer-events-none absolute inset-3 rounded-md border border-dashed border-silver"
             />
             <span className="sr-only">No cover yet</span>
           </div>
         )}
+      </div>
 
-        {/* Hover veil + Open pill */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-night/0 transition-colors duration-300 group-hover:bg-night/10"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
-        >
-          <span className="rounded-md bg-night/85 px-4 py-2 text-sm font-medium text-smoke backdrop-blur">
-            Open
-          </span>
+      {/* Meta footer */}
+      <div className="flex flex-1 flex-col px-4 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-night">
+            {title}
+          </h3>
+          <div className="relative -mr-2 shrink-0" {...stopProp}>
+            {actionsMenu}
+          </div>
         </div>
-
-        {/* Card menu */}
-        <div
-          className="absolute right-2 top-2 z-10"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {actionsMenu}
+        <div className="mt-1 flex items-center gap-2 text-xs text-dim">
+          {metaLine}
+          <span className="ml-auto">{sharedChip}</span>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-4">
-        <h3 className="truncate font-display text-lg font-semibold tracking-tight">
-          {title}
-        </h3>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="truncate text-xs text-dim">
-            {pageCount} {pageCount === 1 ? "page" : "pages"} · Updated{" "}
-            {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
-          </p>
-          {shareToken ? (
-            <span className="inline-flex shrink-0 items-center rounded-md bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25">
-              Shared
-            </span>
-          ) : (
-            <span className="inline-flex shrink-0 items-center rounded-md border border-silver px-2 py-0.5 text-[11px] font-medium text-dim">
-              Private
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Rename dialog */}
-      <RenameDialog
-        id={id}
-        title={title}
-        newTitle={newTitle}
-        setNewTitle={setNewTitle}
-        renameOpen={renameOpen}
-        setRenameOpen={setRenameOpen}
-        renaming={renaming}
-        onSubmit={handleRename}
-      />
-
-      {/* Delete confirmation */}
-      <DeleteDialog
-        title={title}
-        deleteOpen={deleteOpen}
-        setDeleteOpen={setDeleteOpen}
-        deleting={deleting}
-        onDelete={handleDelete}
-      />
+      {sharedDialogs}
     </motion.div>
   );
 }

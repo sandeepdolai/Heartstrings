@@ -40,6 +40,10 @@ import { cn } from "@/lib/utils";
  * zero mail infrastructure to pay for. Existing email accounts (and their
  * projects) are untouched — signing in with the same Google email links to
  * them automatically (see /api/auth/google's find-or-link logic).
+ *
+ * Round 29/5 — editorial split layout: an off-white brand panel (wordmark,
+ * serif headline, numbered benefit rows) beside a quiet white sign-in column.
+ * All Google sign-in logic is unchanged.
  */
 
 /** Google "G" brand mark — the one sanctioned use of color (official brand logo). */
@@ -293,6 +297,26 @@ function GoogleSetupDialog({
 
 /* ── Auth view ───────────────────────────────────────────────────────── */
 
+/** The studio's promise — numbered rows on the brand panel (and, compactly,
+ *  under the sign-in button on small screens). */
+const STUDIO_BENEFITS = [
+  {
+    num: "01",
+    title: "Your whole library",
+    body: "Every book you make, kept in one place.",
+  },
+  {
+    num: "02",
+    title: "Automatic saving",
+    body: "Each stroke is kept the moment you make it.",
+  },
+  {
+    num: "03",
+    title: "One-link sharing",
+    body: "Readers open your book without an account.",
+  },
+] as const;
+
 export function AuthView({ returnHint }: { returnHint?: boolean }) {
   // Google sign-in state: null = still checking /api/auth/config.
   const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
@@ -427,108 +451,196 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
     }
   };
 
+  /** The studio wordmark, wherever it appears, leads home. */
+  const wordmarkHome = (extra: string) => (
+    <button
+      type="button"
+      onClick={() => psNavigate("landing")}
+      aria-label="PaperString home"
+      className={cn(
+        "rounded-lg text-night transition-opacity duration-150 hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        extra
+      )}
+    >
+      <WordMark />
+    </button>
+  );
+
   return (
     <MotionConfig reducedMotion="user">
-      {/* ── Single centered card — Google is the one and only way in,
-          so the page is a calm, focused moment: mark, message, button. */}
-      <main className="flex min-h-screen items-center justify-center bg-paper p-6 sm:p-10">
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full max-w-sm"
-        >
-          <div className="mb-10 flex justify-center">
-            <WordMark className="text-night" />
-          </div>
+      {/* ── Two-panel editorial layout: an off-white brand column with the
+          studio's promises, and a quiet white column with the one button
+          that matters. On small screens the panels collapse to a single
+          centered column (benefits compress beneath the button). */}
+      <main className="grid min-h-[100dvh] bg-paper lg:grid-cols-2">
+        {/* ── Left — brand panel (desktop only) ─────────────────────── */}
+        <aside className="hidden flex-col border-r border-silver bg-smoke px-10 py-12 lg:flex xl:px-14">
+          {wordmarkHome("focus-visible:ring-offset-smoke")}
 
-          <h1 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-            Welcome back
-          </h1>
-          <p className="mt-2.5 text-sm text-onyx/75">
-            Sign in with Google — the one account you already have. No
-            passwords, no hassle.
-          </p>
+          <div className="flex flex-1 flex-col justify-center py-16">
+            <h2 className="font-display text-3xl font-normal leading-[1.15] tracking-tight text-night xl:text-4xl">
+              Your studio, wherever you left it.
+            </h2>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-onyx">
+              Sign in once and every page you&rsquo;ve made is waiting for you —
+              covers, words, and all.
+            </p>
 
-          {returnHint && (
-            <Alert className="mt-5 border-silver/50 bg-card/60 py-2.5">
-              <Info className="size-4 text-dim" />
-              <AlertDescription className="text-xs text-dim">
-                Sign in to get back to your project.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* ── Google sign-in — the only button on the page ──────────
-              Real GIS button when configured; a setup guide until then;
-              a full-tab fallback where iframes block Google's UI. */}
-          <div className="mt-8">
-            {googleEnabled === null ? (
-              <div
-                aria-hidden="true"
-                className="h-11 w-full animate-pulse rounded-lg bg-smoke"
-              />
-            ) : googleEnabled && !gisFailed ? (
-              <div className="flex min-h-11 w-full justify-center">
-                <div ref={googleBtnRef} />
-              </div>
-            ) : googleEnabled && gisFailed ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={googlePending}
-                onClick={openGoogleInFullTab}
-                className="h-11 w-full rounded-lg border border-silver bg-paper transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
-              >
-                {googlePending ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <GoogleMark />
-                )}
-                {googlePending ? "Signing you in…" : "Continue with Google"}
-                <ExternalLink className="size-3.5 text-dim" aria-hidden="true" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setSetupOpen(true)}
-                className="h-11 w-full rounded-lg border border-silver bg-paper transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
-              >
-                <GoogleMark />
-                Continue with Google
-                <ArrowRight className="size-3.5 text-dim" aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-
-          {googleEnabled === false && (
-            <Alert className="mt-5 animate-in fade-in slide-in-from-top-1 border-silver/50 bg-card/60 py-2.5">
-              <Info className="size-4 text-dim" />
-              <AlertDescription className="text-xs text-dim">
-                Google sign-in isn't connected on this deployment yet — it's a
-                free, one-time setup.{" "}
-                <button
-                  type="button"
-                  onClick={() => setSetupOpen(true)}
-                  className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            <ol className="mt-12">
+              {STUDIO_BENEFITS.map((benefit) => (
+                <li
+                  key={benefit.num}
+                  className="border-t border-silver py-5 last:border-b"
                 >
-                  Show the 2-minute setup
-                </button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={() => psNavigate("landing")}
-              className="text-xs text-dim transition-colors hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              ← Back to home
-            </button>
+                  <p className="flex items-baseline gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="font-display text-sm text-dim"
+                    >
+                      {benefit.num}
+                    </span>
+                    <span aria-hidden="true" className="text-dim">
+                      &middot;
+                    </span>
+                    <span className="text-sm font-medium text-night">
+                      {benefit.title}
+                    </span>
+                  </p>
+                  <p className="mt-1 pl-8 text-sm text-onyx">{benefit.body}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-        </motion.div>
+
+          <p className="text-xs text-dim">
+            Made by people who care about paper.
+          </p>
+        </aside>
+
+        {/* ── Right — the sign-in column ────────────────────────────── */}
+        <section className="flex items-center justify-center px-6 py-12 sm:px-10">
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-sm"
+          >
+            {/* on mobile the brand panel is hidden — carry the wordmark here */}
+            <div className="mb-10 flex justify-center lg:hidden">
+              {wordmarkHome("focus-visible:ring-offset-paper")}
+            </div>
+
+            <h1 className="font-display text-3xl font-medium tracking-tight text-balance text-night">
+              Welcome to your studio
+            </h1>
+            <p className="mt-2.5 text-sm text-onyx">
+              Sign in with your Google account — that&rsquo;s all there is.
+            </p>
+
+            {returnHint && (
+              <Alert className="mt-5 border-silver/50 bg-card/60 py-2.5">
+                <Info className="size-4 text-dim" />
+                <AlertDescription className="text-xs text-dim">
+                  Finish signing in to jump back into your book.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* ── Google sign-in — the only button on the page ──────────
+                Real GIS button when configured; a setup guide until then;
+                a full-tab fallback where iframes block Google's UI. */}
+            <div className="mt-8">
+              {googleEnabled === null ? (
+                <div
+                  aria-hidden="true"
+                  className="h-12 w-full animate-pulse rounded-lg border border-silver bg-smoke"
+                />
+              ) : googleEnabled && !gisFailed ? (
+                <div className="flex min-h-11 w-full justify-center">
+                  <div ref={googleBtnRef} />
+                </div>
+              ) : googleEnabled && gisFailed ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={googlePending}
+                  onClick={openGoogleInFullTab}
+                  className="h-12 w-full rounded-lg border border-silver bg-paper text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
+                >
+                  {googlePending ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <GoogleMark />
+                  )}
+                  {googlePending ? "Signing you in…" : "Continue with Google"}
+                  <ExternalLink className="size-3.5 text-dim" aria-hidden="true" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSetupOpen(true)}
+                  className="h-12 w-full rounded-lg border border-silver bg-paper text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
+                >
+                  <GoogleMark />
+                  Continue with Google
+                  <ArrowRight className="size-3.5 text-dim" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+
+            {googleEnabled === false && (
+              <Alert className="mt-5 animate-in fade-in slide-in-from-top-1 border-silver/50 bg-card/60 py-2.5">
+                <Info className="size-4 text-dim" />
+                <AlertDescription className="text-xs text-dim">
+                  Google sign-in isn't connected on this deployment yet — it's a
+                  free, one-time setup.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setSetupOpen(true)}
+                    className="font-semibold text-night underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    Show the 2-minute setup
+                  </button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* ── Compact benefit list — stands in for the hidden brand
+                panel on small screens ─────────────────────────────── */}
+            <ol className="mt-10 lg:hidden">
+              {STUDIO_BENEFITS.map((benefit) => (
+                <li
+                  key={benefit.num}
+                  className="border-t border-silver py-3 last:border-b"
+                >
+                  <p className="flex items-baseline gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="font-display text-xs text-dim"
+                    >
+                      {benefit.num}
+                    </span>
+                    <span className="text-sm font-medium text-night">
+                      {benefit.title}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 pl-6 text-xs text-dim">{benefit.body}</p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-10 text-center">
+              <button
+                type="button"
+                onClick={() => psNavigate("landing")}
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+              >
+                ← Back to home
+              </button>
+            </div>
+          </motion.div>
+        </section>
       </main>
 
       <GoogleSetupDialog

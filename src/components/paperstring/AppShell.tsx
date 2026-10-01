@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { parseView, psNavigate } from "@/lib/paperstring/navigation";
 import type { PsUser } from "@/lib/paperstring/types";
+import { WordMark } from "./brand";
 import { Providers } from "./Providers";
 import { LandingView } from "./landing/LandingView";
 import { AuthView } from "./auth/AuthView";
@@ -40,15 +41,17 @@ function AppShellInner() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-smoke">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-silver/40">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-night" />
-          </div>
-          <p className="text-xs tracking-widest uppercase text-dim">
-            PaperString
-          </p>
+      <div
+        role="status"
+        className="flex min-h-screen flex-col items-center justify-center bg-paper"
+      >
+        <WordMark className="text-night" />
+        {/* indeterminate progress hairline — one quiet line while the
+            session resolves */}
+        <div aria-hidden="true" className="mt-6 h-px w-24 overflow-hidden bg-silver">
+          <div className="h-full w-1/3 animate-pulse bg-night" />
         </div>
+        <p className="mt-4 text-xs text-dim">Opening your studio…</p>
       </div>
     );
   }

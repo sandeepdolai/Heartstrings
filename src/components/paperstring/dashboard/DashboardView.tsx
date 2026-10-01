@@ -6,7 +6,6 @@ import { MotionConfig, motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   AlertCircle,
-  ArrowUpDown,
   BookOpen,
   Check,
   ChevronDown,
@@ -22,7 +21,7 @@ import {
 
 import type { ProjectSummary, PsUser } from "@/lib/paperstring/types";
 import { psNavigate } from "@/lib/paperstring/navigation";
-import { LogoMark, WordMark } from "@/components/paperstring/brand";
+import { WordMark } from "@/components/paperstring/brand";
 import { ProjectCard } from "./ProjectCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,7 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +100,13 @@ function compareProjects(mode: SortMode) {
   };
 }
 
+/** Time-aware greeting — the studio says hello like a person, not a router. */
+function greetingForHour(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export function DashboardView({ user }: { user: PsUser }) {
   const queryClient = useQueryClient();
 
@@ -127,6 +132,7 @@ export function DashboardView({ user }: { user: PsUser }) {
       .slice(0, 2)
       .join("")
       .toUpperCase() || "P";
+  const greeting = greetingForHour(new Date().getHours());
 
   const projectsQuery = useQuery({
     queryKey: ["projects"],
@@ -176,7 +182,7 @@ export function DashboardView({ user }: { user: PsUser }) {
     <Button
       onClick={() => createBook.mutate()}
       disabled={createBook.isPending}
-      className="group h-11 rounded-lg px-5"
+      className="group h-10 rounded-lg px-3.5 sm:h-11 sm:px-5"
     >
       {createBook.isPending ? (
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -217,20 +223,22 @@ export function DashboardView({ user }: { user: PsUser }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen flex-col bg-smoke">
-        {/* ── Header ──────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-20 border-b border-silver/30 bg-smoke/80 backdrop-blur">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="flex min-h-screen flex-col bg-paper">
+        {/* ── App header — the studio's one persistent bar ──────────── */}
+        <header className="sticky top-0 z-20 border-b border-silver bg-paper">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
             <button
               type="button"
               onClick={() => psNavigate("landing")}
               aria-label="PaperString home"
-              className="rounded-md p-1 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="rounded-lg text-night transition-opacity duration-150 hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
-              <WordMark className="text-night" />
+              <WordMark />
             </button>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {newBookButton}
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -278,271 +286,245 @@ export function DashboardView({ user }: { user: PsUser }) {
           </div>
         </header>
 
-        {/* ── Main ────────────────────────────────────────────────────── */}
-        <main className="flex-1">
-          <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="flex flex-wrap items-end justify-between gap-4"
-            >
-              <div>
-                <h1 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">
-                  Your studio
-                </h1>
-                <p className="mt-2 text-sm text-dim">
-                  Every book you make lives here, {firstName}.
-                </p>
-                {libraryLoaded && projects.length > 0 && (
-                  <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-dim">
-                    {statsLine}
-                  </p>
+        {/* ── Greeting ────────────────────────────────────────────────── */}
+        <div className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+          >
+            <h1 className="font-display text-3xl font-medium tracking-tight text-night sm:text-4xl">
+              Your studio
+            </h1>
+            <p className="mt-2 text-sm text-onyx">
+              {greeting}, {firstName} — your books are exactly as you left them.
+            </p>
+            {libraryLoaded && projects.length > 0 && (
+              <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-dim">
+                {statsLine}
+              </p>
+            )}
+          </motion.div>
+        </div>
+
+        {/* ── Library toolbar — full-width hairlines, search / sort / view.
+            Appears once there is a library to manage. ─────────────────── */}
+        {libraryLoaded && projects.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.08 }}
+            className="mt-8 border-y border-silver"
+          >
+            <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:gap-3 sm:px-6">
+              {/* search — a borderless field set into the bar */}
+              <div role="search" className="relative w-full max-w-xs flex-1">
+                <Search
+                  className="pointer-events-none absolute left-0 top-1/2 size-4 -translate-y-1/2 text-dim"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape" && search !== "") {
+                      e.preventDefault();
+                      setSearch("");
+                    }
+                  }}
+                  placeholder="Search your books…"
+                  aria-label="Search your books"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  className="h-9 w-full bg-transparent pl-7 pr-7 text-sm text-night outline-none placeholder:text-dim/70 focus-visible:outline-none"
+                />
+                {search !== "" && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                    className="absolute right-0 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:bg-smoke hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <X className="size-3.5" aria-hidden="true" />
+                  </button>
                 )}
               </div>
-              {newBookButton}
-            </motion.div>
 
-            {/* Search + sort toolbar (library affordances, all client-side) */}
-            {libraryLoaded && projects.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut", delay: 0.08 }}
-                className="mt-6 flex flex-wrap items-center gap-3"
-              >
-                <div role="search" className="relative w-full sm:w-64 md:w-72">
-                  <Search
-                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-dim"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape" && search !== "") {
-                        e.preventDefault();
-                        setSearch("");
-                      }
-                    }}
-                    placeholder="Search your books…"
-                    aria-label="Search your books"
-                    autoComplete="off"
-                    enterKeyHint="search"
-                    className="h-10 rounded-lg border-silver bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring"
-                  />
-                  {search !== "" && (
-                    <button
-                      type="button"
-                      aria-label="Clear search"
-                      onClick={() => setSearch("")}
-                      className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:bg-smoke hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                    >
-                      <X className="size-3.5" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
+              <div
+                aria-hidden="true"
+                className="hidden h-5 w-px shrink-0 bg-silver sm:block"
+              />
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-10 rounded-lg border-silver bg-paper px-4 hover:bg-smoke"
+              {/* sort */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-9 gap-1.5 rounded-lg px-2.5 text-sm text-onyx hover:bg-smoke hover:text-night"
+                  >
+                    <span className="sr-only">Sort books by</span>
+                    <span className="max-w-32 truncate sm:max-w-none">
+                      {activeSort.label}
+                    </span>
+                    <ChevronDown className="size-3.5 text-dim" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wider text-dim">
+                    Sort by
+                  </DropdownMenuLabel>
+                  {SORT_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.id}
+                      onSelect={() => setSortMode(option.id)}
                     >
-                      <ArrowUpDown
-                        className="size-4 text-dim"
+                      <Check
+                        className={cn(
+                          "text-night",
+                          sortMode === option.id ? "opacity-100" : "opacity-0"
+                        )}
                         aria-hidden="true"
                       />
-                      <span className="sr-only">Sort books by</span>
-                      <span className="max-w-36 truncate sm:max-w-none">
-                        {activeSort.label}
-                      </span>
-                      <ChevronDown className="size-3.5 opacity-60" aria-hidden="true" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wider text-dim">
-                      Sort by
-                    </DropdownMenuLabel>
-                    {SORT_OPTIONS.map((option) => (
-                      <DropdownMenuItem
-                        key={option.id}
-                        onSelect={() => setSortMode(option.id)}
-                      >
-                        <Check
-                          className={cn(
-                            "text-night",
-                            sortMode === option.id ? "opacity-100" : "opacity-0"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* layout toggle — covers at a glance, or a scannable list */}
-                <div
-                  role="group"
-                  aria-label="Library layout"
-                  className="ml-auto flex h-10 items-center gap-0.5 rounded-lg border border-silver bg-paper p-1"
-                >
-                  <button
-                    type="button"
-                    aria-label="Grid layout"
-                    aria-pressed={viewMode === "grid"}
-                    title="Grid layout"
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-                      viewMode === "grid"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-dim hover:text-night"
-                    )}
-                  >
-                    <LayoutGrid className="size-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="List layout"
-                    aria-pressed={viewMode === "list"}
-                    title="List layout"
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-                      viewMode === "list"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-dim hover:text-night"
-                    )}
-                  >
-                    <List className="size-4" aria-hidden="true" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="mt-8 lg:mt-10">
-              {projectsQuery.isLoading ? (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="overflow-hidden rounded-lg border border-silver bg-card"
-                    >
-                      <Skeleton className="aspect-[3/4] w-full rounded-none" />
-                      <div className="space-y-3 p-4">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
+                      {option.label}
+                    </DropdownMenuItem>
                   ))}
-                </div>
-              ) : projectsQuery.isError ? (
-                <Alert className="bg-card">
-                  <AlertCircle className="size-4" />
-                  <AlertTitle>Couldn&apos;t load your books</AlertTitle>
-                  <AlertDescription>
-                    <p>Something went wrong on our end. Give it another go.</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 rounded-lg"
-                      onClick={() => projectsQuery.refetch()}
-                    >
-                      Try again
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : projects.length === 0 ? (
-                <div className="relative rounded-xl border-2 border-dashed border-silver p-8 text-center sm:p-12">
-                  {/* a quiet ghost page behind the promise — the shape of
-                      what is one click away */}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* layout toggle — covers at a glance, or a scannable list */}
+              <div
+                role="group"
+                aria-label="Library layout"
+                className="ml-auto flex h-9 shrink-0 items-center gap-0.5 rounded-lg border border-silver bg-paper p-0.5"
+              >
+                <button
+                  type="button"
+                  aria-label="Grid layout"
+                  aria-pressed={viewMode === "grid"}
+                  title="Grid layout"
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                    viewMode === "grid"
+                      ? "bg-smoke text-night"
+                      : "text-dim hover:text-night"
+                  )}
+                >
+                  <LayoutGrid className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="List layout"
+                  aria-pressed={viewMode === "list"}
+                  title="List layout"
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                    viewMode === "list"
+                      ? "bg-smoke text-night"
+                      : "text-dim hover:text-night"
+                  )}
+                >
+                  <List className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Library ─────────────────────────────────────────────────── */}
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+            {projectsQuery.isLoading ? (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {[0, 1, 2].map((i) => (
                   <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 sm:block"
+                    key={i}
+                    className="overflow-hidden rounded-lg border border-silver bg-paper"
                   >
-                    <div className="h-56 w-[126px] rounded-lg border border-dashed border-silver/40" />
+                    <Skeleton className="aspect-[9/16] w-full rounded-none" />
+                    <div className="space-y-2.5 px-4 py-3">
+                      <Skeleton className="h-3.5 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <LogoMark
-                      className="mx-auto h-10 w-auto text-silver"
-                      strokeWidth={4}
-                    />
-                    <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
-                      Your first book is one click away
-                    </h2>
-                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim">
-                      Love notes, friendship books, thank-you pages — start with a
-                      blank page and see where the heart takes you.
-                    </p>
-                    <Button
-                      onClick={() => createBook.mutate()}
-                      disabled={createBook.isPending}
-                      className="mt-8 h-11 rounded-lg px-6"
-                    >
-                      {createBook.isPending ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Plus className="size-4" aria-hidden="true" />
-                      )}
-                      Create your first book
-                    </Button>
-                  </div>
-                </div>
-              ) : visibleProjects.length === 0 ? (
-                <div className="rounded-xl border-2 border-dashed border-silver p-8 text-center sm:p-12">
-                  <HeartCrack
-                    className="mx-auto size-9 text-silver"
-                    strokeWidth={1.75}
-                    aria-hidden="true"
-                  />
-                  <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
-                    No books match &ldquo;{trimmedQuery}&rdquo;
-                  </h2>
-                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim">
-                    The words are there — just not in that order. Try another
-                    word, or clear the search to see your whole shelf.
-                  </p>
+                ))}
+              </div>
+            ) : projectsQuery.isError ? (
+              <Alert className="bg-card">
+                <AlertCircle className="size-4" />
+                <AlertTitle>Couldn&apos;t load your books</AlertTitle>
+                <AlertDescription>
+                  <p>Something went wrong on our end. Give it another go.</p>
                   <Button
                     variant="outline"
-                    onClick={() => setSearch("")}
-                    className="mt-8 h-11 rounded-lg px-6"
+                    size="sm"
+                    className="mt-2 rounded-lg"
+                    onClick={() => projectsQuery.refetch()}
                   >
-                    <X className="size-4" aria-hidden="true" />
-                    Clear search
+                    Try again
                   </Button>
+                </AlertDescription>
+              </Alert>
+            ) : projects.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-silver py-16 text-center">
+                <div
+                  aria-hidden="true"
+                  className="mx-auto grid size-11 place-items-center rounded-lg border border-silver bg-smoke"
+                >
+                  <BookOpen className="size-5 text-night" />
                 </div>
-              ) : viewMode === "list" ? (
-                <ul className="flex flex-col gap-3">
-                  {visibleProjects.map((project, i) => (
-                    <li key={project.id}>
-                      <ProjectCard project={project} index={i} variant="list" />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {visibleProjects.map((project, i) => (
-                    <ProjectCard key={project.id} project={project} index={i} />
-                  ))}
+                <h2 className="mt-6 font-display text-xl font-medium tracking-tight text-night">
+                  Nothing here yet
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim">
+                  Your first book takes about fifteen minutes. Photos, a few
+                  words, one link.
+                </p>
+                <div className="mt-8 flex justify-center">{newBookButton}</div>
+              </div>
+            ) : visibleProjects.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-silver py-16 text-center">
+                <div
+                  aria-hidden="true"
+                  className="mx-auto grid size-11 place-items-center rounded-lg border border-silver bg-smoke"
+                >
+                  <HeartCrack className="size-5 text-night" />
                 </div>
-              )}
-            </div>
+                <h2 className="mt-6 font-display text-xl font-medium tracking-tight text-night">
+                  No books match &ldquo;{trimmedQuery}&rdquo;
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-dim">
+                  The words are there — just not in that order. Try another
+                  word, or clear the search to see your whole shelf.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setSearch("")}
+                  className="mt-8 h-11 rounded-lg px-6"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                  Clear search
+                </Button>
+              </div>
+            ) : viewMode === "list" ? (
+              <ul className="border-t border-silver">
+                {visibleProjects.map((project, i) => (
+                  <li key={project.id}>
+                    <ProjectCard project={project} index={i} variant="list" />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleProjects.map((project, i) => (
+                  <ProjectCard key={project.id} project={project} index={i} />
+                ))}
+              </div>
+            )}
           </div>
         </main>
-
-        {/* ── Footer ──────────────────────────────────────────────────── */}
-        <footer className="mt-auto border-t border-silver/30 py-6">
-          <div className="flex items-center justify-center gap-2 text-xs text-dim">
-            <LogoMark className="h-4 w-auto text-current" strokeWidth={5} />
-            <span>
-              PaperString — made for love, friendship &amp; everything
-              heartfelt. © 2026
-            </span>
-          </div>
-        </footer>
       </div>
     </MotionConfig>
   );
