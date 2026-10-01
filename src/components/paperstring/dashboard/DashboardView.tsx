@@ -223,7 +223,7 @@ export function DashboardView({ user }: { user: PsUser }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen flex-col bg-paper">
+      <div className="hs-studio flex min-h-screen flex-col bg-paper">
         {/* ── App header — the studio's one persistent bar ──────────── */}
         <header className="sticky top-0 z-20 border-b border-silver bg-paper">
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
