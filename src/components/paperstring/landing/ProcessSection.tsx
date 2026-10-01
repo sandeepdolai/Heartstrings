@@ -34,6 +34,7 @@ export function ProcessSection({ user }: { user: PsUser | null }) {
       id="process"
       num="02"
       label="Process"
+      tone="smoke"
       title="From first photo to finished book"
       sub="Three steps, start to sent. No manuals, no tutorials — if you can doodle on a napkin, you can make a PaperString."
       aside={
@@ -58,7 +59,7 @@ export function ProcessSection({ user }: { user: PsUser | null }) {
                 aria-hidden="true"
                 className="absolute -top-[5px] left-0 hidden h-[9px] w-[9px] rounded-[1px] bg-night sm:block sm:first:left-0"
               />
-              <span className="ps-serif text-4xl text-night">{step.n}</span>
+              <span className="text-4xl font-semibold tracking-tight text-night">{step.n}</span>
               <h3 className="mt-4 text-base font-semibold text-night">
                 {step.title}
               </h3>

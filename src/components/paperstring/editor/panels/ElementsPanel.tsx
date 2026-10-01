@@ -179,19 +179,19 @@ export function ElementsPanel() {
         <TabsList className="grid h-9 w-full grid-cols-3 rounded-lg bg-editor-raised p-0.5">
           <TabsTrigger
             value="stickers"
-            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-editor data-[state=active]:text-editor-text"
+            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-wash data-[state=active]:text-heart"
           >
             Stickers
           </TabsTrigger>
           <TabsTrigger
             value="art"
-            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-editor data-[state=active]:text-editor-text"
+            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-wash data-[state=active]:text-heart"
           >
             Paper art
           </TabsTrigger>
           <TabsTrigger
             value="templates"
-            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-editor data-[state=active]:text-editor-text"
+            className="rounded-md text-[11px] font-semibold data-[state=active]:bg-wash data-[state=active]:text-heart"
           >
             Templates
           </TabsTrigger>

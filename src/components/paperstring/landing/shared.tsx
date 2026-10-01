@@ -66,7 +66,7 @@ export function SectionShell({
   label: string;
   title: ReactNode;
   sub?: ReactNode;
-  /** paper = white ground · smoke = off-white band */
+  /** paper = white ground · smoke = off-white band (sections alternate) */
   tone?: "paper" | "smoke";
   /** optional right-aligned content beside the heading (lg+) */
   aside?: ReactNode;
@@ -77,7 +77,7 @@ export function SectionShell({
     <section
       id={id}
       className={cn(
-        "scroll-mt-20 border-t border-silver",
+        "scroll-mt-16",
         tone === "smoke" ? "bg-smoke" : "bg-paper",
         className
       )}
@@ -97,7 +97,7 @@ export function SectionShell({
           </div>
           <div className="mt-5 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="ps-serif text-3xl font-normal leading-[1.15] tracking-tight text-night sm:text-4xl">
+              <p className="text-3xl font-semibold leading-[1.12] tracking-tight text-night sm:text-4xl">
                 {title}
               </p>
               {sub ? (

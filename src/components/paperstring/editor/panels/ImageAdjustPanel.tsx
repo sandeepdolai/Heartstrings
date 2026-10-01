@@ -87,7 +87,7 @@ export function ImageAdjustPanel() {
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
+                    ? "border-heart/70 bg-wash text-heart"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >

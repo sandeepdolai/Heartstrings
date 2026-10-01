@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  ArrowRight,
   Check,
   ImagePlus,
   MousePointer2,
@@ -9,17 +11,20 @@ import {
   Share2,
   Sticker,
   Type,
+  X,
 } from "lucide-react";
+import { LogoMark } from "@/components/paperstring/brand";
 import { psNavigate } from "@/lib/paperstring/navigation";
 import type { PsUser } from "@/lib/paperstring/types";
 import { PageArt } from "./shared";
 import { cn } from "@/lib/utils";
 
 /**
- * Hero — an editorial opening: the offer on the left, the product itself
- * on the right. The StudioFrame is a faithful miniature of the real
- * editor (top bar, tool rail, canvas, layers), built from the same atoms
- * — an honest depiction, not a decorated mock.
+ * Hero — a calm, centered opening in the manner of serious product
+ * companies: the mark, one promise, one paragraph, two actions, then
+ * the product itself. The StudioFrame is a faithful miniature of the
+ * real editor (top bar, tool rail, canvas, layers) — an honest
+ * depiction, not a decorated mock.
  */
 
 const ASSURANCES = ["Free to create", "No app to read", "Your work saves itself"] as const;
@@ -40,6 +45,7 @@ const FRAME_LAYERS = [
 
 export function Hero({ user }: { user: PsUser | null }) {
   const reduce = useReducedMotion();
+  const [bannerOpen, setBannerOpen] = useState(true);
   const openStudio = () => psNavigate(user ? "dashboard" : "auth");
 
   const rise = (delay: number) =>
@@ -53,24 +59,54 @@ export function Hero({ user }: { user: PsUser | null }) {
 
   return (
     <section className="bg-paper">
-      <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 pb-16 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-24">
-        {/* ── Left: the offer, stated plainly ─────────────────── */}
-        <div className="lg:col-span-6">
-          <motion.p {...rise(0)} className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-onyx">
-            <span aria-hidden="true" className="h-px w-8 bg-night/60" />
-            The studio for cards &amp; memory books
-          </motion.p>
+      <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-12 sm:px-6 sm:pt-16 lg:pb-28 lg:pt-20">
+        <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+          {/* ── announcement — a quiet wash pill with a real destination ── */}
+          {bannerOpen && (
+            <motion.div {...rise(0)} className="flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-wash py-1.5 pl-2 pr-1.5 text-sm">
+                <span className="ml-1.5 rounded-full bg-heart px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">
+                  New
+                </span>
+                <button
+                  type="button"
+                  onClick={() => psNavigate("viewer", { s: "demo" })}
+                  className="group ml-0.5 inline-flex flex-wrap items-center gap-1.5 sm:whitespace-nowrap rounded-full px-1.5 py-0.5 font-medium text-night transition-colors duration-150 hover:text-heart-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Shared books open as flip-books — see one live
+                  <ArrowRight
+                    className="h-3.5 w-3.5 text-heart transition-transform duration-150 group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Dismiss announcement"
+                  onClick={() => setBannerOpen(false)}
+                  className="grid h-6 w-6 place-items-center rounded-full text-onyx transition-colors duration-150 hover:bg-white/70 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </motion.div>
+          )}
 
+          {/* ── the mark, centered and unhurried ───────────────────── */}
+          <motion.div {...rise(0.06)} className="mt-10">
+            <LogoMark className="h-16 w-[4.5rem] text-night" strokeWidth={3} />
+          </motion.div>
+
+          {/* ── the promise ─────────────────────────────────────────── */}
           <motion.h1
-            {...rise(0.08)}
-            className="ps-serif mt-5 text-[2.6rem] font-normal leading-[1.06] tracking-tight text-night sm:text-6xl"
+            {...rise(0.12)}
+            className="mt-6 text-[2.75rem] font-semibold leading-[1.05] tracking-tight text-night sm:text-6xl"
           >
             Make something they&rsquo;ll keep.
           </motion.h1>
 
           <motion.p
-            {...rise(0.16)}
-            className="mt-6 max-w-[52ch] text-base leading-relaxed text-onyx sm:text-lg"
+            {...rise(0.18)}
+            className="mt-6 max-w-[36rem] text-base leading-normal text-onyx sm:text-lg sm:leading-normal"
           >
             PaperString brings your photos and your words together on layered
             pages. Cut a subject out of its background, write in your own hand,
@@ -78,12 +114,16 @@ export function Hero({ user }: { user: PsUser | null }) {
             little paper flip-book, anywhere, no app required.
           </motion.p>
 
-          <motion.div {...rise(0.24)} className="mt-9 flex flex-wrap items-center gap-3">
+          {/* ── two actions, one primary ────────────────────────────── */}
+          <motion.div
+            {...rise(0.24)}
+            className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
+          >
             <button
               type="button"
               onClick={openStudio}
               className={cn(
-                "inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-7 text-sm font-medium text-primary-foreground transition-colors duration-150",
+                "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors duration-150",
                 "hover:bg-[#1047C7] active:bg-[#1047C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               )}
             >
@@ -91,34 +131,35 @@ export function Hero({ user }: { user: PsUser | null }) {
             </button>
             <a
               href="#process"
-              className="inline-flex h-12 items-center justify-center rounded-lg border border-silver bg-paper px-6 text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-silver bg-paper px-7 text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               See how it works
             </a>
           </motion.div>
 
+          {/* ── assurances ──────────────────────────────────────────── */}
           <motion.ul
-            {...rise(0.32)}
-            className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-silver pt-5"
+            {...rise(0.3)}
+            className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
           >
             {ASSURANCES.map((text) => (
               <li key={text} className="flex items-center gap-2 text-[13px] text-onyx">
-                <Check className="h-3.5 w-3.5 text-[#155EEF]" aria-hidden="true" />
+                <Check className="h-3.5 w-3.5 text-heart" aria-hidden="true" />
                 {text}
               </li>
             ))}
           </motion.ul>
         </div>
 
-        {/* ── Right: the product, faithfully miniaturised ─────── */}
+        {/* ── the product, faithfully miniaturised ─────────────────── */}
         <motion.div
-          className="lg:col-span-6"
+          className="mx-auto mt-16 w-full max-w-3xl sm:mt-20"
           {...(reduce
             ? {}
             : {
                 initial: { opacity: 0, y: 24 },
                 animate: { opacity: 1, y: 0 },
-                transition: { duration: 0.6, delay: 0.25, ease: "easeOut" },
+                transition: { duration: 0.6, delay: 0.3, ease: "easeOut" },
               })}
         >
           <StudioFrame />
@@ -136,15 +177,15 @@ export function Hero({ user }: { user: PsUser | null }) {
 
 function StudioFrame() {
   return (
-    <figure className="mx-auto w-full max-w-[560px]">
-      <div className="overflow-hidden rounded-lg border border-silver bg-paper shadow-lift-md">
+    <figure className="w-full">
+      <div className="overflow-hidden rounded-xl border border-silver bg-paper shadow-lift-md">
         {/* top bar */}
         <div className="flex h-11 items-center gap-3 border-b border-silver bg-paper px-3">
           <span className="truncate ps-serif text-[13px] italic text-night">
             For Mom — her 70th
           </span>
           <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-dim">
-            <Check className="h-3 w-3 text-[#155EEF]" aria-hidden="true" />
+            <Check className="h-3 w-3 text-heart" aria-hidden="true" />
             Saved
           </span>
           <span className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground">
@@ -163,9 +204,7 @@ function StudioFrame() {
                 title={label}
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-md",
-                  active
-                    ? "bg-[#155EEF]/10 text-[#155EEF]"
-                    : "text-dim"
+                  active ? "bg-wash text-heart" : "text-dim"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -198,7 +237,7 @@ function StudioFrame() {
                   key={layer.name}
                   className={cn(
                     "px-3 py-2.5",
-                    i === 0 && "bg-[#155EEF]/[0.05]",
+                    i === 0 && "bg-wash",
                     i !== FRAME_LAYERS.length - 1 && "border-b border-silver"
                   )}
                 >
@@ -215,7 +254,7 @@ function StudioFrame() {
         </div>
       </div>
 
-      <figcaption className="mt-4 text-[13px] leading-relaxed text-dim">
+      <figcaption className="mt-4 text-center text-[13px] leading-relaxed text-dim">
         The PaperString studio — brush, text, photos and stickers on layered
         pages. Everything saves itself as you work.
       </figcaption>

@@ -42,10 +42,8 @@ export function LandingNav({ user }: { user: PsUser | null }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-[border-color,box-shadow] duration-200",
-        scrolled
-          ? "border-silver bg-paper shadow-lift-sm"
-          : "border-transparent bg-paper"
+        "sticky top-0 z-50 w-full border-b transition-[border-color] duration-200",
+        scrolled ? "border-silver bg-paper" : "border-transparent bg-paper"
       )}
     >
       <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">

@@ -14,6 +14,7 @@ export function Showcase() {
       id="showcase"
       num="04"
       label="Showcase"
+      tone="smoke"
       title="Made in the studio"
       sub="Sample pages, made with the same tools you're about to use — brush, text, photos and stickers."
     >
@@ -22,7 +23,7 @@ export function Showcase() {
           {SHOWCASE_PAGES.map((page, i) => (
             <li key={page.src}>
               <figure>
-                <div className="overflow-hidden rounded-[4px] border border-silver bg-paper">
+                <div className="overflow-hidden rounded-lg border border-silver bg-paper shadow-lift-sm">
                   <PageArt
                     src={page.src}
                     alt={page.alt}
@@ -30,10 +31,10 @@ export function Showcase() {
                   />
                 </div>
                 <figcaption className="mt-3 flex items-baseline justify-between gap-3 border-t border-silver pt-2.5">
-                  <span className="text-[13px] text-night">{page.label}</span>
+                  <span className="text-[13px] font-medium text-night">{page.label}</span>
                   <span
                     aria-hidden="true"
-                    className="ps-serif text-xs tabular-nums text-dim"
+                    className="text-xs tabular-nums text-dim"
                   >
                     {String(i + 1).padStart(2, "0")} / {String(SHOWCASE_PAGES.length).padStart(2, "0")}
                   </span>

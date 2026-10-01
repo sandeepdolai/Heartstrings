@@ -378,6 +378,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     <DropdownMenuItem
                       key={option.id}
                       onSelect={() => setSortMode(option.id)}
+                      className={sortMode === option.id ? "bg-wash" : undefined}
                     >
                       <Check
                         className={cn(
@@ -407,7 +408,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   className={cn(
                     "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                     viewMode === "grid"
-                      ? "bg-smoke text-night"
+                      ? "bg-wash text-heart"
                       : "text-dim hover:text-night"
                   )}
                 >
@@ -422,7 +423,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   className={cn(
                     "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                     viewMode === "list"
-                      ? "bg-smoke text-night"
+                      ? "bg-wash text-heart"
                       : "text-dim hover:text-night"
                   )}
                 >

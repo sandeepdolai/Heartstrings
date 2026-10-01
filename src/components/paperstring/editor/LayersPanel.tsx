@@ -232,7 +232,7 @@ function LayerRow({
       className={cn(
         "group mb-1 flex cursor-pointer items-center gap-2 rounded-xl border px-2 py-1.5 transition outline-none",
         active
-          ? "border-[#155EEF]/60 bg-[#155EEF]/10"
+          ? "border-heart/60 bg-wash"
           : "border-transparent hover:bg-editor-raised focus-visible:bg-editor-raised"
       )}
     >
@@ -527,7 +527,7 @@ function ActiveLayerControls() {
                   <SelectItem
                     key={m.value}
                     value={m.value}
-                    className="text-xs text-editor-text/90 focus:bg-editor-raised focus:text-editor-text aria-selected:bg-[#155EEF]/15 aria-selected:text-editor-text"
+                    className="text-xs text-editor-text/90 focus:bg-editor-raised focus:text-editor-text aria-selected:bg-wash aria-selected:text-editor-text"
                   >
                     {m.label}
                   </SelectItem>
@@ -569,7 +569,7 @@ function ActiveLayerControls() {
           className={cn(
             "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] transition",
             layer.clipped
-              ? "border-[#155EEF]/70 bg-[#155EEF]/15 text-editor-text"
+              ? "border-heart/70 bg-wash text-heart"
               : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
           )}
         >
@@ -630,7 +630,7 @@ function BackgroundPicker({ canvas }: { canvas: CanvasPageData }) {
             className={cn(
               "aspect-square rounded-md ring-1 ring-white/15 transition hover:scale-110",
               canvas.background === t.background &&
-                "outline outline-2 outline-offset-1 outline-[#155EEF]"
+                "outline outline-2 outline-offset-1 outline-heart"
             )}
             style={{ background: t.background }}
           />

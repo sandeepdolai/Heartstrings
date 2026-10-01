@@ -334,7 +334,7 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
                 className={cn(
                   "group flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
+                    ? "border-heart/70 bg-wash text-heart"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
@@ -425,7 +425,7 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
                 className={cn(
                   "aspect-square rounded ring-1 ring-white/15 transition hover:scale-110",
                   values.color.toLowerCase() === c.toLowerCase() &&
-                    "outline outline-2 outline-offset-1 outline-[#155EEF]"
+                    "outline outline-2 outline-offset-1 outline-heart"
                 )}
                 style={{ background: c }}
               />
@@ -458,7 +458,7 @@ function StyleToggle({
       className={cn(
         "grid h-9 w-9 place-items-center rounded-lg border transition",
         active
-          ? "border-[#155EEF]/70 bg-[#155EEF]/15 text-editor-text"
+          ? "border-heart/70 bg-wash text-heart"
           : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
       )}
     >
@@ -622,12 +622,15 @@ function FontGroup({
             className={cn(
               "flex h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-1 text-center transition",
               value === f.cssFamily
-                ? "bg-[#155EEF]/15 ring-1 ring-[#155EEF]/70"
+                ? "bg-wash ring-1 ring-heart/70"
                 : "hover:bg-editor-raised"
             )}
           >
             <span
-              className="w-full truncate text-xs text-editor-text"
+              className={cn(
+                "w-full truncate text-xs",
+                value === f.cssFamily ? "text-heart" : "text-editor-text"
+              )}
               style={{ fontFamily: f.cssFamily }}
             >
               {f.label}

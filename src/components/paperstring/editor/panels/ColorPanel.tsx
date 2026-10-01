@@ -134,7 +134,7 @@ export function ColorPanel() {
             className={cn(
               "flex-1 rounded-md px-2 py-1.5 text-[11px] font-semibold tracking-wide transition",
               (m === "HSV") !== rgbMode
-                ? "bg-editor-raised text-editor-text"
+                ? "bg-wash text-heart"
                 : "text-editor-dim hover:text-editor-text"
             )}
           >
@@ -225,7 +225,7 @@ export function ColorPanel() {
               className={cn(
                 "aspect-square rounded-md ring-1 ring-white/15 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]",
                 brush.color.toLowerCase() === c.toLowerCase() &&
-                  "outline outline-2 outline-offset-1 outline-[#155EEF]"
+                  "outline outline-2 outline-offset-1 outline-heart"
               )}
               style={{ background: c }}
             />

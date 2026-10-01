@@ -33,7 +33,6 @@ export function WhySection() {
       id="why"
       num="01"
       label="The problem"
-      tone="smoke"
       title={
         <>
           The photos live on your phone.
@@ -46,7 +45,7 @@ export function WhySection() {
       <div className="mt-14 grid gap-12 lg:grid-cols-2 lg:gap-0">
         {/* left — the answer, stated as a claim */}
         <Reveal className="lg:pr-12">
-          <p className="ps-serif text-2xl leading-snug tracking-tight text-night sm:text-[1.7rem]">
+          <p className="text-2xl font-semibold leading-snug tracking-tight text-night sm:text-[1.75rem]">
             One studio for the whole message.
           </p>
           <p className="mt-4 max-w-md text-base leading-relaxed text-onyx">

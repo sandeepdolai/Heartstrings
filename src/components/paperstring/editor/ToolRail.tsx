@@ -4,7 +4,7 @@
  * ToolRail — the vertical tool strip (desktop) / horizontal bar (mobile).
  * Tools are grouped like a professional application — Navigate · Paint ·
  * Content — with hairline separators between the groups. The active tool
- * reads as an accent state: blue icon, blue-tinted surface and a 2px
+ * reads as an accent state: blue icon, wash-tinted surface and a 2px
  * indicator bar (left on desktop, top on mobile) — never a heavy block.
  * Keyboard shortcuts: V select · B brush · E eraser · F soft focus · D smudge ·
  * T text · C color · S select-area · K elements.
@@ -99,7 +99,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     hideOnMobile && "max-md:hidden",
                     activeTool
-                      ? "bg-[#155EEF]/10 text-[#155EEF]"
+                      ? "bg-wash text-heart"
                       : "text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-95"
                   )}
                 >
@@ -107,7 +107,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   {activeTool && (
                     <span
                       aria-hidden="true"
-                      className="absolute bottom-0.5 left-1/2 h-[2.5px] w-[2.5px] rounded-full bg-[#155EEF] md:bottom-auto md:left-0.5 md:top-1/2 md:h-4 md:w-[2.5px] md:-translate-y-1/2 md:translate-x-0 md:rounded-full"
+                      className="absolute bottom-0.5 left-1/2 h-[2.5px] w-[2.5px] rounded-full bg-heart md:bottom-auto md:left-0.5 md:top-1/2 md:h-4 md:w-[2.5px] md:-translate-y-1/2 md:translate-x-0 md:rounded-full"
                     />
                   )}
                 </button>

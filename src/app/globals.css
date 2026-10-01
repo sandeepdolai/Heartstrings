@@ -72,6 +72,12 @@
   --color-heart-strong: #1047c7;
   --color-heart-deep: #1047c7;
 
+  /* wash #E8EEFC — the light-blue tint of the action blue, used ONLY for
+     functional surfaces: selected/active states, tab indicators' host
+     rows, quiet callout banners, capability icon chips. It is a state
+     color, not a decoration color. */
+  --color-wash: #e8eefc;
+
   /* ── Elevation — quiet, border-first. Shadows only where a surface
      genuinely lifts (menus, drag, modals); never for decoration. */
   --shadow-lift-sm: 0 1px 2px rgba(23, 23, 23, 0.05);

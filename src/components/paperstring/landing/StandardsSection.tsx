@@ -33,7 +33,6 @@ export function StandardsSection() {
       id="standards"
       num="05"
       label="Our standards"
-      tone="smoke"
       title="Quiet promises, kept"
       sub="A studio is only as good as what it refuses to lose, leak or exaggerate. These are the standards this one is built on."
     >
