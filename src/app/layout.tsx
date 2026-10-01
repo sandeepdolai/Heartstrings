@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -9,12 +9,14 @@ const inter = Inter({
   display: "swap",
 });
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+/* Source Serif 4 — a neutral, highly readable text serif. Pairs with
+   Inter for an established, editorial-but-modern identity. */
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
   subsets: ["latin"],
   display: "swap",
   style: ["normal", "italic"],
-  axes: ["opsz"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -48,7 +50,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   // Light mode only — a single permanent color scheme (no dark theme).
-  themeColor: "#f3f3f3",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -59,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${fraunces.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${sourceSerif.variable} font-sans antialiased bg-background text-foreground`}
       >
         {/* Light mode only — no ThemeProvider, no theme toggle, ever. */}
         {children}

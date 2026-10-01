@@ -202,7 +202,7 @@ function ViewerBook({
   }, []);
 
   return (
-    <main className="ps-grain relative flex h-screen flex-col overflow-hidden bg-smoke text-night supports-[height:100dvh]:h-dvh">
+    <main className="relative flex h-screen flex-col overflow-hidden bg-smoke text-night supports-[height:100dvh]:h-dvh">
       {/* soft radial vignette over the gallery */}
       <div
         aria-hidden="true"

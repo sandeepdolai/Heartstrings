@@ -247,7 +247,7 @@ export function ShareDialog({
               <span className="inline-flex items-center gap-2">
                 Your book is ready to share
                 <Heart
-                  className="h-4 w-4 shrink-0 text-[#e8446a] ps-heartbeat motion-reduce:animate-none"
+                  className="h-4 w-4 shrink-0 text-[#155EEF]"
                   fill="currentColor"
                   strokeWidth={0}
                   aria-hidden="true"
@@ -326,7 +326,7 @@ export function ShareDialog({
               <button
                 type="button"
                 onClick={cancel}
-                className="shrink-0 rounded-full border border-editor-border-strong px-3 py-1 text-[11px] font-medium text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+                className="shrink-0 rounded-md border border-editor-border-strong px-3 py-1 text-[11px] font-medium text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
               >
                 Cancel
               </button>
@@ -378,7 +378,7 @@ export function ShareDialog({
           <div className="flex flex-col gap-3 py-1">
             <p
               role="alert"
-              className="rounded-xl border border-[#e8446a]/30 bg-[#e8446a]/[0.06] px-3 py-2.5 text-xs leading-relaxed text-[#b2334c]"
+              className="rounded-xl border border-[#155EEF]/30 bg-[#155EEF]/[0.06] px-3 py-2.5 text-xs leading-relaxed text-[#1047C7]"
             >
               {error}
             </p>

@@ -854,7 +854,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 z-[1] flex flex-col items-center justify-center gap-4 px-12 text-center"
         >
-          <div className="relative ps-float motion-reduce:animate-none">
+          <div className="relative">
             <LogoMark className="h-14 w-[3.9rem] text-silver/70" strokeWidth={2.4} />
             {/* a faint dashed gesture, like the first stroke about to happen */}
             <svg
@@ -958,7 +958,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         className={cn(
           "pointer-events-none absolute -inset-[3px] rounded-[10px] transition-all duration-300",
           active
-            ? "ring-1 ring-night/[0.14] shadow-[0_0_0_4px_rgba(232,68,106,0.16),0_0_28px_-6px_rgba(232,68,106,0.22)]"
+            ? "ring-1 ring-night/[0.14] shadow-[0_0_0_4px_rgba(21,94,239,0.16),0_0_28px_-6px_rgba(21,94,239,0.22)]"
             : "ring-0 shadow-none"
         )}
       />
@@ -1003,9 +1003,9 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
         >
           <polygon
             points={tracePoints.map(([x, y]) => `${x},${y}`).join(" ")}
-            fill="rgba(232,68,106,0.08)"
+            fill="rgba(21,94,239,0.08)"
             fillRule="evenodd"
-            stroke="#e8446a"
+            stroke="#155EEF"
             strokeWidth={5}
             strokeDasharray="20 16"
             strokeLinejoin="round"
@@ -1016,7 +1016,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
             cy={tracePoints[0][1]}
             r={18}
             fill="#fff"
-            stroke="#e8446a"
+            stroke="#155EEF"
             strokeWidth={5}
           />
         </svg>
@@ -1024,7 +1024,7 @@ function PageCanvasInner({ page, active, width, welcome }: Props) {
       {cutTargetBox && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute z-[1] rounded-[10px] border-2 border-dashed border-[#f7c948] bg-[#f7c948]/[0.08] shadow-[0_0_24px_-6px_rgba(247,201,72,0.55)]"
+          className="pointer-events-none absolute z-[1] rounded-[10px] border-2 border-dashed border-night/45 bg-night/[0.03]"
           style={{
             left: cutTargetBox.x0 * factor,
             top: cutTargetBox.y0 * factor,
@@ -1073,7 +1073,7 @@ function ChromeAction({
         onClick?.(e);
       }}
       className={cn(
-        "grid h-8 w-8 place-items-center rounded-xl transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8446a] active:scale-90",
+        "grid h-8 w-8 place-items-center rounded-xl transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#155EEF] active:scale-90",
         danger
           ? "text-[#c73a56] hover:bg-[#fdeef2] active:bg-[#fbdde6]"
           : "text-night/70 hover:bg-smoke active:bg-[#e9e9e9]",
@@ -1135,7 +1135,7 @@ function SelectionChrome({
         transform: `translate(-50%, -50%) rotate(${layer.rotation}deg)`,
       }}
     >
-      <div className="absolute inset-0 rounded-[6px] border-[1.5px] border-[#e8446a]" />
+      <div className="absolute inset-0 rounded-[6px] border-[1.5px] border-[#155EEF]" />
 
       {/* floating action pill — rotate · edit text · delete (iOS style);
           flips below the box when the layer hugs the page's top edge, and
@@ -1187,7 +1187,7 @@ function SelectionChrome({
               : `Resize from corner ${i + 1}`
           }
           onPointerDown={(e) => onHandleDown(e, "scale", i)}
-          className="pointer-events-auto absolute h-[18px] w-[18px] touch-none -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-[1.5px] border-[#e8446a] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-transform duration-150 hover:scale-[1.3] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+          className="pointer-events-auto absolute h-[18px] w-[18px] touch-none -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize rounded-full border-[1.5px] border-[#155EEF] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-transform duration-150 hover:scale-[1.3] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
           style={{ left: x, top: y }}
         />
       ))}
@@ -1262,7 +1262,7 @@ function TextEditorOverlay({
         rows={Math.max(1, layer.text.split("\n").length)}
         spellCheck={false}
         aria-label="Edit text content"
-        className="resize-none overflow-hidden whitespace-pre rounded-md border border-dashed border-[#e8446a]/70 bg-white/70 px-2 py-1 text-center outline-none backdrop-blur-[1px] focus:border-solid"
+        className="resize-none overflow-hidden whitespace-pre rounded-md border border-dashed border-[#155EEF]/70 bg-white/70 px-2 py-1 text-center outline-none backdrop-blur-[1px] focus:border-solid"
         style={{
           fontFamily: layer.fontFamily,
           fontSize: layer.fontSize * factor,

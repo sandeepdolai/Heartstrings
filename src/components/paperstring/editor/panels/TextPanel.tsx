@@ -59,8 +59,8 @@ const TEXT_PRESETS: {
   {
     label: "Love script",
     preview: "Love",
-    props: { fontFamily: "'Great Vibes'", fontSize: 190, color: "#e8446a", italic: false, bold: false, letterSpacing: 0 },
-    style: { fontFamily: "'Great Vibes'", color: "#e8446a" },
+    props: { fontFamily: "'Great Vibes'", fontSize: 190, color: "#155EEF", italic: false, bold: false, letterSpacing: 0 },
+    style: { fontFamily: "'Great Vibes'", color: "#155EEF" },
   },
   {
     label: "Bold heart",
@@ -203,7 +203,7 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
                   useEditorStore.getState().addTextLayer(CANVAS_W / 2, CANVAS_H / 2);
                 }
               }}
-              className="group flex h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg border border-editor-border-strong bg-editor px-1 py-1 transition hover:-translate-y-0.5 hover:border-[#e8446a]/50 hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+              className="group flex h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg border border-editor-border-strong bg-editor px-1 py-1 transition hover:-translate-y-0.5 hover:border-[#155EEF]/50 hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
             >
               <span
                 aria-hidden="true"
@@ -226,7 +226,7 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
       />
 
       {context === "select" ? (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#e8446a]/35 bg-[#e8446a]/[0.05] px-3 py-2.5">
+        <div className="flex items-start gap-2.5 rounded-lg border border-[#155EEF]/35 bg-[#155EEF]/[0.05] px-3 py-2.5">
           <Scaling className="mt-0.5 h-4 w-4 shrink-0 text-heart" aria-hidden="true" />
           <p className="text-[11px] leading-relaxed text-editor-dim">
             Resize right on the page — drag a{" "}
@@ -332,9 +332,9 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
                 title={`${p.title}`}
                 onClick={() => apply({ curve: p.value })}
                 className={cn(
-                  "group flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  "group flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
@@ -425,7 +425,7 @@ export function TextPanel({ context = "text" }: { context?: "text" | "select" })
                 className={cn(
                   "aspect-square rounded ring-1 ring-white/15 transition hover:scale-110",
                   values.color.toLowerCase() === c.toLowerCase() &&
-                    "outline outline-2 outline-offset-1 outline-[#e8446a]"
+                    "outline outline-2 outline-offset-1 outline-[#155EEF]"
                 )}
                 style={{ background: c }}
               />
@@ -458,7 +458,7 @@ function StyleToggle({
       className={cn(
         "grid h-9 w-9 place-items-center rounded-lg border transition",
         active
-          ? "border-[#e8446a]/70 bg-[#e8446a]/15 text-editor-text"
+          ? "border-[#155EEF]/70 bg-[#155EEF]/15 text-editor-text"
           : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
       )}
     >
@@ -622,7 +622,7 @@ function FontGroup({
             className={cn(
               "flex h-14 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-1 text-center transition",
               value === f.cssFamily
-                ? "bg-[#e8446a]/15 ring-1 ring-[#e8446a]/70"
+                ? "bg-[#155EEF]/15 ring-1 ring-[#155EEF]/70"
                 : "hover:bg-editor-raised"
             )}
           >

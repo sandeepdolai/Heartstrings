@@ -683,7 +683,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
         </div>
         <Button
           onClick={() => psNavigate("dashboard")}
-          className="rounded-full bg-smoke text-night hover:bg-white"
+          className="rounded-lg bg-smoke text-night hover:bg-white"
         >
           <ArrowLeft className="h-4 w-4" /> Back to your studio
         </Button>
@@ -747,11 +747,11 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                         : `${Math.min(28, Math.max(4, sizeHud.value / 6))}px`,
                     background:
                       sizeHud.tool === "brush"
-                        ? "#e8446a"
+                        ? "#155EEF"
                         : sizeHud.tool === "blur"
                           ? "radial-gradient(circle, rgba(181,181,181,0.65), rgba(181,181,181,0.05))"
                           : sizeHud.tool === "smudge"
-                            ? "linear-gradient(90deg, rgba(181,181,181,0.9), rgba(232,68,106,0.45), rgba(181,181,181,0.1))"
+                            ? "linear-gradient(90deg, rgba(181,181,181,0.9), rgba(21,94,239,0.45), rgba(181,181,181,0.1))"
                             : "transparent",
                     border:
                       sizeHud.tool === "eraser"
@@ -780,7 +780,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
                             ? "M1.5 1.5 Q11 16 20.5 1.5"
                             : "M1.5 7 H20.5"
                       }
-                      stroke="#e8446a"
+                      stroke="#155EEF"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -821,7 +821,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
               className="pointer-events-none absolute bottom-6 left-6 z-30 hidden md:block"
             >
               <div className="flex items-center gap-2 rounded-full border border-editor-border-strong bg-editor-panel/95 py-1.5 pl-1.5 pr-3 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#e8446a]/20 to-[#e8446a]/5 text-[#e8446a]">
+                <span className="grid h-6 w-6 place-items-center rounded-md bg-[#155EEF]/10 text-[#155EEF]">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 19l7-7 3 3-7 7-3-3z" />
                     <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />

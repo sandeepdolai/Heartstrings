@@ -176,7 +176,7 @@ export function DashboardView({ user }: { user: PsUser }) {
     <Button
       onClick={() => createBook.mutate()}
       disabled={createBook.isPending}
-      className="group h-11 rounded-full px-5"
+      className="group h-11 rounded-lg px-5"
     >
       {createBook.isPending ? (
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -217,7 +217,7 @@ export function DashboardView({ user }: { user: PsUser }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-screen flex-col bg-smoke ps-grain">
+      <div className="flex min-h-screen flex-col bg-smoke">
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className="sticky top-0 z-20 border-b border-silver/30 bg-smoke/80 backdrop-blur">
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -330,14 +330,14 @@ export function DashboardView({ user }: { user: PsUser }) {
                     aria-label="Search your books"
                     autoComplete="off"
                     enterKeyHint="search"
-                    className="h-10 rounded-full border-silver/60 bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring"
+                    className="h-10 rounded-lg border-silver bg-paper pl-11 pr-10 placeholder:text-dim/70 focus-visible:border-ring"
                   />
                   {search !== "" && (
                     <button
                       type="button"
                       aria-label="Clear search"
                       onClick={() => setSearch("")}
-                      className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-dim transition-colors hover:bg-smoke hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-dim transition-colors hover:bg-smoke hover:text-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                       <X className="size-3.5" aria-hidden="true" />
                     </button>
@@ -348,7 +348,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
-                      className="h-10 rounded-full border-silver/60 bg-paper px-4 hover:bg-smoke"
+                      className="h-10 rounded-lg border-silver bg-paper px-4 hover:bg-smoke"
                     >
                       <ArrowUpDown
                         className="size-4 text-dim"
@@ -387,7 +387,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                 <div
                   role="group"
                   aria-label="Library layout"
-                  className="ml-auto flex h-10 items-center gap-0.5 rounded-full border border-silver/50 bg-paper p-1"
+                  className="ml-auto flex h-10 items-center gap-0.5 rounded-lg border border-silver bg-paper p-1"
                 >
                   <button
                     type="button"
@@ -396,9 +396,9 @@ export function DashboardView({ user }: { user: PsUser }) {
                     title="Grid layout"
                     onClick={() => setViewMode("grid")}
                     className={cn(
-                      "grid size-8 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                       viewMode === "grid"
-                        ? "bg-night text-smoke shadow-sm"
+                        ? "bg-primary text-primary-foreground"
                         : "text-dim hover:text-night"
                     )}
                   >
@@ -411,9 +411,9 @@ export function DashboardView({ user }: { user: PsUser }) {
                     title="List layout"
                     onClick={() => setViewMode("list")}
                     className={cn(
-                      "grid size-8 place-items-center rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                      "grid size-8 place-items-center rounded-md transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                       viewMode === "list"
-                        ? "bg-night text-smoke shadow-sm"
+                        ? "bg-primary text-primary-foreground"
                         : "text-dim hover:text-night"
                     )}
                   >
@@ -429,7 +429,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   {[0, 1, 2].map((i) => (
                     <div
                       key={i}
-                      className="overflow-hidden rounded-2xl border border-silver/30 bg-card"
+                      className="overflow-hidden rounded-lg border border-silver bg-card"
                     >
                       <Skeleton className="aspect-[3/4] w-full rounded-none" />
                       <div className="space-y-3 p-4">
@@ -448,7 +448,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-2 rounded-full"
+                      className="mt-2 rounded-lg"
                       onClick={() => projectsQuery.refetch()}
                     >
                       Try again
@@ -456,7 +456,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   </AlertDescription>
                 </Alert>
               ) : projects.length === 0 ? (
-                <div className="relative rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
+                <div className="relative rounded-xl border-2 border-dashed border-silver p-8 text-center sm:p-12">
                   {/* a quiet ghost page behind the promise — the shape of
                       what is one click away */}
                   <div
@@ -467,7 +467,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   </div>
                   <div className="relative">
                     <LogoMark
-                      className="ps-float mx-auto h-10 w-auto text-silver motion-reduce:animate-none"
+                      className="mx-auto h-10 w-auto text-silver"
                       strokeWidth={4}
                     />
                     <h2 className="mt-6 font-display text-2xl font-medium tracking-tight">
@@ -480,7 +480,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                     <Button
                       onClick={() => createBook.mutate()}
                       disabled={createBook.isPending}
-                      className="mt-8 h-11 rounded-full px-6"
+                      className="mt-8 h-11 rounded-lg px-6"
                     >
                       {createBook.isPending ? (
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -492,7 +492,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   </div>
                 </div>
               ) : visibleProjects.length === 0 ? (
-                <div className="rounded-3xl border-2 border-dashed border-silver/50 p-8 text-center sm:p-12">
+                <div className="rounded-xl border-2 border-dashed border-silver p-8 text-center sm:p-12">
                   <HeartCrack
                     className="mx-auto size-9 text-silver"
                     strokeWidth={1.75}
@@ -508,7 +508,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   <Button
                     variant="outline"
                     onClick={() => setSearch("")}
-                    className="mt-8 h-11 rounded-full px-6"
+                    className="mt-8 h-11 rounded-lg px-6"
                   >
                     <X className="size-4" aria-hidden="true" />
                     Clear search

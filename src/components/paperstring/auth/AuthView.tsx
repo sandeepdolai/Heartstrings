@@ -235,7 +235,7 @@ function GoogleSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 rounded-2xl p-6">
+      <DialogContent className="max-w-md gap-0 rounded-xl p-6">
         <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <GoogleMark />
@@ -281,7 +281,7 @@ function GoogleSetupDialog({
           <Button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="h-10 w-full rounded-full"
+            className="h-10 w-full rounded-lg"
           >
             Got it
           </Button>
@@ -431,7 +431,7 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
     <MotionConfig reducedMotion="user">
       {/* ── Single centered card — Google is the one and only way in,
           so the page is a calm, focused moment: mark, message, button. */}
-      <main className="flex min-h-screen items-center justify-center bg-smoke ps-grain p-6 sm:p-10">
+      <main className="flex min-h-screen items-center justify-center bg-paper p-6 sm:p-10">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -466,7 +466,7 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
             {googleEnabled === null ? (
               <div
                 aria-hidden="true"
-                className="h-11 w-full animate-pulse rounded-full bg-silver/30"
+                className="h-11 w-full animate-pulse rounded-lg bg-smoke"
               />
             ) : googleEnabled && !gisFailed ? (
               <div className="flex min-h-11 w-full justify-center">
@@ -478,7 +478,7 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
                 variant="outline"
                 disabled={googlePending}
                 onClick={openGoogleInFullTab}
-                className="h-11 w-full rounded-full border-silver/60 bg-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+                className="h-11 w-full rounded-lg border border-silver bg-paper transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
               >
                 {googlePending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -493,7 +493,7 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
                 type="button"
                 variant="outline"
                 onClick={() => setSetupOpen(true)}
-                className="h-11 w-full rounded-full border-silver/60 bg-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+                className="h-11 w-full rounded-lg border border-silver bg-paper transition-colors duration-150 hover:border-night/40 hover:bg-smoke"
               >
                 <GoogleMark />
                 Continue with Google

@@ -159,7 +159,7 @@ export function ElementsPanel() {
                     title={s.label}
                     aria-label={`Add ${s.label} sticker`}
                     onClick={() => addSticker(s.id)}
-                    className="grid aspect-square place-items-center rounded-lg border border-editor-border p-1.5 transition hover:scale-105 hover:border-editor-border-strong hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+                    className="grid aspect-square place-items-center rounded-lg border border-editor-border p-1.5 transition hover:scale-105 hover:border-editor-border-strong hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
                   >
                     <img
                       src={stickerSrc(s.id)}
@@ -183,7 +183,7 @@ export function ElementsPanel() {
                 type="button"
                 aria-label={`Add ${art.label}`}
                 onClick={() => addPaperArt(art)}
-                className="overflow-hidden rounded-lg border border-editor-border transition hover:scale-[1.04] hover:border-editor-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+                className="overflow-hidden rounded-lg border border-editor-border transition hover:scale-[1.04] hover:border-editor-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
               >
                 <img
                   src={art.src}
@@ -213,7 +213,7 @@ export function ElementsPanel() {
                   onClick={() => applyTemplate(t)}
                   className={cn(
                     "relative overflow-hidden rounded-lg border border-editor-border transition",
-                    "hover:scale-[1.04] hover:border-editor-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+                    "hover:scale-[1.04] hover:border-editor-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
                   )}
                 >
                   <span

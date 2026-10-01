@@ -1,25 +1,22 @@
 "use client";
 
-import { Heart } from "lucide-react";
 import { WordMark } from "@/components/paperstring/brand";
 import { psNavigate } from "@/lib/paperstring/navigation";
 
 const FOOTER_LINK_CLASS =
-  "ps-underline-link rounded-full text-onyx transition-colors duration-200 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night";
+  "rounded-lg text-onyx transition-colors duration-150 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function LandingFooter() {
   const signIn = () => psNavigate("auth");
 
   return (
-    <footer className="mt-auto border-t border-silver/30 bg-smoke">
+    <footer className="mt-auto border-t border-silver bg-smoke">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-6 px-4 py-8 sm:px-6 md:flex-row md:justify-between">
-        {/* brand + tagline */}
-        <div className="flex flex-col items-center gap-2.5 md:items-start">
+        {/* brand */}
+        <div className="flex flex-col items-center gap-2 md:items-start">
           <WordMark className="ps-serif text-night" />
-          <p className="flex items-center gap-1.5 text-xs text-dim">
-            Made with
-            <Heart className="h-3 w-3 text-night" aria-hidden="true" />
-            for the people you love.
+          <p className="text-xs text-dim">
+            A creative studio for heartfelt cards &amp; books.
           </p>
         </div>
 

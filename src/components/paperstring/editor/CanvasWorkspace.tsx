@@ -197,7 +197,7 @@ export function CanvasWorkspace() {
                     }
                   }}
                   className={cn(
-                    "block cursor-pointer rounded-lg outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-[#e8446a]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor",
+                    "block cursor-pointer rounded-lg outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-[#155EEF]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-editor",
                     // inactive pages offer a quiet lift so "click to edit"
                     // reads before the first tap; the active page already
                     // wears its halo and stays anchored
@@ -234,7 +234,7 @@ export function CanvasWorkspace() {
                 </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => setConfirmDelete(page.id)}
-                  className="text-[#c73a56] focus:text-[#b2334c]"
+                  className="text-[#c73a56] focus:text-[#1047C7]"
                 >
                   <Trash2 className="h-4 w-4" /> Delete page
                 </ContextMenuItem>
@@ -289,10 +289,10 @@ export function CanvasWorkspace() {
             type="button"
             onClick={addCanvas}
             aria-label="Add a new page"
-            className="group/add grid aspect-[9/16] w-[300px] place-items-center rounded-2xl border border-editor-border-strong bg-white/60 text-dim shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#e8446a]/60 hover:bg-[#e8446a]/[0.03] hover:text-night hover:shadow-[0_10px_30px_-10px_rgba(232,68,106,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8446a]/70 motion-reduce:hover:translate-y-0"
+            className="group/add grid aspect-[9/16] w-[300px] place-items-center rounded-2xl border border-editor-border-strong bg-white/60 text-dim shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#155EEF]/60 hover:bg-[#155EEF]/[0.03] hover:text-night hover:shadow-[0_10px_30px_-10px_rgba(21,94,239,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155EEF]/70 motion-reduce:hover:translate-y-0"
           >
             <span className="flex flex-col items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-editor-border-strong bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] transition-all duration-300 group-hover/add:rotate-90 group-hover/add:border-[#e8446a]/70 group-hover/add:text-[#e8446a]">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-editor-border-strong bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] transition-all duration-300 group-hover/add:rotate-90 group-hover/add:border-[#155EEF]/70 group-hover/add:text-[#155EEF]">
                 <Plus className="h-6 w-6 transition-transform duration-300" />
               </span>
               <span className="text-xs uppercase tracking-[0.2em]">Add page</span>
@@ -556,13 +556,13 @@ function FilmstripChip({
       {dropIdx === i && i === 0 && (
         <span
           aria-hidden="true"
-          className="absolute -left-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+          className="absolute -left-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#155EEF] shadow-[0_0_8px_rgba(21,94,239,0.7)]"
         />
       )}
       {dropIdx === i + 1 && !(dragging && i === fromIdx) && (
         <span
           aria-hidden="true"
-          className="absolute -right-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#e8446a] shadow-[0_0_8px_rgba(232,68,106,0.7)]"
+          className="absolute -right-[5px] top-1/2 h-7 w-[2px] -translate-y-1/2 rounded-full bg-[#155EEF] shadow-[0_0_8px_rgba(21,94,239,0.7)]"
         />
       )}
       <button
@@ -580,14 +580,14 @@ function FilmstripChip({
         }}
         onDragEnd={onDragEnd}
         className={cn(
-          "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
+          "group relative flex h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] tabular-nums transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]",
           dragging
-            ? "cursor-grabbing border-[#e8446a]/60 bg-[#e8446a]/10 opacity-40"
+            ? "cursor-grabbing border-[#155EEF]/60 bg-[#155EEF]/10 opacity-40"
             : "cursor-grab active:cursor-grabbing",
           dragging
             ? ""
             : active
-              ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(232,68,106,0.4)]"
+              ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text shadow-[0_0_12px_-4px_rgba(21,94,239,0.4)]"
               : "border-editor-border-strong text-editor-dim hover:border-dim/50 hover:bg-editor-raised hover:text-editor-text"
         )}
       >
@@ -742,7 +742,7 @@ function PageFilmstrip({
         ))}
       </ol>
       {dragId && (
-        <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#e8446a]/80">
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[#155EEF]/80">
           Drop to reorder
         </span>
       )}
@@ -822,7 +822,7 @@ function MobilePageMenu({
           <Copy className="h-4 w-4" /> Duplicate page
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-[#c73a56] focus:text-[#b2334c]"
+          className="text-[#c73a56] focus:text-[#1047C7]"
           onClick={() => onConfirmDelete(pageId)}
         >
           <Trash2 className="h-4 w-4" /> Delete page
@@ -869,7 +869,7 @@ function DeleteConfirmDialog({
               toast.success("Page deleted");
               onClose();
             }}
-            className="bg-[#c73a56] text-white hover:bg-[#b2334c]"
+            className="bg-[#c73a56] text-white hover:bg-[#1047C7]"
           >
             Delete page
           </AlertDialogAction>

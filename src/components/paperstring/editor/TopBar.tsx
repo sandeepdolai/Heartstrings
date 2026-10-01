@@ -132,7 +132,7 @@ export function TopBar({
             }}
             maxLength={120}
             aria-label="Project title"
-            className="min-w-0 flex-1 rounded-md border border-editor-border-strong bg-editor-panel px-2.5 py-1.5 font-display text-sm italic text-editor-text outline-none focus:border-[#e8446a]/70 sm:max-w-xs"
+            className="min-w-0 flex-1 rounded-md border border-editor-border-strong bg-editor-panel px-2.5 py-1.5 font-display text-sm italic text-editor-text outline-none focus:border-[#155EEF]/70 sm:max-w-xs"
           />
         ) : (
           <button
@@ -140,7 +140,7 @@ export function TopBar({
             onClick={startEditing}
             aria-label="Rename project"
             title="Rename this book"
-            className="group/title min-w-0 max-w-[32vw] rounded-md px-2.5 py-1.5 text-sm text-editor-text transition hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]/70 sm:max-w-xs"
+            className="group/title min-w-0 max-w-[32vw] rounded-md px-2.5 py-1.5 text-sm text-editor-text transition hover:bg-editor-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]/70 sm:max-w-xs"
           >
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="truncate font-display italic tracking-tight">
@@ -153,7 +153,7 @@ export function TopBar({
             </span>
             <span
               aria-hidden="true"
-              className="mt-0.5 block h-px w-full origin-left scale-x-0 bg-[#e8446a]/70 transition-transform duration-300 group-hover/title:scale-x-100"
+              className="mt-0.5 block h-px w-full origin-left scale-x-0 bg-[#155EEF]/70 transition-transform duration-300 group-hover/title:scale-x-100"
             />
           </button>
         )}
@@ -374,17 +374,11 @@ export function TopBar({
             onClick={onShare}
             aria-label="Share your book"
             className={cn(
-              "group gap-1.5 rounded-xl bg-night text-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)] transition-all hover:bg-onyx hover:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.4)] active:scale-[0.97]",
-              shareToken && "bg-onyx"
+              "group gap-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-[#1047C7] active:scale-[0.97]",
+              shareToken && "bg-[#1047C7]"
             )}
           >
-            <Share2
-              className={cn(
-                "h-4 w-4 transition-transform",
-                !shareToken &&
-                  "ps-heartbeat motion-reduce:animate-none motion-reduce:transform-none"
-              )}
-            />
+            <Share2 className="h-4 w-4" />
             <span className="hidden sm:inline">{shareToken ? "Shared" : "Share"}</span>
           </Button>
         </div>

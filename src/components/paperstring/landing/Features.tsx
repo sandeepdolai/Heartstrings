@@ -34,7 +34,7 @@ const FEATURES = [
   {
     icon: Gem,
     title: "True 4K quality",
-    copy: "Every page is rendered in stunning 4K. No settings, no compromises — beauty by default.",
+    copy: "Every page is rendered in 4K. No settings, no compromises — quality by default.",
   },
   {
     icon: ShieldCheck,
@@ -45,31 +45,31 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="ps-grain scroll-mt-24 bg-smoke py-20 lg:py-28">
+    <section id="features" className="scroll-mt-24 border-t border-silver bg-paper py-20 lg:py-28">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <Reveal>
           <SectionHeading
             eyebrow="Features"
-            title="A tiny studio with serious craft"
+            title="A small studio with serious craft"
             sub="Everything you need to make something heartfelt — and nothing you don't."
           />
         </Reveal>
 
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, i) => (
-            <Reveal key={feature.title} delay={(i % 3) * 0.1} className="h-full">
-              <article className="group h-full rounded-2xl border border-silver/30 bg-paper p-6 transition-all duration-200 hover:-translate-y-1 hover:border-silver/50 hover:shadow-lift-lg">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-silver/40 bg-smoke/60 text-night transition-all duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:border-night group-hover:bg-night group-hover:text-smoke group-hover:shadow-[0_10px_24px_-10px_rgba(19,19,19,0.45)] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100">
+            <Reveal key={feature.title} delay={(i % 3) * 0.08} className="h-full">
+              <article className="h-full rounded-lg border border-silver bg-paper p-6 transition-colors duration-150 hover:border-night/25">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-silver bg-smoke text-night">
                   <feature.icon
                     className="h-5 w-5"
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
                 </span>
-                <h3 className="mt-5 ps-serif text-lg text-night">
+                <h3 className="mt-5 text-base font-semibold text-night">
                   {feature.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-dim">
+                <p className="mt-2 text-sm leading-relaxed text-onyx">
                   {feature.copy}
                 </p>
               </article>

@@ -260,7 +260,7 @@ export function ProjectCard({
             openInEditor();
           }
         }}
-        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-silver/30 bg-card p-3 transition-all duration-200 hover:border-silver/60 hover:shadow-lift-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.995]"
+        className="group flex cursor-pointer items-center gap-4 rounded-lg border border-silver bg-card p-3 transition-colors duration-150 hover:border-night/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {/* thumb */}
         <div className="relative h-[4.25rem] w-16 shrink-0 overflow-hidden rounded-lg ring-1 ring-silver/40">
@@ -304,11 +304,11 @@ export function ProjectCard({
 
         {/* shared / private chip */}
         {shareToken ? (
-          <span className="hidden shrink-0 items-center rounded-full bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25 sm:inline-flex">
+          <span className="hidden shrink-0 items-center rounded-md bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25 sm:inline-flex">
             Shared
           </span>
         ) : (
-          <span className="hidden shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim sm:inline-flex">
+          <span className="hidden shrink-0 items-center rounded-md border border-silver px-2 py-0.5 text-[11px] font-medium text-dim sm:inline-flex">
             Private
           </span>
         )}
@@ -316,7 +316,7 @@ export function ProjectCard({
         {/* open affordance — whispers "click to open" on hover */}
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-silver/50 text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 md:-translate-x-1"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-silver text-dim opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 md:-translate-x-1"
         >
           <ArrowUpRight className="h-3.5 w-3.5" />
         </span>
@@ -376,7 +376,7 @@ export function ProjectCard({
           openInEditor();
         }
       }}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-silver/30 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:border-silver/60 hover:shadow-lift-lg focus-visible:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:translate-y-0 active:scale-[0.99]"
+      className="group cursor-pointer overflow-hidden rounded-lg border border-silver bg-card transition-colors duration-150 hover:border-night/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       {/* Cover */}
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -413,7 +413,7 @@ export function ProjectCard({
           aria-hidden="true"
           className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
         >
-          <span className="rounded-full bg-night/85 px-4 py-2 text-sm font-medium text-smoke backdrop-blur">
+          <span className="rounded-md bg-night/85 px-4 py-2 text-sm font-medium text-smoke backdrop-blur">
             Open
           </span>
         </div>
@@ -439,11 +439,11 @@ export function ProjectCard({
             {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
           </p>
           {shareToken ? (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25">
+            <span className="inline-flex shrink-0 items-center rounded-md bg-heart/10 px-2.5 py-0.5 text-[11px] font-medium text-heart-deep ring-1 ring-inset ring-heart/25">
               Shared
             </span>
           ) : (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-silver/50 px-2 py-0.5 text-[11px] font-medium text-dim">
+            <span className="inline-flex shrink-0 items-center rounded-md border border-silver px-2 py-0.5 text-[11px] font-medium text-dim">
               Private
             </span>
           )}

@@ -295,7 +295,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
             <button
               type="button"
               onClick={next}
-              className="flex h-8 items-center gap-1.5 rounded-full bg-smoke px-4 text-xs font-medium text-night transition hover:bg-white active:scale-[0.97]"
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-smoke px-4 text-xs font-medium text-night transition hover:bg-white active:scale-[0.97]"
             >
               {isLast ? (
                 <>
@@ -312,7 +312,7 @@ export function EditorTour({ open, onClose }: { open: boolean; onClose: () => vo
         <button
           type="button"
           onClick={() => finish(index)}
-          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-editor-dim/70 transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]"
+          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-editor-dim/70 transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]"
           aria-label="Skip the tour"
           title="Skip the tour"
         >

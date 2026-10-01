@@ -165,7 +165,7 @@ export function FlipBookDemo() {
 
   return (
     <div className="flex select-none flex-col items-center">
-      <div className="ps-float relative">
+      <div className="relative">
         {/* The book itself — one generous tap target */}
         <button
           type="button"
@@ -236,7 +236,7 @@ export function FlipBookDemo() {
                 {/* back — plain paper, a small beating heart */}
                 <div className="ps-backface-hidden absolute inset-0 rounded-lg bg-paper p-1.5 ring-1 ring-night/5 shadow-paper-hover [transform:rotateY(180deg)]">
                   <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-md border border-silver/20 bg-smoke/40">
-                    <LogoMark className="ps-heartbeat h-8 w-9 text-silver" />
+                    <LogoMark className="h-8 w-9 text-silver" />
                     <p className="ps-serif text-sm italic text-dim">for you</p>
                   </div>
                 </div>

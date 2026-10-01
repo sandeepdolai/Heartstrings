@@ -232,7 +232,7 @@ function LayerRow({
       className={cn(
         "group mb-1 flex cursor-pointer items-center gap-2 rounded-xl border px-2 py-1.5 transition outline-none",
         active
-          ? "border-[#e8446a]/60 bg-[#e8446a]/10"
+          ? "border-[#155EEF]/60 bg-[#155EEF]/10"
           : "border-transparent hover:bg-editor-raised focus-visible:bg-editor-raised"
       )}
     >
@@ -366,7 +366,7 @@ function LayerRow({
           )}
           <DropdownMenuSeparator className="bg-editor-border" />
           <DropdownMenuItem
-            className="text-[#c73a56] focus:text-[#b2334c]"
+            className="text-[#c73a56] focus:text-[#1047C7]"
             onClick={() => {
               useEditorStore.getState().deleteLayer(layer.id);
               toast.success("Layer deleted — undo still works");
@@ -507,9 +507,9 @@ function ActiveLayerControls() {
             aria-label={`Blend mode for ${layer.name}`}
             size="sm"
             className={cn(
-              "h-7 flex-1 rounded-lg border-editor-border-strong bg-transparent px-2.5 text-[11px] text-editor-text shadow-none transition hover:bg-editor-raised hover:text-editor-text focus-visible:ring-[#e8446a]/50",
+              "h-7 flex-1 rounded-lg border-editor-border-strong bg-transparent px-2.5 text-[11px] text-editor-text shadow-none transition hover:bg-editor-raised hover:text-editor-text focus-visible:ring-[#155EEF]/50",
               layer.blendMode && layer.blendMode !== "normal"
-                ? "border-[#e8446a]/50 text-[#c73a56]"
+                ? "border-[#155EEF]/50 text-[#c73a56]"
                 : "text-editor-dim"
             )}
           >
@@ -527,7 +527,7 @@ function ActiveLayerControls() {
                   <SelectItem
                     key={m.value}
                     value={m.value}
-                    className="text-xs text-editor-text/90 focus:bg-editor-raised focus:text-editor-text aria-selected:bg-[#e8446a]/15 aria-selected:text-editor-text"
+                    className="text-xs text-editor-text/90 focus:bg-editor-raised focus:text-editor-text aria-selected:bg-[#155EEF]/15 aria-selected:text-editor-text"
                   >
                     {m.label}
                   </SelectItem>
@@ -569,7 +569,7 @@ function ActiveLayerControls() {
           className={cn(
             "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] transition",
             layer.clipped
-              ? "border-[#e8446a]/70 bg-[#e8446a]/15 text-editor-text"
+              ? "border-[#155EEF]/70 bg-[#155EEF]/15 text-editor-text"
               : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
           )}
         >
@@ -630,7 +630,7 @@ function BackgroundPicker({ canvas }: { canvas: CanvasPageData }) {
             className={cn(
               "aspect-square rounded-md ring-1 ring-white/15 transition hover:scale-110",
               canvas.background === t.background &&
-                "outline outline-2 outline-offset-1 outline-[#e8446a]"
+                "outline outline-2 outline-offset-1 outline-[#155EEF]"
             )}
             style={{ background: t.background }}
           />

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { psNavigate } from "@/lib/paperstring/navigation";
 import type { PsUser } from "@/lib/paperstring/types";
-import { ghostAction, pillPrimary } from "./shared";
+import { btnPrimary, ghostAction } from "./shared";
 
 const NAV_LINKS = [
   { href: "#how", label: "How it works" },
@@ -26,39 +26,35 @@ export function LandingNav({ user }: { user: PsUser | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const startCreating = () =>
-    psNavigate(user ? "dashboard" : "auth");
+  const startCreating = () => psNavigate(user ? "dashboard" : "auth");
   const signIn = () => psNavigate("auth");
 
   /** Close the sheet, then glide to the section (instant if reduced motion). */
   const goTo = (href: string) => {
     setMenuOpen(false);
-    window.setTimeout(
-      () => {
-        const reduce = window.matchMedia(
-          "(prefers-reduced-motion: reduce)"
-        ).matches;
-        document
-          .querySelector(href)
-          ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
-      },
-      220
-    );
+    window.setTimeout(() => {
+      const reduce = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      document
+        .querySelector(href)
+        ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+    }, 220);
   };
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b backdrop-blur-md transition-[background-color,border-color,box-shadow] duration-300",
+        "sticky top-0 z-50 w-full border-b transition-[border-color,box-shadow] duration-200",
         scrolled
-          ? "border-silver/40 bg-smoke/85 shadow-[0_1px_24px_rgba(19,19,19,0.05)]"
-          : "border-transparent bg-smoke/0"
+          ? "border-silver bg-paper shadow-lift-sm"
+          : "border-transparent bg-paper"
       )}
     >
       <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6">
@@ -67,9 +63,9 @@ export function LandingNav({ user }: { user: PsUser | null }) {
           <a
             href="#top"
             aria-label="PaperString — back to top"
-            className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke"
+            className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <WordMark className="ps-serif text-night transition-opacity duration-200 hover:opacity-70" />
+            <WordMark className="ps-serif text-night transition-opacity duration-150 hover:opacity-75" />
           </a>
         </div>
 
@@ -80,7 +76,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="ps-underline-link rounded-full px-3.5 py-2 text-sm text-onyx transition-colors duration-200 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night"
+                  className="rounded-lg px-3.5 py-2 text-sm text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {link.label}
                 </a>
@@ -95,11 +91,11 @@ export function LandingNav({ user }: { user: PsUser | null }) {
             <button
               type="button"
               onClick={startCreating}
-              className={cn(pillPrimary, "group h-10 px-5 text-sm font-medium")}
+              className={cn(btnPrimary, "group h-10 px-5")}
             >
               Your studio
               <ArrowRight
-                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </button>
@@ -108,17 +104,14 @@ export function LandingNav({ user }: { user: PsUser | null }) {
               <button
                 type="button"
                 onClick={signIn}
-                className={cn(
-                  ghostAction,
-                  "hidden h-10 px-4 text-sm sm:inline-flex"
-                )}
+                className={cn(ghostAction, "hidden h-10 px-4 text-sm sm:inline-flex")}
               >
                 Sign in
               </button>
               <button
                 type="button"
                 onClick={startCreating}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-night/20 bg-paper/60 px-5 text-sm font-medium text-night transition-all duration-200 hover:border-night/40 hover:bg-paper hover:shadow-lift-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-silver bg-paper px-5 text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Start creating
               </button>
@@ -132,14 +125,14 @@ export function LandingNav({ user }: { user: PsUser | null }) {
                 <button
                   type="button"
                   aria-label="Open menu"
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-night transition-colors duration-200 hover:bg-night/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-night transition-colors duration-150 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-[86vw] max-w-xs border-l border-silver/40 bg-smoke p-0 text-night"
+                className="w-[86vw] max-w-xs border-l border-silver bg-paper p-0 text-night"
               >
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <SheetDescription className="sr-only">
@@ -157,11 +150,11 @@ export function LandingNav({ user }: { user: PsUser | null }) {
                               e.preventDefault();
                               goTo(link.href);
                             }}
-                            className="flex items-center justify-between border-b border-silver/30 py-4 ps-serif text-2xl text-night transition-colors duration-200 hover:text-night/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night"
+                            className="flex items-center justify-between border-b border-silver py-4 text-base font-medium text-night transition-colors duration-150 hover:text-onyx focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             {link.label}
                             <ArrowRight
-                              className="h-4 w-4 text-silver"
+                              className="h-4 w-4 text-dim"
                               aria-hidden="true"
                             />
                           </a>
@@ -178,10 +171,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
                           setMenuOpen(false);
                           startCreating();
                         }}
-                        className={cn(
-                          pillPrimary,
-                          "h-12 px-6 text-sm font-medium"
-                        )}
+                        className={cn(btnPrimary, "h-12 px-6 text-sm")}
                       >
                         Your studio
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -194,10 +184,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
                             setMenuOpen(false);
                             signIn();
                           }}
-                          className={cn(
-                            ghostAction,
-                            "h-12 border border-silver/40 px-6 text-sm font-medium"
-                          )}
+                          className="inline-flex h-12 items-center justify-center rounded-lg border border-silver bg-paper px-6 text-sm font-medium text-night transition-colors duration-150 hover:bg-smoke"
                         >
                           Sign in
                         </button>
@@ -207,10 +194,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
                             setMenuOpen(false);
                             startCreating();
                           }}
-                          className={cn(
-                            pillPrimary,
-                            "h-12 px-6 text-sm font-medium"
-                          )}
+                          className={cn(btnPrimary, "h-12 px-6 text-sm")}
                         >
                           Start creating
                         </button>

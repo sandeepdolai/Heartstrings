@@ -108,7 +108,7 @@ export function ColorPanel() {
             maxLength={7}
             spellCheck={false}
             aria-label="Hex color value"
-            className="h-10 w-full rounded-xl border border-editor-border-strong bg-editor px-6 py-2 font-mono text-xs uppercase text-editor-text outline-none transition focus:border-[#e8446a]/70"
+            className="h-10 w-full rounded-xl border border-editor-border-strong bg-editor px-6 py-2 font-mono text-xs uppercase text-editor-text outline-none transition focus:border-[#155EEF]/70"
           />
         </div>
         <button
@@ -223,9 +223,9 @@ export function ColorPanel() {
               title={c.toUpperCase()}
               onClick={() => apply(c)}
               className={cn(
-                "aspect-square rounded-md ring-1 ring-white/15 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]",
+                "aspect-square rounded-md ring-1 ring-white/15 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]",
                 brush.color.toLowerCase() === c.toLowerCase() &&
-                  "outline outline-2 outline-offset-1 outline-[#e8446a]"
+                  "outline outline-2 outline-offset-1 outline-[#155EEF]"
               )}
               style={{ background: c }}
             />
@@ -245,7 +245,7 @@ export function ColorPanel() {
                 aria-label={`Reuse ${c}`}
                 title={c.toUpperCase()}
                 onClick={() => apply(c, { remember: false })}
-                className="h-6 w-6 rounded-md ring-1 ring-white/15 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e8446a]"
+                className="h-6 w-6 rounded-md ring-1 ring-white/15 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#155EEF]"
                 style={{ background: c }}
               />
             ))}

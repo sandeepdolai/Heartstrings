@@ -90,10 +90,10 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                   aria-pressed={activeTool}
                   onClick={() => setTool(t.id)}
                   className={cn(
-                    "relative grid h-11 w-11 place-items-center rounded-2xl transition-all duration-150 max-md:h-10 max-md:w-10",
+                    "relative grid h-11 w-11 place-items-center rounded-lg transition-colors duration-150 max-md:h-10 max-md:w-10",
                     hideOnMobile && "max-md:hidden",
                     activeTool
-                      ? "bg-night text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.35)]"
+                      ? "bg-primary text-primary-foreground"
                       : "text-editor-dim hover:bg-editor-raised hover:text-editor-text active:scale-95"
                   )}
                 >
@@ -121,7 +121,7 @@ export function ToolRail({ onOpenLayers }: { onOpenLayers?: () => void }) {
                 aria-label="Layers"
                 data-tour="layers-mobile"
                 onClick={onOpenLayers}
-                className="grid h-11 w-10 place-items-center rounded-2xl text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 md:hidden"
+                className="grid h-11 w-10 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text active:scale-95 md:hidden"
               >
                 <Layers className="h-5 w-5" />
               </button>

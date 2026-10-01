@@ -85,9 +85,9 @@ export function ImageAdjustPanel() {
                 title={`${look.label} look`}
                 onClick={() => applyLook(look.adjust)}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  "flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
@@ -169,7 +169,7 @@ function lookSwatch(id: string): string {
     case "vintage":
       return "linear-gradient(135deg, #e8d9bd, #a98f6a)";
     case "vivid":
-      return "linear-gradient(135deg, #ff8fa8, #e8446a)";
+      return "linear-gradient(135deg, #ff8fa8, #155EEF)";
     case "golden":
       return "linear-gradient(135deg, #ffe3a3, #e2a03d)";
     default:

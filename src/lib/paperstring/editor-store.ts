@@ -226,11 +226,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   activeLayerIds: {},
   tool: "select",
   prevTool: "select",
-  brush: { size: 18, opacity: 1, color: "#e8446a" },
+  brush: { size: 18, opacity: 1, color: "#155EEF" },
   eraserSize: 40,
   blur: { size: 110, strength: 4 },
   smudge: { size: 90, strength: 5 },
-  colorHistory: ["#e8446a", "#131313", "#f7c948", "#8ab8e0", "#7cc47f", "#ffffff"],
+  colorHistory: ["#155EEF", "#131313", "#f7c948", "#8ab8e0", "#7cc47f", "#ffffff"],
   textDefaults: {
     fontFamily: "Fraunces",
     fontSize: 96,

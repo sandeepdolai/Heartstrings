@@ -6,11 +6,11 @@
    is never emitted as a real CSS variable), which makes every `font-display`
    heading silently fall back to Inter. Until that rule is fixed at the
    foundation level, landing components use this self-contained equivalent.
-   It resolves --font-fraunces (defined on <body> by next/font) directly.
+   It resolves --font-source-serif (defined on <body> by next/font) directly.
 */
 
 .ps-serif {
-  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-family: var(--font-source-serif), ui-serif, Georgia, serif;
   font-optical-sizing: auto;
 }
 

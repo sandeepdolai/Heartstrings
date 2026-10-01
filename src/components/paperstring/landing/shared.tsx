@@ -7,14 +7,16 @@ import { LogoMark } from "@/components/paperstring/brand";
 import "./landing.css";
 
 /* ────────────────────────────────────────────────────────────
-   Reveal — gentle while-in-view entrance, reduced-motion aware
+   Reveal — quiet while-in-view entrance, reduced-motion aware.
+   One motion idea for the whole page; nothing loops, nothing
+   floats.
    ──────────────────────────────────────────────────────────── */
 
 export function Reveal({
   children,
   className,
   delay = 0,
-  y = 24,
+  y = 16,
 }: {
   children: ReactNode;
   className?: string;
@@ -29,15 +31,15 @@ export function Reveal({
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.55, delay, ease: "easeOut" }}
+      transition={{ duration: 0.45, delay, ease: "easeOut" }}
     >
-      {children}
-    </motion.div>
+      {children}</motion.div>
   );
 }
 
 /* ────────────────────────────────────────────────────────────
-   SectionHeading — eyebrow + display-serif title + muted sub
+   SectionHeading — label + serif title + supporting copy.
+   Centered by default; the label is small, quiet, uppercase.
    ──────────────────────────────────────────────────────────── */
 
 export function SectionHeading({
@@ -65,7 +67,7 @@ export function SectionHeading({
     >
       <p
         className={cn(
-          "text-xs font-medium uppercase tracking-[0.18em]",
+          "text-xs font-medium uppercase tracking-[0.14em]",
           dark ? "text-silver" : "text-dim"
         )}
       >
@@ -73,7 +75,7 @@ export function SectionHeading({
       </p>
       <h2
         className={cn(
-          "mt-4 ps-serif text-3xl leading-tight tracking-tight sm:text-4xl lg:text-[2.75rem]",
+          "ps-serif mt-3 text-3xl font-normal leading-tight tracking-tight sm:text-4xl",
           dark ? "text-smoke" : "text-night"
         )}
       >
@@ -83,7 +85,7 @@ export function SectionHeading({
         <p
           className={cn(
             "mt-4 text-base leading-relaxed",
-            dark ? "text-silver" : "text-dim"
+            dark ? "text-silver" : "text-onyx"
           )}
         >
           {sub}
@@ -94,9 +96,9 @@ export function SectionHeading({
 }
 
 /* ────────────────────────────────────────────────────────────
-   PageArt — showcase artwork with a graceful paper fallback
-   (renders a blank page with the string-heart if the image
-   cannot load, so the layout never looks broken)
+   PageArt — showcase artwork with a graceful fallback (renders a
+   blank page with the mark if the image cannot load, so the
+   layout never looks broken)
    ──────────────────────────────────────────────────────────── */
 
 export function PageArt({
@@ -138,11 +140,18 @@ export function PageArt({
 }
 
 /* ────────────────────────────────────────────────────────────
-   Shared button recipes (monochrome, pill aesthetic)
+   Shared button recipes — professional, restrained radii.
+   Blue appears ONLY on the primary action of a region.
    ──────────────────────────────────────────────────────────── */
 
-export const pillPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-night text-smoke transition-all duration-200 hover:bg-onyx hover:-translate-y-0.5 hover:shadow-lift-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke";
+export const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-[#1047C7] active:bg-[#1047C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+export const btnSecondary =
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-silver bg-paper text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export const ghostAction =
-  "inline-flex items-center justify-center gap-2 rounded-full text-night/80 transition-colors duration-200 hover:bg-night/5 hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night focus-visible:ring-offset-2 focus-visible:ring-offset-smoke";
+  "inline-flex items-center justify-center gap-2 rounded-lg text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+/* Legacy aliases — older sections still import these names. */
+export const pillPrimary = btnPrimary;

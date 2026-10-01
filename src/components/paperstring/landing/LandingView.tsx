@@ -11,11 +11,12 @@ import { Showcase } from "./Showcase";
 
 /**
  * Landing page — PaperString's front door.
- * Monochrome editorial chrome that lets the colorful artwork shine.
+ * White ground, near-black type, controlled blue for actions. The
+ * colorful artwork is the only color on the page.
  */
 export function LandingView({ user }: { user: PsUser | null }) {
   return (
-    <div id="top" className="flex min-h-screen flex-col bg-smoke text-night">
+    <div id="top" className="flex min-h-screen flex-col bg-paper text-night">
       <LandingNav user={user} />
       <main className="flex-1">
         <Hero user={user} />

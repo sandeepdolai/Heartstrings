@@ -125,7 +125,7 @@ function PressureNote({ verb }: { verb: string }) {
       className={cn(
         "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors duration-300",
         penActive
-          ? "border-[#e8446a]/40 bg-[#e8446a]/[0.06]"
+          ? "border-[#155EEF]/40 bg-[#155EEF]/[0.06]"
           : "border-editor-border-strong bg-editor-raised/40"
       )}
       title="Apple Pencil and other pens: press lighter or harder while you draw"
@@ -136,7 +136,7 @@ function PressureNote({ verb }: { verb: string }) {
             key={i}
             className={cn(
               "rounded-full transition-colors duration-300",
-              penActive ? "bg-[#e8446a]/70" : "bg-editor-dim/50"
+              penActive ? "bg-[#155EEF]/70" : "bg-editor-dim/50"
             )}
             style={{ width: d, height: d }}
           />
@@ -258,9 +258,9 @@ function BrushPanel({ eraser }: { eraser: boolean }) {
                     title={`${p.label} — ${p.size}px at ${p.opacity}% opacity`}
                     onClick={() => setBrush({ size: p.size, opacity: p.opacity / 100 })}
                     className={cn(
-                      "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                      "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                       active
-                        ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                        ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
                         : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                     )}
                   >
@@ -359,9 +359,9 @@ function BlurPanel() {
                 title={`${p.label} — ${p.size}px nib, strength ${p.strength}`}
                 onClick={() => setBlurTool({ size: p.size, strength: p.strength })}
                 className={cn(
-                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
@@ -440,9 +440,9 @@ function SmudgePanel() {
                 title={`${p.label} — ${p.size}px finger, drag ${p.strength}`}
                 onClick={() => setSmudgeTool({ size: p.size, strength: p.strength })}
                 className={cn(
-                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e8446a]",
+                  "group flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#155EEF]",
                   active
-                    ? "border-[#e8446a]/70 bg-[#e8446a]/10 text-editor-text"
+                    ? "border-[#155EEF]/70 bg-[#155EEF]/10 text-editor-text"
                     : "border-editor-border-strong text-editor-dim hover:bg-editor-raised hover:text-editor-text"
                 )}
               >
@@ -554,7 +554,7 @@ function SelectionAreaPanel() {
               <li key={i} className="flex items-start gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="mt-px grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-[#e8446a]/12 text-[9px] font-bold text-heart-deep"
+                  className="mt-px grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-[#155EEF]/12 text-[9px] font-bold text-heart-deep"
                 >
                   {i + 1}
                 </span>

@@ -569,7 +569,7 @@ export const PaperFlip = forwardRef<PaperFlipHandle, PaperFlipProps>(
           "rounded-xl bg-white shadow-[0_36px_90px_-28px_rgba(0,0,0,0.3),0_12px_32px_-14px_rgba(0,0,0,0.16)] ring-1 ring-black/[0.06]",
           "outline-none transition-shadow",
           "focus-visible:ring-2 focus-visible:ring-silver/70 focus-visible:ring-offset-2 focus-visible:ring-offset-night",
-          single && "ps-float"
+          single && ""
         )}
       >
         <style dangerouslySetInnerHTML={{ __html: BOOK_CSS }} />
