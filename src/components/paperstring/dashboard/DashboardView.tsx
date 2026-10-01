@@ -226,17 +226,17 @@ export function DashboardView({ user }: { user: PsUser }) {
       <div className="flex min-h-screen flex-col bg-paper">
         {/* ── App header — the studio's one persistent bar ──────────── */}
         <header className="sticky top-0 z-20 border-b border-silver bg-paper">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
             <button
               type="button"
               onClick={() => psNavigate("landing")}
               aria-label="PaperString home"
-              className="rounded-lg text-night transition-opacity duration-150 hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+              className="min-w-0 shrink rounded-lg text-night transition-opacity duration-150 hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
-              <WordMark />
+              <WordMark markClassName="h-6 w-7 sm:h-7 sm:w-8" />
             </button>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
               {newBookButton}
 
               <DropdownMenu>
@@ -337,7 +337,7 @@ export function DashboardView({ user }: { user: PsUser }) {
                   aria-label="Search your books"
                   autoComplete="off"
                   enterKeyHint="search"
-                  className="h-9 w-full bg-transparent pl-7 pr-7 text-sm text-night outline-none placeholder:text-dim/70 focus-visible:outline-none"
+                  className="h-9 w-full bg-transparent pl-7 pr-7 text-sm text-night outline-none placeholder:text-dim focus-visible:outline-none"
                 />
                 {search !== "" && (
                   <button

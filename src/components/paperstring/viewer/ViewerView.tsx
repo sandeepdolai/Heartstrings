@@ -283,7 +283,7 @@ function ViewerBook({
               aria-label="Previous page"
               disabled={index === 0}
               onClick={() => flipRef.current?.prev()}
-              className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-night/75 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.05] backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-night hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
+              className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-paper text-night border border-silver shadow-lift-sm transition-all duration-200 hover:border-night/25 hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
             >
               <ChevronLeft className="h-6 w-6" aria-hidden="true" />
             </button>
@@ -292,7 +292,7 @@ function ViewerBook({
               aria-label="Next page"
               disabled={index === pages.length - 1}
               onClick={() => flipRef.current?.next()}
-              className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-night/75 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.05] backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-night hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
+              className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-paper text-night border border-silver shadow-lift-sm transition-all duration-200 hover:border-night/25 hover:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-night/40 disabled:pointer-events-none disabled:opacity-30 disabled:shadow-none disabled:ring-transparent md:grid"
             >
               <ChevronRight className="h-6 w-6" aria-hidden="true" />
             </button>

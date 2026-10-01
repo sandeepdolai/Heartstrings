@@ -499,9 +499,6 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
                     >
                       {benefit.num}
                     </span>
-                    <span aria-hidden="true" className="text-dim">
-                      &middot;
-                    </span>
                     <span className="text-sm font-medium text-night">
                       {benefit.title}
                     </span>
@@ -593,8 +590,8 @@ export function AuthView({ returnHint }: { returnHint?: boolean }) {
               <Alert className="mt-5 animate-in fade-in slide-in-from-top-1 border-silver/50 bg-card/60 py-2.5">
                 <Info className="size-4 text-dim" />
                 <AlertDescription className="text-xs text-dim">
-                  Google sign-in isn't connected on this deployment yet — it's a
-                  free, one-time setup.{" "}
+                  Google sign-in needs a one-time setup here — it&rsquo;s free
+                  and takes about two minutes.{" "}
                   <button
                     type="button"
                     onClick={() => setSetupOpen(true)}

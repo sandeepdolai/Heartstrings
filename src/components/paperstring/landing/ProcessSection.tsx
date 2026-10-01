@@ -47,17 +47,18 @@ export function ProcessSection({ user }: { user: PsUser | null }) {
       }
     >
       <Reveal delay={0.1}>
-        <ol className="mt-14 grid gap-10 sm:grid-cols-3 sm:gap-8">
-          {STEPS.map((step, i) => (
-            <li key={step.n} className="border-t-2 border-night pt-5">
-              <div className="flex items-baseline justify-between">
-                <span className="ps-serif text-4xl text-night">{step.n}</span>
-                {i < STEPS.length - 1 && (
-                  <span aria-hidden="true" className="hidden text-dim sm:block">
-                    ·
-                  </span>
-                )}
-              </div>
+        <ol className="relative mt-14 border-t border-night sm:grid sm:grid-cols-3">
+          {STEPS.map((step) => (
+            <li
+              key={step.n}
+              className="relative pt-8 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-silver sm:pl-6 sm:pt-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0 sm:[&:not(:first-child)]:border-l"
+            >
+              {/* the step marker sits on the shared rule */}
+              <span
+                aria-hidden="true"
+                className="absolute -top-[5px] left-0 hidden h-[9px] w-[9px] rounded-[1px] bg-night sm:block sm:first:left-0"
+              />
+              <span className="ps-serif text-4xl text-night">{step.n}</span>
               <h3 className="mt-4 text-base font-semibold text-night">
                 {step.title}
               </h3>
