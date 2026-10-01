@@ -707,7 +707,7 @@ export function EditorView({ projectId, user }: { projectId: string; user: PsUse
 
   return (
     <EditorFontsProvider value={fontsApi}>
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-editor text-editor-text">
+      <div className="hs-editor flex h-[100dvh] flex-col overflow-hidden bg-editor text-editor-text">
         <TopBar
           saveState={saveState}
           onSave={() => void saveAndExportRef.current()}

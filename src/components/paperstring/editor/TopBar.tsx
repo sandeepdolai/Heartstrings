@@ -106,14 +106,14 @@ export function TopBar({
   };
 
   return (
-    <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-editor-border bg-editor px-2 sm:gap-3 sm:px-3">
+    <header className="z-30 flex h-16 shrink-0 items-center gap-2 border-b border-editor-border bg-editor px-2 sm:gap-3 sm:px-3">
       <TooltipProvider delayDuration={400}>
         {/* ── left cluster: exit · document · save state ──────────── */}
         <button
           type="button"
           aria-label="Back to your studio"
           onClick={() => window.history.back()}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-editor-dim transition hover:bg-editor-raised hover:text-editor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4.5 w-4.5" />
         </button>
@@ -209,7 +209,7 @@ export function TopBar({
           <div
             role="group"
             aria-label="History"
-            className="hidden items-center rounded-lg border border-editor-border-strong bg-editor-panel sm:flex"
+            className="hidden items-center rounded-md border border-editor-border-strong bg-editor-panel sm:flex"
           >
             <Tooltip>
               <TooltipTrigger asChild>
@@ -392,7 +392,7 @@ export function TopBar({
               onClick={onShare}
               aria-label="Share your book"
               className={cn(
-                "group gap-1.5 rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-[#1047C7] active:scale-[0.97]",
+                "group gap-1.5 rounded-md bg-primary text-primary-foreground transition-colors hover:bg-[#1047C7] active:scale-[0.97]",
                 shareToken && "bg-[#1047C7]"
               )}
             >

@@ -82,7 +82,7 @@ export function SectionShell({
         className
       )}
     >
-      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
         <Reveal>
           <div className="flex items-baseline gap-3">
             <span
@@ -97,11 +97,11 @@ export function SectionShell({
           </div>
           <div className="mt-5 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="ps-serif text-3xl font-normal leading-[1.15] tracking-tight text-night sm:text-4xl">
+              <p className="ps-serif text-3xl font-semibold leading-[1.12] tracking-[-0.035em] text-night sm:text-4xl lg:text-5xl">
                 {title}
               </p>
               {sub ? (
-                <p className="mt-4 max-w-xl text-base leading-relaxed text-onyx">
+                <p className="mt-4 max-w-xl text-base leading-7 text-onyx sm:text-lg">
                   {sub}
                 </p>
               ) : null}
@@ -180,13 +180,13 @@ export function PageArt({
    ──────────────────────────────────────────────────────────── */
 
 export const btnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-[#1047C7] active:bg-[#1047C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "inline-flex items-center justify-center gap-2 rounded-md bg-primary text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-[#1047C7] active:bg-[#1047C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export const btnSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-silver bg-paper text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "inline-flex items-center justify-center gap-2 rounded-md border border-silver bg-paper text-sm font-medium text-night transition-colors duration-150 hover:border-night/40 hover:bg-smoke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export const ghostAction =
-  "inline-flex items-center justify-center gap-2 rounded-lg text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "inline-flex items-center justify-center gap-2 rounded-md text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 /* Legacy aliases — older sections still import these names. */
 export const pillPrimary = btnPrimary;
