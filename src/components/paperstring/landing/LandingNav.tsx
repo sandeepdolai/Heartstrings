@@ -48,7 +48,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
           : "border-transparent bg-paper"
       )}
     >
-      <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto grid h-[72px] w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
         {/* brand */}
         <a
           href="#top"
@@ -60,12 +60,12 @@ export function LandingNav({ user }: { user: PsUser | null }) {
 
         {/* center anchor links (desktop) */}
         <nav aria-label="Primary" className="hidden justify-self-center md:block">
-          <ul className="flex items-center gap-1">
+          <ul className="flex items-center gap-2">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="rounded-lg px-3.5 py-2 text-sm text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-onyx transition-colors duration-150 hover:bg-smoke hover:text-night focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {link.label}
                 </a>
@@ -88,7 +88,7 @@ export function LandingNav({ user }: { user: PsUser | null }) {
           <button
             type="button"
             onClick={openStudio}
-            className={cn(btnPrimary, "h-10 px-5")}
+            className={cn(btnPrimary, "h-10 px-5 rounded-md")}
           >
             {user ? "Your studio" : "Open studio"}
           </button>
